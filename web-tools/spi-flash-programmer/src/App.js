@@ -1,5 +1,5 @@
 import { downloadBytes } from "../../shared/files/download.js";
-import { RflasherAdapter, formatBytes } from "./RflasherAdapter.js";
+import { RflasherAdapter, formatBytes } from "./RflasherAdapter.js?v=20260912";
 
 const elements = {
   serialUnsupported: document.querySelector("#serialUnsupported"),
@@ -346,7 +346,7 @@ function renderProbe(result) {
     elements.chipName.textContent = `${result.chip.manufacturer} ${result.chip.model}`;
     elements.chipCapacity.textContent = formatCapacity(result.chip.capacity);
   } else {
-    elements.chipName.textContent = "Unknown in prototype database";
+    elements.chipName.textContent = "Not in compatible chip database";
     elements.chipCapacity.textContent = "-";
   }
 }

@@ -1,6 +1,6 @@
 import { SerialTransport } from "../../shared/serial/SerialTransport.js";
 import { SerialTimeoutError } from "../../shared/serial/SerialErrors.js";
-import { identifyJedec } from "./chipDatabase.js";
+import { identifyJedec } from "./chipDatabase.js?v=20260912";
 
 const ACK = 0x06;
 const NAK = 0x15;
@@ -106,7 +106,7 @@ export class RflasherAdapter {
     if (chip) {
       this.log(`Probe matched ${chip.manufacturer} ${chip.model}.`);
     } else {
-      this.log("Probe completed, but the minimal prototype database did not identify this JEDEC ID.");
+      this.log("Probe completed, but this JEDEC ID is not in the documented compatible chip database.");
     }
 
     return this.lastProbe;

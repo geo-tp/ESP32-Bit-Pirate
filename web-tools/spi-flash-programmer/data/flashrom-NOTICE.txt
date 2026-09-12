@@ -1,0 +1,11 @@
+Derived from flashrom, GPL-2.0-or-later.
+Upstream copyright notices:
+2000 Silicon Integrated System Corporation
+2004 Tyan Corp
+2005-2008 coresystems GmbH <stepan@openbios.org>
+2006-2009 Carl-Daniel Hailfinger
+2009 Sean Nelson <audiohacked@gmail.com>
+2025 Antonio Vázquez Blanco <antoniovazquezblanco@gmail.com>
+2025 Antonio Vázquez Blanco <antoniovazquezlbanco@gmail.com>
+2026 Rafael Franco <git@rafaelfranco.es>
+2026 Stump Creek Technical Services LLC <mstoops@stumpcreektechnicalservices.com>

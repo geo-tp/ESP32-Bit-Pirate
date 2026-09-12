@@ -1,0 +1,6258 @@
+{
+  "upstream": "https://github.com/flashrom/flashrom",
+  "revision": "399bffcb7d0dc3de96223163e3477f1137df319f",
+  "license": "GPL-2.0-or-later",
+  "entries": [
+    [
+      "010212",
+      {
+        "manufacturer": "Spansion",
+        "model": "S25FL004A",
+        "capacity": 524288,
+        "variants": [
+          {
+            "manufacturer": "Spansion",
+            "model": "S25FL004A",
+            "capacity": 524288,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_UNTESTED",
+            "source": "flashchips/spansion.c"
+          }
+        ]
+      }
+    ],
+    [
+      "010213",
+      {
+        "manufacturer": "Spansion",
+        "model": "S25FL008A",
+        "capacity": 1048576,
+        "variants": [
+          {
+            "manufacturer": "Spansion",
+            "model": "S25FL008A",
+            "capacity": 1048576,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PRE",
+            "source": "flashchips/spansion.c"
+          }
+        ]
+      }
+    ],
+    [
+      "010214",
+      {
+        "manufacturer": "Spansion",
+        "model": "S25FL016A",
+        "capacity": 2097152,
+        "variants": [
+          {
+            "manufacturer": "Spansion",
+            "model": "S25FL016A",
+            "capacity": 2097152,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/spansion.c"
+          }
+        ]
+      }
+    ],
+    [
+      "010215",
+      {
+        "manufacturer": "Spansion",
+        "model": "S25FL032A/P",
+        "capacity": 4194304,
+        "variants": [
+          {
+            "manufacturer": "Spansion",
+            "model": "S25FL032A/P",
+            "capacity": 4194304,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/spansion.c"
+          }
+        ]
+      }
+    ],
+    [
+      "010216",
+      {
+        "manufacturer": "Spansion",
+        "model": "S25FL064A/P",
+        "capacity": 8388608,
+        "variants": [
+          {
+            "manufacturer": "Spansion",
+            "model": "S25FL064A/P",
+            "capacity": 8388608,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/spansion.c"
+          }
+        ]
+      }
+    ],
+    [
+      "010219",
+      {
+        "manufacturer": "Spansion",
+        "model": "S25FL256S......0",
+        "capacity": 33554432,
+        "variants": [
+          {
+            "manufacturer": "Spansion",
+            "model": "S25FL256S......0",
+            "capacity": 33554432,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/spansion.c"
+          }
+        ]
+      }
+    ],
+    [
+      "014013",
+      {
+        "manufacturer": "Spansion",
+        "model": "S25FL204K",
+        "capacity": 524288,
+        "variants": [
+          {
+            "manufacturer": "Spansion",
+            "model": "S25FL204K",
+            "capacity": 524288,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PR",
+            "source": "flashchips/spansion.c"
+          }
+        ]
+      }
+    ],
+    [
+      "014014",
+      {
+        "manufacturer": "Spansion",
+        "model": "S25FL208K",
+        "capacity": 1048576,
+        "variants": [
+          {
+            "manufacturer": "Spansion",
+            "model": "S25FL208K",
+            "capacity": 1048576,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/spansion.c"
+          }
+        ]
+      }
+    ],
+    [
+      "014015",
+      {
+        "manufacturer": "Spansion",
+        "model": "S25FL116K/S25FL216K",
+        "capacity": 2097152,
+        "variants": [
+          {
+            "manufacturer": "Spansion",
+            "model": "S25FL116K/S25FL216K",
+            "capacity": 2097152,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/spansion.c"
+          }
+        ]
+      }
+    ],
+    [
+      "014016",
+      {
+        "manufacturer": "Spansion",
+        "model": "S25FL132K",
+        "capacity": 4194304,
+        "variants": [
+          {
+            "manufacturer": "Spansion",
+            "model": "S25FL132K",
+            "capacity": 4194304,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_UNTESTED",
+            "source": "flashchips/spansion.c"
+          }
+        ]
+      }
+    ],
+    [
+      "014017",
+      {
+        "manufacturer": "Spansion",
+        "model": "S25FL164K",
+        "capacity": 8388608,
+        "variants": [
+          {
+            "manufacturer": "Spansion",
+            "model": "S25FL164K",
+            "capacity": 8388608,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/spansion.c"
+          }
+        ]
+      }
+    ],
+    [
+      "016018",
+      {
+        "manufacturer": "Spansion",
+        "model": "S25FL128L",
+        "capacity": 16777216,
+        "variants": [
+          {
+            "manufacturer": "Spansion",
+            "model": "S25FL128L",
+            "capacity": 16777216,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/spansion.c"
+          }
+        ]
+      }
+    ],
+    [
+      "016019",
+      {
+        "manufacturer": "Spansion",
+        "model": "S25FL256L",
+        "capacity": 33554432,
+        "variants": [
+          {
+            "manufacturer": "Spansion",
+            "model": "S25FL256L",
+            "capacity": 33554432,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/spansion.c"
+          }
+        ]
+      }
+    ],
+    [
+      "0b4012",
+      {
+        "manufacturer": "XTX Technology Limited",
+        "model": "XT25F02E",
+        "capacity": 262144,
+        "variants": [
+          {
+            "manufacturer": "XTX Technology Limited",
+            "model": "XT25F02E",
+            "capacity": 262144,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/xtx.c"
+          }
+        ]
+      }
+    ],
+    [
+      "0e4015",
+      {
+        "manufacturer": "Zbit Semiconductor",
+        "model": "ZB25VQ16",
+        "capacity": 2097152,
+        "variants": [
+          {
+            "manufacturer": "Zbit Semiconductor",
+            "model": "ZB25VQ16",
+            "capacity": 2097152,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/zbit.c"
+          }
+        ]
+      }
+    ],
+    [
+      "1c2010",
+      {
+        "manufacturer": "Eon",
+        "model": "EN25B05 / EN25B05T / EN25P05",
+        "capacity": 65536,
+        "variants": [
+          {
+            "manufacturer": "Eon",
+            "model": "EN25B05",
+            "capacity": 65536,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_UNTESTED",
+            "source": "flashchips/eon.c"
+          },
+          {
+            "manufacturer": "Eon",
+            "model": "EN25B05T",
+            "capacity": 65536,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_UNTESTED",
+            "source": "flashchips/eon.c"
+          },
+          {
+            "manufacturer": "Eon",
+            "model": "EN25P05",
+            "capacity": 65536,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_UNTESTED",
+            "source": "flashchips/eon.c"
+          }
+        ]
+      }
+    ],
+    [
+      "1c2011",
+      {
+        "manufacturer": "Eon",
+        "model": "EN25B10 / EN25B10T / EN25P10",
+        "capacity": 131072,
+        "variants": [
+          {
+            "manufacturer": "Eon",
+            "model": "EN25B10",
+            "capacity": 131072,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_UNTESTED",
+            "source": "flashchips/eon.c"
+          },
+          {
+            "manufacturer": "Eon",
+            "model": "EN25B10T",
+            "capacity": 131072,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/eon.c"
+          },
+          {
+            "manufacturer": "Eon",
+            "model": "EN25P10",
+            "capacity": 131072,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_UNTESTED",
+            "source": "flashchips/eon.c"
+          }
+        ]
+      }
+    ],
+    [
+      "1c2012",
+      {
+        "manufacturer": "Eon",
+        "model": "EN25B20 / EN25B20T / EN25P20",
+        "capacity": 262144,
+        "variants": [
+          {
+            "manufacturer": "Eon",
+            "model": "EN25B20",
+            "capacity": 262144,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_UNTESTED",
+            "source": "flashchips/eon.c"
+          },
+          {
+            "manufacturer": "Eon",
+            "model": "EN25B20T",
+            "capacity": 262144,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_UNTESTED",
+            "source": "flashchips/eon.c"
+          },
+          {
+            "manufacturer": "Eon",
+            "model": "EN25P20",
+            "capacity": 262144,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_UNTESTED",
+            "source": "flashchips/eon.c"
+          }
+        ]
+      }
+    ],
+    [
+      "1c2013",
+      {
+        "manufacturer": "Eon",
+        "model": "EN25B40 / EN25B40T / EN25P40",
+        "capacity": 524288,
+        "variants": [
+          {
+            "manufacturer": "Eon",
+            "model": "EN25B40",
+            "capacity": 524288,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_UNTESTED",
+            "source": "flashchips/eon.c"
+          },
+          {
+            "manufacturer": "Eon",
+            "model": "EN25B40T",
+            "capacity": 524288,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_UNTESTED",
+            "source": "flashchips/eon.c"
+          },
+          {
+            "manufacturer": "Eon",
+            "model": "EN25P40",
+            "capacity": 524288,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_UNTESTED",
+            "source": "flashchips/eon.c"
+          }
+        ]
+      }
+    ],
+    [
+      "1c2014",
+      {
+        "manufacturer": "Eon",
+        "model": "EN25B80 / EN25B80T / EN25P80",
+        "capacity": 1048576,
+        "variants": [
+          {
+            "manufacturer": "Eon",
+            "model": "EN25B80",
+            "capacity": 1048576,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_UNTESTED",
+            "source": "flashchips/eon.c"
+          },
+          {
+            "manufacturer": "Eon",
+            "model": "EN25B80T",
+            "capacity": 1048576,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_UNTESTED",
+            "source": "flashchips/eon.c"
+          },
+          {
+            "manufacturer": "Eon",
+            "model": "EN25P80",
+            "capacity": 1048576,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_UNTESTED",
+            "source": "flashchips/eon.c"
+          }
+        ]
+      }
+    ],
+    [
+      "1c2015",
+      {
+        "manufacturer": "Eon",
+        "model": "EN25B16 / EN25B16T / EN25P16",
+        "capacity": 2097152,
+        "variants": [
+          {
+            "manufacturer": "Eon",
+            "model": "EN25B16",
+            "capacity": 2097152,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_UNTESTED",
+            "source": "flashchips/eon.c"
+          },
+          {
+            "manufacturer": "Eon",
+            "model": "EN25B16T",
+            "capacity": 2097152,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_UNTESTED",
+            "source": "flashchips/eon.c"
+          },
+          {
+            "manufacturer": "Eon",
+            "model": "EN25P16",
+            "capacity": 2097152,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_UNTESTED",
+            "source": "flashchips/eon.c"
+          }
+        ]
+      }
+    ],
+    [
+      "1c2016",
+      {
+        "manufacturer": "Eon",
+        "model": "EN25B32 / EN25B32T / EN25P32",
+        "capacity": 4194304,
+        "variants": [
+          {
+            "manufacturer": "Eon",
+            "model": "EN25B32",
+            "capacity": 4194304,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_UNTESTED",
+            "source": "flashchips/eon.c"
+          },
+          {
+            "manufacturer": "Eon",
+            "model": "EN25B32T",
+            "capacity": 4194304,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_UNTESTED",
+            "source": "flashchips/eon.c"
+          },
+          {
+            "manufacturer": "Eon",
+            "model": "EN25P32",
+            "capacity": 4194304,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_UNTESTED",
+            "source": "flashchips/eon.c"
+          }
+        ]
+      }
+    ],
+    [
+      "1c2017",
+      {
+        "manufacturer": "Eon",
+        "model": "EN25B64 / EN25B64T / EN25P64",
+        "capacity": 8388608,
+        "variants": [
+          {
+            "manufacturer": "Eon",
+            "model": "EN25B64",
+            "capacity": 8388608,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_UNTESTED",
+            "source": "flashchips/eon.c"
+          },
+          {
+            "manufacturer": "Eon",
+            "model": "EN25B64T",
+            "capacity": 8388608,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_UNTESTED",
+            "source": "flashchips/eon.c"
+          },
+          {
+            "manufacturer": "Eon",
+            "model": "EN25P64",
+            "capacity": 8388608,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_UNTESTED",
+            "source": "flashchips/eon.c"
+          }
+        ]
+      }
+    ],
+    [
+      "1c3013",
+      {
+        "manufacturer": "Eon",
+        "model": "EN25Q40",
+        "capacity": 524288,
+        "variants": [
+          {
+            "manufacturer": "Eon",
+            "model": "EN25Q40",
+            "capacity": 524288,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_UNTESTED",
+            "source": "flashchips/eon.c"
+          }
+        ]
+      }
+    ],
+    [
+      "1c3014",
+      {
+        "manufacturer": "Eon",
+        "model": "EN25Q80(A)",
+        "capacity": 1048576,
+        "variants": [
+          {
+            "manufacturer": "Eon",
+            "model": "EN25Q80(A)",
+            "capacity": 1048576,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_UNTESTED",
+            "source": "flashchips/eon.c"
+          }
+        ]
+      }
+    ],
+    [
+      "1c3015",
+      {
+        "manufacturer": "Eon",
+        "model": "EN25Q16",
+        "capacity": 2097152,
+        "variants": [
+          {
+            "manufacturer": "Eon",
+            "model": "EN25Q16",
+            "capacity": 2097152,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_UNTESTED",
+            "source": "flashchips/eon.c"
+          }
+        ]
+      }
+    ],
+    [
+      "1c3016",
+      {
+        "manufacturer": "Eon",
+        "model": "EN25Q32(A/B)",
+        "capacity": 4194304,
+        "variants": [
+          {
+            "manufacturer": "Eon",
+            "model": "EN25Q32(A/B)",
+            "capacity": 4194304,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/eon.c"
+          }
+        ]
+      }
+    ],
+    [
+      "1c3017",
+      {
+        "manufacturer": "Eon",
+        "model": "EN25Q64",
+        "capacity": 8388608,
+        "variants": [
+          {
+            "manufacturer": "Eon",
+            "model": "EN25Q64",
+            "capacity": 8388608,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/eon.c"
+          }
+        ]
+      }
+    ],
+    [
+      "1c3110",
+      {
+        "manufacturer": "Eon",
+        "model": "EN25F05",
+        "capacity": 65536,
+        "variants": [
+          {
+            "manufacturer": "Eon",
+            "model": "EN25F05",
+            "capacity": 65536,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/eon.c"
+          }
+        ]
+      }
+    ],
+    [
+      "1c3111",
+      {
+        "manufacturer": "Eon",
+        "model": "EN25F10",
+        "capacity": 131072,
+        "variants": [
+          {
+            "manufacturer": "Eon",
+            "model": "EN25F10",
+            "capacity": 131072,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/eon.c"
+          }
+        ]
+      }
+    ],
+    [
+      "1c3112",
+      {
+        "manufacturer": "Eon",
+        "model": "EN25F20",
+        "capacity": 262144,
+        "variants": [
+          {
+            "manufacturer": "Eon",
+            "model": "EN25F20",
+            "capacity": 262144,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_UNTESTED",
+            "source": "flashchips/eon.c"
+          }
+        ]
+      }
+    ],
+    [
+      "1c3113",
+      {
+        "manufacturer": "Eon",
+        "model": "EN25F40",
+        "capacity": 524288,
+        "variants": [
+          {
+            "manufacturer": "Eon",
+            "model": "EN25F40",
+            "capacity": 524288,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/eon.c"
+          }
+        ]
+      }
+    ],
+    [
+      "1c3114",
+      {
+        "manufacturer": "Eon",
+        "model": "EN25F80",
+        "capacity": 1048576,
+        "variants": [
+          {
+            "manufacturer": "Eon",
+            "model": "EN25F80",
+            "capacity": 1048576,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/eon.c"
+          }
+        ]
+      }
+    ],
+    [
+      "1c3115",
+      {
+        "manufacturer": "Eon",
+        "model": "EN25F16",
+        "capacity": 2097152,
+        "variants": [
+          {
+            "manufacturer": "Eon",
+            "model": "EN25F16",
+            "capacity": 2097152,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/eon.c"
+          }
+        ]
+      }
+    ],
+    [
+      "1c3116",
+      {
+        "manufacturer": "Eon",
+        "model": "EN25F32",
+        "capacity": 4194304,
+        "variants": [
+          {
+            "manufacturer": "Eon",
+            "model": "EN25F32",
+            "capacity": 4194304,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/eon.c"
+          }
+        ]
+      }
+    ],
+    [
+      "1c3117",
+      {
+        "manufacturer": "Eon",
+        "model": "EN25F64",
+        "capacity": 8388608,
+        "variants": [
+          {
+            "manufacturer": "Eon",
+            "model": "EN25F64",
+            "capacity": 8388608,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/eon.c"
+          }
+        ]
+      }
+    ],
+    [
+      "1c7015",
+      {
+        "manufacturer": "Eon",
+        "model": "EN25QH16",
+        "capacity": 2097152,
+        "variants": [
+          {
+            "manufacturer": "Eon",
+            "model": "EN25QH16",
+            "capacity": 2097152,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/eon.c"
+          }
+        ]
+      }
+    ],
+    [
+      "1c7016",
+      {
+        "manufacturer": "Eon",
+        "model": "EN25QH32 / EN25QH32B",
+        "capacity": 4194304,
+        "variants": [
+          {
+            "manufacturer": "Eon",
+            "model": "EN25QH32",
+            "capacity": 4194304,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/eon.c"
+          },
+          {
+            "manufacturer": "Eon",
+            "model": "EN25QH32B",
+            "capacity": 4194304,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/eon.c"
+          }
+        ]
+      }
+    ],
+    [
+      "1c7017",
+      {
+        "manufacturer": "Eon",
+        "model": "EN25QH64 / EN25QH64A",
+        "capacity": 8388608,
+        "variants": [
+          {
+            "manufacturer": "Eon",
+            "model": "EN25QH64",
+            "capacity": 8388608,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/eon.c"
+          },
+          {
+            "manufacturer": "Eon",
+            "model": "EN25QH64A",
+            "capacity": 8388608,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/eon.c"
+          }
+        ]
+      }
+    ],
+    [
+      "1c7018",
+      {
+        "manufacturer": "Eon",
+        "model": "EN25QH128",
+        "capacity": 16777216,
+        "variants": [
+          {
+            "manufacturer": "Eon",
+            "model": "EN25QH128",
+            "capacity": 16777216,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/eon.c"
+          }
+        ]
+      }
+    ],
+    [
+      "1c7118",
+      {
+        "manufacturer": "Eon",
+        "model": "EN25QX128A",
+        "capacity": 16777216,
+        "variants": [
+          {
+            "manufacturer": "Eon",
+            "model": "EN25QX128A",
+            "capacity": 16777216,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/eon.c"
+          }
+        ]
+      }
+    ],
+    [
+      "1f1401",
+      {
+        "manufacturer": "Atmel",
+        "model": "AT25EU0041A",
+        "capacity": 524288,
+        "variants": [
+          {
+            "manufacturer": "Atmel",
+            "model": "AT25EU0041A",
+            "capacity": 524288,
+            "voltageMv": [
+              1650,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/atmel.c"
+          }
+        ]
+      }
+    ],
+    [
+      "1f1601",
+      {
+        "manufacturer": "Atmel",
+        "model": "AT25EU0161A",
+        "capacity": 2097152,
+        "variants": [
+          {
+            "manufacturer": "Atmel",
+            "model": "AT25EU0161A",
+            "capacity": 2097152,
+            "voltageMv": [
+              1650,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/atmel.c"
+          }
+        ]
+      }
+    ],
+    [
+      "1f4200",
+      {
+        "manufacturer": "Atmel",
+        "model": "AT25DF011",
+        "capacity": 131072,
+        "variants": [
+          {
+            "manufacturer": "Atmel",
+            "model": "AT25DF011",
+            "capacity": 131072,
+            "voltageMv": [
+              1650,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/atmel.c"
+          }
+        ]
+      }
+    ],
+    [
+      "1f4300",
+      {
+        "manufacturer": "Atmel",
+        "model": "AT25DF021",
+        "capacity": 262144,
+        "variants": [
+          {
+            "manufacturer": "Atmel",
+            "model": "AT25DF021",
+            "capacity": 262144,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_UNTESTED",
+            "source": "flashchips/atmel.c"
+          }
+        ]
+      }
+    ],
+    [
+      "1f4301",
+      {
+        "manufacturer": "Atmel",
+        "model": "AT25DF021A",
+        "capacity": 262144,
+        "variants": [
+          {
+            "manufacturer": "Atmel",
+            "model": "AT25DF021A",
+            "capacity": 262144,
+            "voltageMv": [
+              1650,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/atmel.c"
+          }
+        ]
+      }
+    ],
+    [
+      "1f4401",
+      {
+        "manufacturer": "Atmel",
+        "model": "AT25DF041A",
+        "capacity": 524288,
+        "variants": [
+          {
+            "manufacturer": "Atmel",
+            "model": "AT25DF041A",
+            "capacity": 524288,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/atmel.c"
+          }
+        ]
+      }
+    ],
+    [
+      "1f4408",
+      {
+        "manufacturer": "Atmel",
+        "model": "AT25FF041A",
+        "capacity": 524288,
+        "variants": [
+          {
+            "manufacturer": "Atmel",
+            "model": "AT25FF041A",
+            "capacity": 524288,
+            "voltageMv": [
+              1650,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/atmel.c"
+          }
+        ]
+      }
+    ],
+    [
+      "1f4501",
+      {
+        "manufacturer": "Atmel",
+        "model": "AT25DF081A / AT26DF081A",
+        "capacity": 1048576,
+        "variants": [
+          {
+            "manufacturer": "Atmel",
+            "model": "AT25DF081A",
+            "capacity": 1048576,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_UNTESTED",
+            "source": "flashchips/atmel.c"
+          },
+          {
+            "manufacturer": "Atmel",
+            "model": "AT26DF081A",
+            "capacity": 1048576,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/atmel.c"
+          }
+        ]
+      }
+    ],
+    [
+      "1f4600",
+      {
+        "manufacturer": "Atmel",
+        "model": "AT26DF161",
+        "capacity": 2097152,
+        "variants": [
+          {
+            "manufacturer": "Atmel",
+            "model": "AT26DF161",
+            "capacity": 2097152,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/atmel.c"
+          }
+        ]
+      }
+    ],
+    [
+      "1f4601",
+      {
+        "manufacturer": "Atmel",
+        "model": "AT26DF161A",
+        "capacity": 2097152,
+        "variants": [
+          {
+            "manufacturer": "Atmel",
+            "model": "AT26DF161A",
+            "capacity": 2097152,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/atmel.c"
+          }
+        ]
+      }
+    ],
+    [
+      "1f4602",
+      {
+        "manufacturer": "Atmel",
+        "model": "AT25DF161",
+        "capacity": 2097152,
+        "variants": [
+          {
+            "manufacturer": "Atmel",
+            "model": "AT25DF161",
+            "capacity": 2097152,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/atmel.c"
+          }
+        ]
+      }
+    ],
+    [
+      "1f4700",
+      {
+        "manufacturer": "Atmel",
+        "model": "AT25DF321",
+        "capacity": 4194304,
+        "variants": [
+          {
+            "manufacturer": "Atmel",
+            "model": "AT25DF321",
+            "capacity": 4194304,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/atmel.c"
+          }
+        ]
+      }
+    ],
+    [
+      "1f4701",
+      {
+        "manufacturer": "Atmel",
+        "model": "AT25DF321A",
+        "capacity": 4194304,
+        "variants": [
+          {
+            "manufacturer": "Atmel",
+            "model": "AT25DF321A",
+            "capacity": 4194304,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/atmel.c"
+          }
+        ]
+      }
+    ],
+    [
+      "1f4800",
+      {
+        "manufacturer": "Atmel",
+        "model": "AT25DF641(A)",
+        "capacity": 8388608,
+        "variants": [
+          {
+            "manufacturer": "Atmel",
+            "model": "AT25DF641(A)",
+            "capacity": 8388608,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/atmel.c"
+          }
+        ]
+      }
+    ],
+    [
+      "1f6500",
+      {
+        "manufacturer": "Atmel",
+        "model": "AT25F512B",
+        "capacity": 65536,
+        "variants": [
+          {
+            "manufacturer": "Atmel",
+            "model": "AT25F512B",
+            "capacity": 65536,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_UNTESTED",
+            "source": "flashchips/atmel.c"
+          }
+        ]
+      }
+    ],
+    [
+      "1f6601",
+      {
+        "manufacturer": "Atmel",
+        "model": "AT25FS010",
+        "capacity": 131072,
+        "variants": [
+          {
+            "manufacturer": "Atmel",
+            "model": "AT25FS010",
+            "capacity": 131072,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/atmel.c"
+          }
+        ]
+      }
+    ],
+    [
+      "1f6604",
+      {
+        "manufacturer": "Atmel",
+        "model": "AT25FS040",
+        "capacity": 524288,
+        "variants": [
+          {
+            "manufacturer": "Atmel",
+            "model": "AT25FS040",
+            "capacity": 524288,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_UNTESTED",
+            "source": "flashchips/atmel.c"
+          }
+        ]
+      }
+    ],
+    [
+      "1f8401",
+      {
+        "manufacturer": "Atmel",
+        "model": "AT25SF041",
+        "capacity": 524288,
+        "variants": [
+          {
+            "manufacturer": "Atmel",
+            "model": "AT25SF041",
+            "capacity": 524288,
+            "voltageMv": [
+              2500,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/atmel.c"
+          }
+        ]
+      }
+    ],
+    [
+      "1f8501",
+      {
+        "manufacturer": "Atmel",
+        "model": "AT25SF081",
+        "capacity": 1048576,
+        "variants": [
+          {
+            "manufacturer": "Atmel",
+            "model": "AT25SF081",
+            "capacity": 1048576,
+            "voltageMv": [
+              2300,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/atmel.c"
+          }
+        ]
+      }
+    ],
+    [
+      "1f8600",
+      {
+        "manufacturer": "Atmel",
+        "model": "AT25DQ161",
+        "capacity": 2097152,
+        "variants": [
+          {
+            "manufacturer": "Atmel",
+            "model": "AT25DQ161",
+            "capacity": 2097152,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_UNTESTED",
+            "source": "flashchips/atmel.c"
+          }
+        ]
+      }
+    ],
+    [
+      "1f8601",
+      {
+        "manufacturer": "Atmel",
+        "model": "AT25SF161",
+        "capacity": 2097152,
+        "variants": [
+          {
+            "manufacturer": "Atmel",
+            "model": "AT25SF161",
+            "capacity": 2097152,
+            "voltageMv": [
+              2500,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/atmel.c"
+          }
+        ]
+      }
+    ],
+    [
+      "1f8701",
+      {
+        "manufacturer": "Atmel",
+        "model": "AT25SF321",
+        "capacity": 4194304,
+        "variants": [
+          {
+            "manufacturer": "Atmel",
+            "model": "AT25SF321",
+            "capacity": 4194304,
+            "voltageMv": [
+              2500,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PR",
+            "source": "flashchips/atmel.c"
+          }
+        ]
+      }
+    ],
+    [
+      "202010",
+      {
+        "manufacturer": "Micron/Numonyx/ST",
+        "model": "M25P05-A",
+        "capacity": 65536,
+        "variants": [
+          {
+            "manufacturer": "Micron/Numonyx/ST",
+            "model": "M25P05-A",
+            "capacity": 65536,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/micron_numonyx_st.c"
+          }
+        ]
+      }
+    ],
+    [
+      "202011",
+      {
+        "manufacturer": "Micron/Numonyx/ST",
+        "model": "M25P10-A",
+        "capacity": 131072,
+        "variants": [
+          {
+            "manufacturer": "Micron/Numonyx/ST",
+            "model": "M25P10-A",
+            "capacity": 131072,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/micron_numonyx_st.c"
+          }
+        ]
+      }
+    ],
+    [
+      "202012",
+      {
+        "manufacturer": "Micron/Numonyx/ST",
+        "model": "M25P20",
+        "capacity": 262144,
+        "variants": [
+          {
+            "manufacturer": "Micron/Numonyx/ST",
+            "model": "M25P20",
+            "capacity": 262144,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_UNTESTED",
+            "source": "flashchips/micron_numonyx_st.c"
+          }
+        ]
+      }
+    ],
+    [
+      "202013",
+      {
+        "manufacturer": "Micron/Numonyx/ST",
+        "model": "M25P40",
+        "capacity": 524288,
+        "variants": [
+          {
+            "manufacturer": "Micron/Numonyx/ST",
+            "model": "M25P40",
+            "capacity": 524288,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/micron_numonyx_st.c"
+          }
+        ]
+      }
+    ],
+    [
+      "202014",
+      {
+        "manufacturer": "Micron/Numonyx/ST",
+        "model": "M25P80",
+        "capacity": 1048576,
+        "variants": [
+          {
+            "manufacturer": "Micron/Numonyx/ST",
+            "model": "M25P80",
+            "capacity": 1048576,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/micron_numonyx_st.c"
+          }
+        ]
+      }
+    ],
+    [
+      "202015",
+      {
+        "manufacturer": "Micron/Numonyx/ST",
+        "model": "M25P16",
+        "capacity": 2097152,
+        "variants": [
+          {
+            "manufacturer": "Micron/Numonyx/ST",
+            "model": "M25P16",
+            "capacity": 2097152,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/micron_numonyx_st.c"
+          }
+        ]
+      }
+    ],
+    [
+      "202016",
+      {
+        "manufacturer": "Micron/Numonyx/ST",
+        "model": "M25P32",
+        "capacity": 4194304,
+        "variants": [
+          {
+            "manufacturer": "Micron/Numonyx/ST",
+            "model": "M25P32",
+            "capacity": 4194304,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/micron_numonyx_st.c"
+          }
+        ]
+      }
+    ],
+    [
+      "202017",
+      {
+        "manufacturer": "Micron/Numonyx/ST",
+        "model": "M25P64",
+        "capacity": 8388608,
+        "variants": [
+          {
+            "manufacturer": "Micron/Numonyx/ST",
+            "model": "M25P64",
+            "capacity": 8388608,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/micron_numonyx_st.c"
+          }
+        ]
+      }
+    ],
+    [
+      "202018",
+      {
+        "manufacturer": "Micron/Numonyx/ST",
+        "model": "M25P128",
+        "capacity": 16777216,
+        "variants": [
+          {
+            "manufacturer": "Micron/Numonyx/ST",
+            "model": "M25P128",
+            "capacity": 16777216,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/micron_numonyx_st.c"
+          }
+        ]
+      }
+    ],
+    [
+      "204016",
+      {
+        "manufacturer": "XMC",
+        "model": "XM25QH32C/XM25QH32D",
+        "capacity": 4194304,
+        "variants": [
+          {
+            "manufacturer": "XMC",
+            "model": "XM25QH32C/XM25QH32D",
+            "capacity": 4194304,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/xmc.c"
+          }
+        ]
+      }
+    ],
+    [
+      "204017",
+      {
+        "manufacturer": "XMC",
+        "model": "XM25QH64C/XM25QH64D",
+        "capacity": 8388608,
+        "variants": [
+          {
+            "manufacturer": "XMC",
+            "model": "XM25QH64C/XM25QH64D",
+            "capacity": 8388608,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/xmc.c"
+          }
+        ]
+      }
+    ],
+    [
+      "204018",
+      {
+        "manufacturer": "XMC",
+        "model": "XM25QH128C/XM25QH128D",
+        "capacity": 16777216,
+        "variants": [
+          {
+            "manufacturer": "XMC",
+            "model": "XM25QH128C/XM25QH128D",
+            "capacity": 16777216,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/xmc.c"
+          }
+        ]
+      }
+    ],
+    [
+      "204019",
+      {
+        "manufacturer": "XMC",
+        "model": "XM25QH256C/XM25QH256D",
+        "capacity": 33554432,
+        "variants": [
+          {
+            "manufacturer": "XMC",
+            "model": "XM25QH256C/XM25QH256D",
+            "capacity": 33554432,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/xmc.c"
+          }
+        ]
+      }
+    ],
+    [
+      "204318",
+      {
+        "manufacturer": "XMC",
+        "model": "XM25RH128C",
+        "capacity": 16777216,
+        "variants": [
+          {
+            "manufacturer": "XMC",
+            "model": "XM25RH128C",
+            "capacity": 16777216,
+            "voltageMv": [
+              2300,
+              3600
+            ],
+            "upstreamTested": "TEST_UNTESTED",
+            "source": "flashchips/xmc.c"
+          }
+        ]
+      }
+    ],
+    [
+      "207017",
+      {
+        "manufacturer": "XMC",
+        "model": "XM25QH64A",
+        "capacity": 8388608,
+        "variants": [
+          {
+            "manufacturer": "XMC",
+            "model": "XM25QH64A",
+            "capacity": 8388608,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/xmc.c"
+          }
+        ]
+      }
+    ],
+    [
+      "207018",
+      {
+        "manufacturer": "XMC",
+        "model": "XM25QH128A",
+        "capacity": 16777216,
+        "variants": [
+          {
+            "manufacturer": "XMC",
+            "model": "XM25QH128A",
+            "capacity": 16777216,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/xmc.c"
+          }
+        ]
+      }
+    ],
+    [
+      "207114",
+      {
+        "manufacturer": "Micron/Numonyx/ST",
+        "model": "M25PX80",
+        "capacity": 1048576,
+        "variants": [
+          {
+            "manufacturer": "Micron/Numonyx/ST",
+            "model": "M25PX80",
+            "capacity": 1048576,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/micron_numonyx_st.c"
+          }
+        ]
+      }
+    ],
+    [
+      "207115",
+      {
+        "manufacturer": "Micron/Numonyx/ST",
+        "model": "M25PX16",
+        "capacity": 2097152,
+        "variants": [
+          {
+            "manufacturer": "Micron/Numonyx/ST",
+            "model": "M25PX16",
+            "capacity": 2097152,
+            "voltageMv": [
+              2300,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/micron_numonyx_st.c"
+          }
+        ]
+      }
+    ],
+    [
+      "207116",
+      {
+        "manufacturer": "Micron/Numonyx/ST",
+        "model": "M25PX32",
+        "capacity": 4194304,
+        "variants": [
+          {
+            "manufacturer": "Micron/Numonyx/ST",
+            "model": "M25PX32",
+            "capacity": 4194304,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PRE",
+            "source": "flashchips/micron_numonyx_st.c"
+          }
+        ]
+      }
+    ],
+    [
+      "207117",
+      {
+        "manufacturer": "Micron/Numonyx/ST",
+        "model": "M25PX64",
+        "capacity": 8388608,
+        "variants": [
+          {
+            "manufacturer": "Micron/Numonyx/ST",
+            "model": "M25PX64",
+            "capacity": 8388608,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/micron_numonyx_st.c"
+          }
+        ]
+      }
+    ],
+    [
+      "208011",
+      {
+        "manufacturer": "Micron/Numonyx/ST",
+        "model": "M25PE10",
+        "capacity": 131072,
+        "variants": [
+          {
+            "manufacturer": "Micron/Numonyx/ST",
+            "model": "M25PE10",
+            "capacity": 131072,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_UNTESTED",
+            "source": "flashchips/micron_numonyx_st.c"
+          }
+        ]
+      }
+    ],
+    [
+      "208012",
+      {
+        "manufacturer": "Micron/Numonyx/ST",
+        "model": "M25PE20",
+        "capacity": 262144,
+        "variants": [
+          {
+            "manufacturer": "Micron/Numonyx/ST",
+            "model": "M25PE20",
+            "capacity": 262144,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_UNTESTED",
+            "source": "flashchips/micron_numonyx_st.c"
+          }
+        ]
+      }
+    ],
+    [
+      "208013",
+      {
+        "manufacturer": "Micron/Numonyx/ST",
+        "model": "M25PE40",
+        "capacity": 524288,
+        "variants": [
+          {
+            "manufacturer": "Micron/Numonyx/ST",
+            "model": "M25PE40",
+            "capacity": 524288,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/micron_numonyx_st.c"
+          }
+        ]
+      }
+    ],
+    [
+      "208014",
+      {
+        "manufacturer": "Micron/Numonyx/ST",
+        "model": "M25PE80",
+        "capacity": 1048576,
+        "variants": [
+          {
+            "manufacturer": "Micron/Numonyx/ST",
+            "model": "M25PE80",
+            "capacity": 1048576,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/micron_numonyx_st.c"
+          }
+        ]
+      }
+    ],
+    [
+      "208015",
+      {
+        "manufacturer": "Micron/Numonyx/ST",
+        "model": "M25PE16",
+        "capacity": 2097152,
+        "variants": [
+          {
+            "manufacturer": "Micron/Numonyx/ST",
+            "model": "M25PE16",
+            "capacity": 2097152,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_UNTESTED",
+            "source": "flashchips/micron_numonyx_st.c"
+          }
+        ]
+      }
+    ],
+    [
+      "20ba16",
+      {
+        "manufacturer": "Micron/Numonyx/ST",
+        "model": "N25Q032..3E",
+        "capacity": 4194304,
+        "variants": [
+          {
+            "manufacturer": "Micron/Numonyx/ST",
+            "model": "N25Q032..3E",
+            "capacity": 4194304,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/micron_numonyx_st.c"
+          }
+        ]
+      }
+    ],
+    [
+      "20ba17",
+      {
+        "manufacturer": "Micron/Numonyx/ST",
+        "model": "N25Q064..3E",
+        "capacity": 8388608,
+        "variants": [
+          {
+            "manufacturer": "Micron/Numonyx/ST",
+            "model": "N25Q064..3E",
+            "capacity": 8388608,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/micron_numonyx_st.c"
+          }
+        ]
+      }
+    ],
+    [
+      "20ba18",
+      {
+        "manufacturer": "Micron / Micron/Numonyx/ST",
+        "model": "MT25QL128 / N25Q128..3E",
+        "capacity": 16777216,
+        "variants": [
+          {
+            "manufacturer": "Micron",
+            "model": "MT25QL128",
+            "capacity": 16777216,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/micron.c"
+          },
+          {
+            "manufacturer": "Micron/Numonyx/ST",
+            "model": "N25Q128..3E",
+            "capacity": 16777216,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/micron_numonyx_st.c"
+          }
+        ]
+      }
+    ],
+    [
+      "20ba19",
+      {
+        "manufacturer": "Micron / Micron/Numonyx/ST",
+        "model": "MT25QL256 / N25Q256..3E",
+        "capacity": 33554432,
+        "variants": [
+          {
+            "manufacturer": "Micron",
+            "model": "MT25QL256",
+            "capacity": 33554432,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/micron.c"
+          },
+          {
+            "manufacturer": "Micron/Numonyx/ST",
+            "model": "N25Q256..3E",
+            "capacity": 33554432,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_UNTESTED",
+            "source": "flashchips/micron_numonyx_st.c"
+          }
+        ]
+      }
+    ],
+    [
+      "373010",
+      {
+        "manufacturer": "AMIC",
+        "model": "A25L512",
+        "capacity": 65536,
+        "variants": [
+          {
+            "manufacturer": "AMIC",
+            "model": "A25L512",
+            "capacity": 65536,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_UNTESTED",
+            "source": "flashchips/amic.c"
+          }
+        ]
+      }
+    ],
+    [
+      "373011",
+      {
+        "manufacturer": "AMIC",
+        "model": "A25L010",
+        "capacity": 131072,
+        "variants": [
+          {
+            "manufacturer": "AMIC",
+            "model": "A25L010",
+            "capacity": 131072,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_UNTESTED",
+            "source": "flashchips/amic.c"
+          }
+        ]
+      }
+    ],
+    [
+      "373012",
+      {
+        "manufacturer": "AMIC",
+        "model": "A25L020",
+        "capacity": 262144,
+        "variants": [
+          {
+            "manufacturer": "AMIC",
+            "model": "A25L020",
+            "capacity": 262144,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_UNTESTED",
+            "source": "flashchips/amic.c"
+          }
+        ]
+      }
+    ],
+    [
+      "373013",
+      {
+        "manufacturer": "AMIC",
+        "model": "A25L040",
+        "capacity": 524288,
+        "variants": [
+          {
+            "manufacturer": "AMIC",
+            "model": "A25L040",
+            "capacity": 524288,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_UNTESTED",
+            "source": "flashchips/amic.c"
+          }
+        ]
+      }
+    ],
+    [
+      "373014",
+      {
+        "manufacturer": "AMIC",
+        "model": "A25L080",
+        "capacity": 1048576,
+        "variants": [
+          {
+            "manufacturer": "AMIC",
+            "model": "A25L080",
+            "capacity": 1048576,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_UNTESTED",
+            "source": "flashchips/amic.c"
+          }
+        ]
+      }
+    ],
+    [
+      "373015",
+      {
+        "manufacturer": "AMIC",
+        "model": "A25L016",
+        "capacity": 2097152,
+        "variants": [
+          {
+            "manufacturer": "AMIC",
+            "model": "A25L016",
+            "capacity": 2097152,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_UNTESTED",
+            "source": "flashchips/amic.c"
+          }
+        ]
+      }
+    ],
+    [
+      "373016",
+      {
+        "manufacturer": "AMIC",
+        "model": "A25L032",
+        "capacity": 4194304,
+        "variants": [
+          {
+            "manufacturer": "AMIC",
+            "model": "A25L032",
+            "capacity": 4194304,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/amic.c"
+          }
+        ]
+      }
+    ],
+    [
+      "374015",
+      {
+        "manufacturer": "AMIC",
+        "model": "A25LQ16",
+        "capacity": 2097152,
+        "variants": [
+          {
+            "manufacturer": "AMIC",
+            "model": "A25LQ16",
+            "capacity": 2097152,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_UNTESTED",
+            "source": "flashchips/amic.c"
+          }
+        ]
+      }
+    ],
+    [
+      "374016",
+      {
+        "manufacturer": "AMIC",
+        "model": "A25LQ032/A25LQ32A",
+        "capacity": 4194304,
+        "variants": [
+          {
+            "manufacturer": "AMIC",
+            "model": "A25LQ032/A25LQ32A",
+            "capacity": 4194304,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_UNTESTED",
+            "source": "flashchips/amic.c"
+          }
+        ]
+      }
+    ],
+    [
+      "374017",
+      {
+        "manufacturer": "AMIC",
+        "model": "A25LQ64",
+        "capacity": 8388608,
+        "variants": [
+          {
+            "manufacturer": "AMIC",
+            "model": "A25LQ64",
+            "capacity": 8388608,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_UNTESTED",
+            "source": "flashchips/amic.c"
+          }
+        ]
+      }
+    ],
+    [
+      "4a2013",
+      {
+        "manufacturer": "ESI",
+        "model": "ES25P40",
+        "capacity": 524288,
+        "variants": [
+          {
+            "manufacturer": "ESI",
+            "model": "ES25P40",
+            "capacity": 524288,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_UNTESTED",
+            "source": "flashchips/esi.c"
+          }
+        ]
+      }
+    ],
+    [
+      "4a2014",
+      {
+        "manufacturer": "ESI",
+        "model": "ES25P80",
+        "capacity": 1048576,
+        "variants": [
+          {
+            "manufacturer": "ESI",
+            "model": "ES25P80",
+            "capacity": 1048576,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_UNTESTED",
+            "source": "flashchips/esi.c"
+          }
+        ]
+      }
+    ],
+    [
+      "620612",
+      {
+        "manufacturer": "Sanyo",
+        "model": "LE25FU206A",
+        "capacity": 262144,
+        "variants": [
+          {
+            "manufacturer": "Sanyo",
+            "model": "LE25FU206A",
+            "capacity": 262144,
+            "voltageMv": [
+              2300,
+              3600
+            ],
+            "upstreamTested": "TEST_UNTESTED",
+            "source": "flashchips/sanyo.c"
+          }
+        ]
+      }
+    ],
+    [
+      "620613",
+      {
+        "manufacturer": "Sanyo",
+        "model": "LE25FU406C/LE25U40CMC",
+        "capacity": 524288,
+        "variants": [
+          {
+            "manufacturer": "Sanyo",
+            "model": "LE25FU406C/LE25U40CMC",
+            "capacity": 524288,
+            "voltageMv": [
+              2300,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/sanyo.c"
+          }
+        ]
+      }
+    ],
+    [
+      "621100",
+      {
+        "manufacturer": "Sanyo",
+        "model": "LE25FW403A",
+        "capacity": 524288,
+        "variants": [
+          {
+            "manufacturer": "Sanyo",
+            "model": "LE25FW403A",
+            "capacity": 524288,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_UNTESTED",
+            "source": "flashchips/sanyo.c"
+          }
+        ]
+      }
+    ],
+    [
+      "621600",
+      {
+        "manufacturer": "Sanyo",
+        "model": "LE25FW203A",
+        "capacity": 262144,
+        "variants": [
+          {
+            "manufacturer": "Sanyo",
+            "model": "LE25FW203A",
+            "capacity": 262144,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_UNTESTED",
+            "source": "flashchips/sanyo.c"
+          }
+        ]
+      }
+    ],
+    [
+      "684012",
+      {
+        "manufacturer": "Boya/BoHong Microelectronics",
+        "model": "BY25D20",
+        "capacity": 262144,
+        "variants": [
+          {
+            "manufacturer": "Boya/BoHong Microelectronics",
+            "model": "BY25D20",
+            "capacity": 262144,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_UNTESTED",
+            "source": "flashchips/boya_bohong.c"
+          }
+        ]
+      }
+    ],
+    [
+      "684013",
+      {
+        "manufacturer": "Boya/BoHong Microelectronics",
+        "model": "BY25D40",
+        "capacity": 524288,
+        "variants": [
+          {
+            "manufacturer": "Boya/BoHong Microelectronics",
+            "model": "BY25D40",
+            "capacity": 524288,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PR",
+            "source": "flashchips/boya_bohong.c"
+          }
+        ]
+      }
+    ],
+    [
+      "684014",
+      {
+        "manufacturer": "Boya/BoHong Microelectronics",
+        "model": "B.25D80A",
+        "capacity": 1048576,
+        "variants": [
+          {
+            "manufacturer": "Boya/BoHong Microelectronics",
+            "model": "B.25D80A",
+            "capacity": 1048576,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PR",
+            "source": "flashchips/boya_bohong.c"
+          }
+        ]
+      }
+    ],
+    [
+      "684015",
+      {
+        "manufacturer": "Boya/BoHong Microelectronics",
+        "model": "B.25D16A",
+        "capacity": 2097152,
+        "variants": [
+          {
+            "manufacturer": "Boya/BoHong Microelectronics",
+            "model": "B.25D16A",
+            "capacity": 2097152,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PR",
+            "source": "flashchips/boya_bohong.c"
+          }
+        ]
+      }
+    ],
+    [
+      "684017",
+      {
+        "manufacturer": "Boya/BoHong Microelectronics",
+        "model": "B.25Q64AS",
+        "capacity": 8388608,
+        "variants": [
+          {
+            "manufacturer": "Boya/BoHong Microelectronics",
+            "model": "B.25Q64AS",
+            "capacity": 8388608,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/boya_bohong.c"
+          }
+        ]
+      }
+    ],
+    [
+      "684018",
+      {
+        "manufacturer": "Boya/BoHong Microelectronics",
+        "model": "B.25Q128AS",
+        "capacity": 16777216,
+        "variants": [
+          {
+            "manufacturer": "Boya/BoHong Microelectronics",
+            "model": "B.25Q128AS",
+            "capacity": 16777216,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/boya_bohong.c"
+          }
+        ]
+      }
+    ],
+    [
+      "852013",
+      {
+        "manufacturer": "PUYA",
+        "model": "P25Q40HB",
+        "capacity": 524288,
+        "variants": [
+          {
+            "manufacturer": "PUYA",
+            "model": "P25Q40HB",
+            "capacity": 524288,
+            "voltageMv": [
+              2300,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/puya.c"
+          }
+        ]
+      }
+    ],
+    [
+      "852015",
+      {
+        "manufacturer": "PUYA",
+        "model": "P25Q16HB",
+        "capacity": 2097152,
+        "variants": [
+          {
+            "manufacturer": "PUYA",
+            "model": "P25Q16HB",
+            "capacity": 2097152,
+            "voltageMv": [
+              2300,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/puya.c"
+          }
+        ]
+      }
+    ],
+    [
+      "854010",
+      {
+        "manufacturer": "PUYA",
+        "model": "P25Q06H",
+        "capacity": 65536,
+        "variants": [
+          {
+            "manufacturer": "PUYA",
+            "model": "P25Q06H",
+            "capacity": 65536,
+            "voltageMv": [
+              2300,
+              3600
+            ],
+            "upstreamTested": "TEST_UNTESTED",
+            "source": "flashchips/puya.c"
+          }
+        ]
+      }
+    ],
+    [
+      "854011",
+      {
+        "manufacturer": "PUYA",
+        "model": "P25Q11H",
+        "capacity": 131072,
+        "variants": [
+          {
+            "manufacturer": "PUYA",
+            "model": "P25Q11H",
+            "capacity": 131072,
+            "voltageMv": [
+              2300,
+              3600
+            ],
+            "upstreamTested": "TEST_UNTESTED",
+            "source": "flashchips/puya.c"
+          }
+        ]
+      }
+    ],
+    [
+      "854012",
+      {
+        "manufacturer": "PUYA",
+        "model": "P25Q21H",
+        "capacity": 262144,
+        "variants": [
+          {
+            "manufacturer": "PUYA",
+            "model": "P25Q21H",
+            "capacity": 262144,
+            "voltageMv": [
+              2300,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/puya.c"
+          }
+        ]
+      }
+    ],
+    [
+      "856013",
+      {
+        "manufacturer": "PUYA",
+        "model": "P25D40SH",
+        "capacity": 524288,
+        "variants": [
+          {
+            "manufacturer": "PUYA",
+            "model": "P25D40SH",
+            "capacity": 524288,
+            "voltageMv": [
+              2300,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PR",
+            "source": "flashchips/puya.c"
+          }
+        ]
+      }
+    ],
+    [
+      "856014",
+      {
+        "manufacturer": "PUYA",
+        "model": "P25D80H",
+        "capacity": 1048576,
+        "variants": [
+          {
+            "manufacturer": "PUYA",
+            "model": "P25D80H",
+            "capacity": 1048576,
+            "voltageMv": [
+              2300,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/puya.c"
+          }
+        ]
+      }
+    ],
+    [
+      "856016",
+      {
+        "manufacturer": "PUYA",
+        "model": "P25D32SH/P25Q32SH",
+        "capacity": 4194304,
+        "variants": [
+          {
+            "manufacturer": "PUYA",
+            "model": "P25D32SH/P25Q32SH",
+            "capacity": 4194304,
+            "voltageMv": [
+              2300,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PR",
+            "source": "flashchips/puya.c"
+          }
+        ]
+      }
+    ],
+    [
+      "898911",
+      {
+        "manufacturer": "Intel",
+        "model": "25F160S33B8",
+        "capacity": 2097152,
+        "variants": [
+          {
+            "manufacturer": "Intel",
+            "model": "25F160S33B8",
+            "capacity": 2097152,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_UNTESTED",
+            "source": "flashchips/intel.c"
+          }
+        ]
+      }
+    ],
+    [
+      "898912",
+      {
+        "manufacturer": "Intel",
+        "model": "25F320S33B8",
+        "capacity": 4194304,
+        "variants": [
+          {
+            "manufacturer": "Intel",
+            "model": "25F320S33B8",
+            "capacity": 4194304,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_UNTESTED",
+            "source": "flashchips/intel.c"
+          }
+        ]
+      }
+    ],
+    [
+      "898913",
+      {
+        "manufacturer": "Intel",
+        "model": "25F640S33B8",
+        "capacity": 8388608,
+        "variants": [
+          {
+            "manufacturer": "Intel",
+            "model": "25F640S33B8",
+            "capacity": 8388608,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/intel.c"
+          }
+        ]
+      }
+    ],
+    [
+      "898915",
+      {
+        "manufacturer": "Intel",
+        "model": "25F160S33T8",
+        "capacity": 2097152,
+        "variants": [
+          {
+            "manufacturer": "Intel",
+            "model": "25F160S33T8",
+            "capacity": 2097152,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_UNTESTED",
+            "source": "flashchips/intel.c"
+          }
+        ]
+      }
+    ],
+    [
+      "898916",
+      {
+        "manufacturer": "Intel",
+        "model": "25F320S33T8",
+        "capacity": 4194304,
+        "variants": [
+          {
+            "manufacturer": "Intel",
+            "model": "25F320S33T8",
+            "capacity": 4194304,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_UNTESTED",
+            "source": "flashchips/intel.c"
+          }
+        ]
+      }
+    ],
+    [
+      "898917",
+      {
+        "manufacturer": "Intel",
+        "model": "25F640S33T8",
+        "capacity": 8388608,
+        "variants": [
+          {
+            "manufacturer": "Intel",
+            "model": "25F640S33T8",
+            "capacity": 8388608,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_UNTESTED",
+            "source": "flashchips/intel.c"
+          }
+        ]
+      }
+    ],
+    [
+      "8c2016",
+      {
+        "manufacturer": "ESMT",
+        "model": "F25L32PA",
+        "capacity": 4194304,
+        "variants": [
+          {
+            "manufacturer": "ESMT",
+            "model": "F25L32PA",
+            "capacity": 4194304,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_UNTESTED",
+            "source": "flashchips/esmt.c"
+          }
+        ]
+      }
+    ],
+    [
+      "9d1445",
+      {
+        "manufacturer": "ISSI",
+        "model": "IS25LQ016",
+        "capacity": 2097152,
+        "variants": [
+          {
+            "manufacturer": "ISSI",
+            "model": "IS25LQ016",
+            "capacity": 2097152,
+            "voltageMv": [
+              2300,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/issi.c"
+          }
+        ]
+      }
+    ],
+    [
+      "9d4016",
+      {
+        "manufacturer": "ISSI",
+        "model": "IS25LQ032",
+        "capacity": 4194304,
+        "variants": [
+          {
+            "manufacturer": "ISSI",
+            "model": "IS25LQ032",
+            "capacity": 4194304,
+            "voltageMv": [
+              2300,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/issi.c"
+          }
+        ]
+      }
+    ],
+    [
+      "9d6015",
+      {
+        "manufacturer": "ISSI",
+        "model": "IS25LP016",
+        "capacity": 2097152,
+        "variants": [
+          {
+            "manufacturer": "ISSI",
+            "model": "IS25LP016",
+            "capacity": 2097152,
+            "voltageMv": [
+              2300,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/issi.c"
+          }
+        ]
+      }
+    ],
+    [
+      "9d6016",
+      {
+        "manufacturer": "ISSI",
+        "model": "IS25LP032",
+        "capacity": 4194304,
+        "variants": [
+          {
+            "manufacturer": "ISSI",
+            "model": "IS25LP032",
+            "capacity": 4194304,
+            "voltageMv": [
+              2300,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PR",
+            "source": "flashchips/issi.c"
+          }
+        ]
+      }
+    ],
+    [
+      "9d6017",
+      {
+        "manufacturer": "ISSI",
+        "model": "IS25LP064",
+        "capacity": 8388608,
+        "variants": [
+          {
+            "manufacturer": "ISSI",
+            "model": "IS25LP064",
+            "capacity": 8388608,
+            "voltageMv": [
+              2300,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/issi.c"
+          }
+        ]
+      }
+    ],
+    [
+      "9d6018",
+      {
+        "manufacturer": "ISSI",
+        "model": "IS25LP128",
+        "capacity": 16777216,
+        "variants": [
+          {
+            "manufacturer": "ISSI",
+            "model": "IS25LP128",
+            "capacity": 16777216,
+            "voltageMv": [
+              2300,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/issi.c"
+          }
+        ]
+      }
+    ],
+    [
+      "9d6019",
+      {
+        "manufacturer": "ISSI",
+        "model": "IS25LP256",
+        "capacity": 33554432,
+        "variants": [
+          {
+            "manufacturer": "ISSI",
+            "model": "IS25LP256",
+            "capacity": 33554432,
+            "voltageMv": [
+              2300,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/issi.c"
+          }
+        ]
+      }
+    ],
+    [
+      "9d6020",
+      {
+        "manufacturer": "ISSI",
+        "model": "IS25LP512MG",
+        "capacity": 67108864,
+        "variants": [
+          {
+            "manufacturer": "ISSI",
+            "model": "IS25LP512MG",
+            "capacity": 67108864,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_UNTESTED",
+            "source": "flashchips/issi.c"
+          }
+        ]
+      }
+    ],
+    [
+      "a12818",
+      {
+        "manufacturer": "Fudan",
+        "model": "FM25W128",
+        "capacity": 16777216,
+        "variants": [
+          {
+            "manufacturer": "Fudan",
+            "model": "FM25W128",
+            "capacity": 16777216,
+            "voltageMv": [
+              1650,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PROBE",
+            "source": "flashchips/fudan.c"
+          }
+        ]
+      }
+    ],
+    [
+      "a13110",
+      {
+        "manufacturer": "Fudan",
+        "model": "FM25F005",
+        "capacity": 65536,
+        "variants": [
+          {
+            "manufacturer": "Fudan",
+            "model": "FM25F005",
+            "capacity": 65536,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_UNTESTED",
+            "source": "flashchips/fudan.c"
+          }
+        ]
+      }
+    ],
+    [
+      "a13111",
+      {
+        "manufacturer": "Fudan",
+        "model": "FM25F01",
+        "capacity": 131072,
+        "variants": [
+          {
+            "manufacturer": "Fudan",
+            "model": "FM25F01",
+            "capacity": 131072,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/fudan.c"
+          }
+        ]
+      }
+    ],
+    [
+      "a13112",
+      {
+        "manufacturer": "Fudan",
+        "model": "FM25F02(A)",
+        "capacity": 262144,
+        "variants": [
+          {
+            "manufacturer": "Fudan",
+            "model": "FM25F02(A)",
+            "capacity": 262144,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_UNTESTED",
+            "source": "flashchips/fudan.c"
+          }
+        ]
+      }
+    ],
+    [
+      "a13113",
+      {
+        "manufacturer": "Fudan",
+        "model": "FM25F04(A)",
+        "capacity": 524288,
+        "variants": [
+          {
+            "manufacturer": "Fudan",
+            "model": "FM25F04(A)",
+            "capacity": 524288,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_UNTESTED",
+            "source": "flashchips/fudan.c"
+          }
+        ]
+      }
+    ],
+    [
+      "a14013",
+      {
+        "manufacturer": "Fudan",
+        "model": "FM25Q04",
+        "capacity": 524288,
+        "variants": [
+          {
+            "manufacturer": "Fudan",
+            "model": "FM25Q04",
+            "capacity": 524288,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_UNTESTED",
+            "source": "flashchips/fudan.c"
+          }
+        ]
+      }
+    ],
+    [
+      "a14014",
+      {
+        "manufacturer": "Fudan",
+        "model": "FM25Q08",
+        "capacity": 1048576,
+        "variants": [
+          {
+            "manufacturer": "Fudan",
+            "model": "FM25Q08",
+            "capacity": 1048576,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/fudan.c"
+          }
+        ]
+      }
+    ],
+    [
+      "a14015",
+      {
+        "manufacturer": "Fudan",
+        "model": "FM25Q16",
+        "capacity": 2097152,
+        "variants": [
+          {
+            "manufacturer": "Fudan",
+            "model": "FM25Q16",
+            "capacity": 2097152,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PR",
+            "source": "flashchips/fudan.c"
+          }
+        ]
+      }
+    ],
+    [
+      "a14016",
+      {
+        "manufacturer": "Fudan",
+        "model": "FM25Q32",
+        "capacity": 4194304,
+        "variants": [
+          {
+            "manufacturer": "Fudan",
+            "model": "FM25Q32",
+            "capacity": 4194304,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_UNTESTED",
+            "source": "flashchips/fudan.c"
+          }
+        ]
+      }
+    ],
+    [
+      "a14017",
+      {
+        "manufacturer": "Fudan",
+        "model": "FM25Q64",
+        "capacity": 8388608,
+        "variants": [
+          {
+            "manufacturer": "Fudan",
+            "model": "FM25Q64",
+            "capacity": 8388608,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_UNTESTED",
+            "source": "flashchips/fudan.c"
+          }
+        ]
+      }
+    ],
+    [
+      "a14018",
+      {
+        "manufacturer": "Fudan",
+        "model": "FM25Q128",
+        "capacity": 16777216,
+        "variants": [
+          {
+            "manufacturer": "Fudan",
+            "model": "FM25Q128",
+            "capacity": 16777216,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PR",
+            "source": "flashchips/fudan.c"
+          }
+        ]
+      }
+    ],
+    [
+      "ba2012",
+      {
+        "manufacturer": "Zetta Device",
+        "model": "ZD25D20",
+        "capacity": 262144,
+        "variants": [
+          {
+            "manufacturer": "Zetta Device",
+            "model": "ZD25D20",
+            "capacity": 262144,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_UNTESTED",
+            "source": "flashchips/zetta.c"
+          }
+        ]
+      }
+    ],
+    [
+      "ba2013",
+      {
+        "manufacturer": "Zetta Device",
+        "model": "ZD25D40",
+        "capacity": 524288,
+        "variants": [
+          {
+            "manufacturer": "Zetta Device",
+            "model": "ZD25D40",
+            "capacity": 524288,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_UNTESTED",
+            "source": "flashchips/zetta.c"
+          }
+        ]
+      }
+    ],
+    [
+      "bf254b",
+      {
+        "manufacturer": "SST",
+        "model": "SST25VF064C",
+        "capacity": 8388608,
+        "variants": [
+          {
+            "manufacturer": "SST",
+            "model": "SST25VF064C",
+            "capacity": 8388608,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/sst.c"
+          }
+        ]
+      }
+    ],
+    [
+      "bf2641",
+      {
+        "manufacturer": "SST",
+        "model": "SST26VF016B(A)",
+        "capacity": 2097152,
+        "variants": [
+          {
+            "manufacturer": "SST",
+            "model": "SST26VF016B(A)",
+            "capacity": 2097152,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/sst.c"
+          }
+        ]
+      }
+    ],
+    [
+      "bf2642",
+      {
+        "manufacturer": "SST",
+        "model": "SST26VF032B(A)",
+        "capacity": 4194304,
+        "variants": [
+          {
+            "manufacturer": "SST",
+            "model": "SST26VF032B(A)",
+            "capacity": 4194304,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_UNTESTED",
+            "source": "flashchips/sst.c"
+          }
+        ]
+      }
+    ],
+    [
+      "bf2643",
+      {
+        "manufacturer": "SST",
+        "model": "SST26VF064B(A)",
+        "capacity": 8388608,
+        "variants": [
+          {
+            "manufacturer": "SST",
+            "model": "SST26VF064B(A)",
+            "capacity": 8388608,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/sst.c"
+          }
+        ]
+      }
+    ],
+    [
+      "c22010",
+      {
+        "manufacturer": "Macronix",
+        "model": "MX25L512(E)/MX25V512(C)",
+        "capacity": 65536,
+        "variants": [
+          {
+            "manufacturer": "Macronix",
+            "model": "MX25L512(E)/MX25V512(C)",
+            "capacity": 65536,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/macronix.c"
+          }
+        ]
+      }
+    ],
+    [
+      "c22011",
+      {
+        "manufacturer": "Macronix",
+        "model": "MX25L1005(C)/MX25L1006E",
+        "capacity": 131072,
+        "variants": [
+          {
+            "manufacturer": "Macronix",
+            "model": "MX25L1005(C)/MX25L1006E",
+            "capacity": 131072,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/macronix.c"
+          }
+        ]
+      }
+    ],
+    [
+      "c22012",
+      {
+        "manufacturer": "Macronix",
+        "model": "MX25L2005(C)/MX25L2006E",
+        "capacity": 262144,
+        "variants": [
+          {
+            "manufacturer": "Macronix",
+            "model": "MX25L2005(C)/MX25L2006E",
+            "capacity": 262144,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/macronix.c"
+          }
+        ]
+      }
+    ],
+    [
+      "c22013",
+      {
+        "manufacturer": "Macronix",
+        "model": "MX25L4005(A/C)/MX25L4006E",
+        "capacity": 524288,
+        "variants": [
+          {
+            "manufacturer": "Macronix",
+            "model": "MX25L4005(A/C)/MX25L4006E",
+            "capacity": 524288,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/macronix.c"
+          }
+        ]
+      }
+    ],
+    [
+      "c22014",
+      {
+        "manufacturer": "Macronix",
+        "model": "MX25L8005/MX25L8006E/MX25L8008E/MX25V8005",
+        "capacity": 1048576,
+        "variants": [
+          {
+            "manufacturer": "Macronix",
+            "model": "MX25L8005/MX25L8006E/MX25L8008E/MX25V8005",
+            "capacity": 1048576,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/macronix.c"
+          }
+        ]
+      }
+    ],
+    [
+      "c22015",
+      {
+        "manufacturer": "Macronix",
+        "model": "MX25L1605 / MX25V16066 / MX25L1605A/MX25L1606E/MX25L1608E / MX25L1605D/MX25L1608D/MX25L1673E",
+        "capacity": 2097152,
+        "variants": [
+          {
+            "manufacturer": "Macronix",
+            "model": "MX25L1605",
+            "capacity": 2097152,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/macronix.c"
+          },
+          {
+            "manufacturer": "Macronix",
+            "model": "MX25V16066",
+            "capacity": 2097152,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PR",
+            "source": "flashchips/macronix.c"
+          },
+          {
+            "manufacturer": "Macronix",
+            "model": "MX25L1605A/MX25L1606E/MX25L1608E",
+            "capacity": 2097152,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/macronix.c"
+          },
+          {
+            "manufacturer": "Macronix",
+            "model": "MX25L1605D/MX25L1608D/MX25L1673E",
+            "capacity": 2097152,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/macronix.c"
+          }
+        ]
+      }
+    ],
+    [
+      "c22016",
+      {
+        "manufacturer": "Macronix",
+        "model": "MX25L3205(A) / MX25L3205D/MX25L3208D / MX25L3206E/MX25L3208E / MX25L3233F/MX25L3273E",
+        "capacity": 4194304,
+        "variants": [
+          {
+            "manufacturer": "Macronix",
+            "model": "MX25L3205(A)",
+            "capacity": 4194304,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/macronix.c"
+          },
+          {
+            "manufacturer": "Macronix",
+            "model": "MX25L3205D/MX25L3208D",
+            "capacity": 4194304,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/macronix.c"
+          },
+          {
+            "manufacturer": "Macronix",
+            "model": "MX25L3206E/MX25L3208E",
+            "capacity": 4194304,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREWB",
+            "source": "flashchips/macronix.c"
+          },
+          {
+            "manufacturer": "Macronix",
+            "model": "MX25L3233F/MX25L3273E",
+            "capacity": 4194304,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/macronix.c"
+          }
+        ]
+      }
+    ],
+    [
+      "c22017",
+      {
+        "manufacturer": "Macronix",
+        "model": "MX25L6405 / MX25L6405D / MX25L6406E/MX25L6408E / MX25L6436E/MX25L6445E/MX25L6465E / MX25L6473E / MX25L6473F",
+        "capacity": 8388608,
+        "variants": [
+          {
+            "manufacturer": "Macronix",
+            "model": "MX25L6405",
+            "capacity": 8388608,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/macronix.c"
+          },
+          {
+            "manufacturer": "Macronix",
+            "model": "MX25L6405D",
+            "capacity": 8388608,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/macronix.c"
+          },
+          {
+            "manufacturer": "Macronix",
+            "model": "MX25L6406E/MX25L6408E",
+            "capacity": 8388608,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREWB",
+            "source": "flashchips/macronix.c"
+          },
+          {
+            "manufacturer": "Macronix",
+            "model": "MX25L6436E/MX25L6445E/MX25L6465E",
+            "capacity": 8388608,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREWB",
+            "source": "flashchips/macronix.c"
+          },
+          {
+            "manufacturer": "Macronix",
+            "model": "MX25L6473E",
+            "capacity": 8388608,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/macronix.c"
+          },
+          {
+            "manufacturer": "Macronix",
+            "model": "MX25L6473F",
+            "capacity": 8388608,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/macronix.c"
+          }
+        ]
+      }
+    ],
+    [
+      "c22018",
+      {
+        "manufacturer": "Macronix",
+        "model": "MX25L12805D / MX25L12833F / MX25L12845E/MX25L12865E / MX25L12850F",
+        "capacity": 16777216,
+        "variants": [
+          {
+            "manufacturer": "Macronix",
+            "model": "MX25L12805D",
+            "capacity": 16777216,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/macronix.c"
+          },
+          {
+            "manufacturer": "Macronix",
+            "model": "MX25L12833F",
+            "capacity": 16777216,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREWB",
+            "source": "flashchips/macronix.c"
+          },
+          {
+            "manufacturer": "Macronix",
+            "model": "MX25L12845E/MX25L12865E",
+            "capacity": 16777216,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/macronix.c"
+          },
+          {
+            "manufacturer": "Macronix",
+            "model": "MX25L12850F",
+            "capacity": 16777216,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREWB",
+            "source": "flashchips/macronix.c"
+          }
+        ]
+      }
+    ],
+    [
+      "c22019",
+      {
+        "manufacturer": "Macronix",
+        "model": "MX25L25635F/MX25L25645G",
+        "capacity": 33554432,
+        "variants": [
+          {
+            "manufacturer": "Macronix",
+            "model": "MX25L25635F/MX25L25645G",
+            "capacity": 33554432,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/macronix.c"
+          }
+        ]
+      }
+    ],
+    [
+      "c2201a",
+      {
+        "manufacturer": "Macronix",
+        "model": "MX66L51235F/MX25L51245G",
+        "capacity": 67108864,
+        "variants": [
+          {
+            "manufacturer": "Macronix",
+            "model": "MX66L51235F/MX25L51245G",
+            "capacity": 67108864,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/macronix.c"
+          }
+        ]
+      }
+    ],
+    [
+      "c22313",
+      {
+        "manufacturer": "Macronix",
+        "model": "MX25V4035F",
+        "capacity": 524288,
+        "variants": [
+          {
+            "manufacturer": "Macronix",
+            "model": "MX25V4035F",
+            "capacity": 524288,
+            "voltageMv": [
+              2300,
+              3600
+            ],
+            "upstreamTested": "TEST_UNTESTED",
+            "source": "flashchips/macronix.c"
+          }
+        ]
+      }
+    ],
+    [
+      "c22314",
+      {
+        "manufacturer": "Macronix",
+        "model": "MX25V8035F",
+        "capacity": 1048576,
+        "variants": [
+          {
+            "manufacturer": "Macronix",
+            "model": "MX25V8035F",
+            "capacity": 1048576,
+            "voltageMv": [
+              2300,
+              3600
+            ],
+            "upstreamTested": "TEST_UNTESTED",
+            "source": "flashchips/macronix.c"
+          }
+        ]
+      }
+    ],
+    [
+      "c22415",
+      {
+        "manufacturer": "Macronix",
+        "model": "MX25L1635D / MX25L1633E",
+        "capacity": 2097152,
+        "variants": [
+          {
+            "manufacturer": "Macronix",
+            "model": "MX25L1635D",
+            "capacity": 2097152,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/macronix.c"
+          },
+          {
+            "manufacturer": "Macronix",
+            "model": "MX25L1633E",
+            "capacity": 2097152,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREWB",
+            "source": "flashchips/macronix.c"
+          }
+        ]
+      }
+    ],
+    [
+      "c22515",
+      {
+        "manufacturer": "Macronix",
+        "model": "MX25L1635E/MX25L1636E",
+        "capacity": 2097152,
+        "variants": [
+          {
+            "manufacturer": "Macronix",
+            "model": "MX25L1635E/MX25L1636E",
+            "capacity": 2097152,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREWB",
+            "source": "flashchips/macronix.c"
+          }
+        ]
+      }
+    ],
+    [
+      "c22810",
+      {
+        "manufacturer": "Macronix",
+        "model": "MX25R512F",
+        "capacity": 65536,
+        "variants": [
+          {
+            "manufacturer": "Macronix",
+            "model": "MX25R512F",
+            "capacity": 65536,
+            "voltageMv": [
+              1650,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/macronix.c"
+          }
+        ]
+      }
+    ],
+    [
+      "c22811",
+      {
+        "manufacturer": "Macronix",
+        "model": "MX25R1035F",
+        "capacity": 131072,
+        "variants": [
+          {
+            "manufacturer": "Macronix",
+            "model": "MX25R1035F",
+            "capacity": 131072,
+            "voltageMv": [
+              1650,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREWB",
+            "source": "flashchips/macronix.c"
+          }
+        ]
+      }
+    ],
+    [
+      "c22812",
+      {
+        "manufacturer": "Macronix",
+        "model": "MX25R2035F",
+        "capacity": 262144,
+        "variants": [
+          {
+            "manufacturer": "Macronix",
+            "model": "MX25R2035F",
+            "capacity": 262144,
+            "voltageMv": [
+              1650,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREWB",
+            "source": "flashchips/macronix.c"
+          }
+        ]
+      }
+    ],
+    [
+      "c22813",
+      {
+        "manufacturer": "Macronix",
+        "model": "MX25R4035F",
+        "capacity": 524288,
+        "variants": [
+          {
+            "manufacturer": "Macronix",
+            "model": "MX25R4035F",
+            "capacity": 524288,
+            "voltageMv": [
+              1650,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREWB",
+            "source": "flashchips/macronix.c"
+          }
+        ]
+      }
+    ],
+    [
+      "c22814",
+      {
+        "manufacturer": "Macronix",
+        "model": "MX25R8035F",
+        "capacity": 1048576,
+        "variants": [
+          {
+            "manufacturer": "Macronix",
+            "model": "MX25R8035F",
+            "capacity": 1048576,
+            "voltageMv": [
+              1650,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREWB",
+            "source": "flashchips/macronix.c"
+          }
+        ]
+      }
+    ],
+    [
+      "c22815",
+      {
+        "manufacturer": "Macronix",
+        "model": "MX25R1635F",
+        "capacity": 2097152,
+        "variants": [
+          {
+            "manufacturer": "Macronix",
+            "model": "MX25R1635F",
+            "capacity": 2097152,
+            "voltageMv": [
+              1650,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREWB",
+            "source": "flashchips/macronix.c"
+          }
+        ]
+      }
+    ],
+    [
+      "c22816",
+      {
+        "manufacturer": "Macronix",
+        "model": "MX25R3235F",
+        "capacity": 4194304,
+        "variants": [
+          {
+            "manufacturer": "Macronix",
+            "model": "MX25R3235F",
+            "capacity": 4194304,
+            "voltageMv": [
+              1650,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/macronix.c"
+          }
+        ]
+      }
+    ],
+    [
+      "c22817",
+      {
+        "manufacturer": "Macronix",
+        "model": "MX25R6435F",
+        "capacity": 8388608,
+        "variants": [
+          {
+            "manufacturer": "Macronix",
+            "model": "MX25R6435F",
+            "capacity": 8388608,
+            "voltageMv": [
+              1650,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/macronix.c"
+          }
+        ]
+      }
+    ],
+    [
+      "c25e16",
+      {
+        "manufacturer": "Macronix",
+        "model": "MX25L3235D",
+        "capacity": 4194304,
+        "variants": [
+          {
+            "manufacturer": "Macronix",
+            "model": "MX25L3235D",
+            "capacity": 4194304,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_UNTESTED",
+            "source": "flashchips/macronix.c"
+          }
+        ]
+      }
+    ],
+    [
+      "c27519",
+      {
+        "manufacturer": "Macronix",
+        "model": "MX77L25650F",
+        "capacity": 33554432,
+        "variants": [
+          {
+            "manufacturer": "Macronix",
+            "model": "MX77L25650F",
+            "capacity": 33554432,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/macronix.c"
+          }
+        ]
+      }
+    ],
+    [
+      "c29517",
+      {
+        "manufacturer": "Macronix",
+        "model": "MX25L6495F",
+        "capacity": 8388608,
+        "variants": [
+          {
+            "manufacturer": "Macronix",
+            "model": "MX25L6495F",
+            "capacity": 8388608,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/macronix.c"
+          }
+        ]
+      }
+    ],
+    [
+      "c29e16",
+      {
+        "manufacturer": "Macronix",
+        "model": "MX25L3255E",
+        "capacity": 4194304,
+        "variants": [
+          {
+            "manufacturer": "Macronix",
+            "model": "MX25L3255E",
+            "capacity": 4194304,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/macronix.c"
+          }
+        ]
+      }
+    ],
+    [
+      "c83114",
+      {
+        "manufacturer": "GigaDevice",
+        "model": "GD25T80",
+        "capacity": 1048576,
+        "variants": [
+          {
+            "manufacturer": "GigaDevice",
+            "model": "GD25T80",
+            "capacity": 1048576,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_UNTESTED",
+            "source": "flashchips/gigadevice.c"
+          }
+        ]
+      }
+    ],
+    [
+      "c84010",
+      {
+        "manufacturer": "GigaDevice",
+        "model": "GD25Q512",
+        "capacity": 65536,
+        "variants": [
+          {
+            "manufacturer": "GigaDevice",
+            "model": "GD25Q512",
+            "capacity": 65536,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/gigadevice.c"
+          }
+        ]
+      }
+    ],
+    [
+      "c84011",
+      {
+        "manufacturer": "GigaDevice",
+        "model": "GD25Q10",
+        "capacity": 131072,
+        "variants": [
+          {
+            "manufacturer": "GigaDevice",
+            "model": "GD25Q10",
+            "capacity": 131072,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_UNTESTED",
+            "source": "flashchips/gigadevice.c"
+          }
+        ]
+      }
+    ],
+    [
+      "c84012",
+      {
+        "manufacturer": "GigaDevice",
+        "model": "GD25Q20(B)",
+        "capacity": 262144,
+        "variants": [
+          {
+            "manufacturer": "GigaDevice",
+            "model": "GD25Q20(B)",
+            "capacity": 262144,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/gigadevice.c"
+          }
+        ]
+      }
+    ],
+    [
+      "c84013",
+      {
+        "manufacturer": "GigaDevice",
+        "model": "GD25Q40(B)",
+        "capacity": 524288,
+        "variants": [
+          {
+            "manufacturer": "GigaDevice",
+            "model": "GD25Q40(B)",
+            "capacity": 524288,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/gigadevice.c"
+          }
+        ]
+      }
+    ],
+    [
+      "c84014",
+      {
+        "manufacturer": "GigaDevice",
+        "model": "GD25Q80(B)",
+        "capacity": 1048576,
+        "variants": [
+          {
+            "manufacturer": "GigaDevice",
+            "model": "GD25Q80(B)",
+            "capacity": 1048576,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/gigadevice.c"
+          }
+        ]
+      }
+    ],
+    [
+      "c84015",
+      {
+        "manufacturer": "GigaDevice",
+        "model": "GD25Q16(B)",
+        "capacity": 2097152,
+        "variants": [
+          {
+            "manufacturer": "GigaDevice",
+            "model": "GD25Q16(B)",
+            "capacity": 2097152,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/gigadevice.c"
+          }
+        ]
+      }
+    ],
+    [
+      "c84016",
+      {
+        "manufacturer": "GigaDevice",
+        "model": "GD25Q32(B)",
+        "capacity": 4194304,
+        "variants": [
+          {
+            "manufacturer": "GigaDevice",
+            "model": "GD25Q32(B)",
+            "capacity": 4194304,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREWB",
+            "source": "flashchips/gigadevice.c"
+          }
+        ]
+      }
+    ],
+    [
+      "c84017",
+      {
+        "manufacturer": "GigaDevice",
+        "model": "GD25Q64(B)",
+        "capacity": 8388608,
+        "variants": [
+          {
+            "manufacturer": "GigaDevice",
+            "model": "GD25Q64(B)",
+            "capacity": 8388608,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREWB",
+            "source": "flashchips/gigadevice.c"
+          }
+        ]
+      }
+    ],
+    [
+      "c84018",
+      {
+        "manufacturer": "GigaDevice",
+        "model": "GD25B128B/GD25Q128B / GD25Q128E/GD25B128E/GD25R128E/GD25Q127C / GD25Q128C",
+        "capacity": 16777216,
+        "variants": [
+          {
+            "manufacturer": "GigaDevice",
+            "model": "GD25B128B/GD25Q128B",
+            "capacity": 16777216,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/gigadevice.c"
+          },
+          {
+            "manufacturer": "GigaDevice",
+            "model": "GD25Q128E/GD25B128E/GD25R128E/GD25Q127C",
+            "capacity": 16777216,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREWB",
+            "source": "flashchips/gigadevice.c"
+          },
+          {
+            "manufacturer": "GigaDevice",
+            "model": "GD25Q128C",
+            "capacity": 16777216,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREWB",
+            "source": "flashchips/gigadevice.c"
+          }
+        ]
+      }
+    ],
+    [
+      "c84019",
+      {
+        "manufacturer": "GigaDevice",
+        "model": "GD25Q256E/GD25B256E/GD25R256E/GD25Q256D",
+        "capacity": 33554432,
+        "variants": [
+          {
+            "manufacturer": "GigaDevice",
+            "model": "GD25Q256E/GD25B256E/GD25R256E/GD25Q256D",
+            "capacity": 33554432,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREWB",
+            "source": "flashchips/gigadevice.c"
+          }
+        ]
+      }
+    ],
+    [
+      "c84212",
+      {
+        "manufacturer": "GigaDevice",
+        "model": "GD25VQ21B",
+        "capacity": 262144,
+        "variants": [
+          {
+            "manufacturer": "GigaDevice",
+            "model": "GD25VQ21B",
+            "capacity": 262144,
+            "voltageMv": [
+              2300,
+              3600
+            ],
+            "upstreamTested": "TEST_UNTESTED",
+            "source": "flashchips/gigadevice.c"
+          }
+        ]
+      }
+    ],
+    [
+      "c84213",
+      {
+        "manufacturer": "GigaDevice",
+        "model": "GD25VQ40C / GD25VQ41B",
+        "capacity": 524288,
+        "variants": [
+          {
+            "manufacturer": "GigaDevice",
+            "model": "GD25VQ40C",
+            "capacity": 524288,
+            "voltageMv": [
+              2300,
+              3600
+            ],
+            "upstreamTested": "TEST_UNTESTED",
+            "source": "flashchips/gigadevice.c"
+          },
+          {
+            "manufacturer": "GigaDevice",
+            "model": "GD25VQ41B",
+            "capacity": 524288,
+            "voltageMv": [
+              2300,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/gigadevice.c"
+          }
+        ]
+      }
+    ],
+    [
+      "c84214",
+      {
+        "manufacturer": "GigaDevice",
+        "model": "GD25VQ80C",
+        "capacity": 1048576,
+        "variants": [
+          {
+            "manufacturer": "GigaDevice",
+            "model": "GD25VQ80C",
+            "capacity": 1048576,
+            "voltageMv": [
+              2300,
+              3600
+            ],
+            "upstreamTested": "TEST_UNTESTED",
+            "source": "flashchips/gigadevice.c"
+          }
+        ]
+      }
+    ],
+    [
+      "c84319",
+      {
+        "manufacturer": "GigaDevice",
+        "model": "GD25F256F",
+        "capacity": 33554432,
+        "variants": [
+          {
+            "manufacturer": "GigaDevice",
+            "model": "GD25F256F",
+            "capacity": 33554432,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREWB",
+            "source": "flashchips/gigadevice.c"
+          }
+        ]
+      }
+    ],
+    [
+      "c86514",
+      {
+        "manufacturer": "GigaDevice",
+        "model": "GD25WQ80E",
+        "capacity": 1048576,
+        "variants": [
+          {
+            "manufacturer": "GigaDevice",
+            "model": "GD25WQ80E",
+            "capacity": 1048576,
+            "voltageMv": [
+              1650,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/gigadevice.c"
+          }
+        ]
+      }
+    ],
+    [
+      "d53011",
+      {
+        "manufacturer": "Nantronics",
+        "model": "N25S10",
+        "capacity": 131072,
+        "variants": [
+          {
+            "manufacturer": "Nantronics",
+            "model": "N25S10",
+            "capacity": 131072,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_UNTESTED",
+            "source": "flashchips/nantronics.c"
+          }
+        ]
+      }
+    ],
+    [
+      "d53012",
+      {
+        "manufacturer": "Nantronics",
+        "model": "N25S20",
+        "capacity": 262144,
+        "variants": [
+          {
+            "manufacturer": "Nantronics",
+            "model": "N25S20",
+            "capacity": 262144,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_UNTESTED",
+            "source": "flashchips/nantronics.c"
+          }
+        ]
+      }
+    ],
+    [
+      "d53013",
+      {
+        "manufacturer": "Nantronics",
+        "model": "N25S40",
+        "capacity": 524288,
+        "variants": [
+          {
+            "manufacturer": "Nantronics",
+            "model": "N25S40",
+            "capacity": 524288,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_UNTESTED",
+            "source": "flashchips/nantronics.c"
+          }
+        ]
+      }
+    ],
+    [
+      "d53014",
+      {
+        "manufacturer": "Nantronics",
+        "model": "N25S80",
+        "capacity": 1048576,
+        "variants": [
+          {
+            "manufacturer": "Nantronics",
+            "model": "N25S80",
+            "capacity": 1048576,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_UNTESTED",
+            "source": "flashchips/nantronics.c"
+          }
+        ]
+      }
+    ],
+    [
+      "d53015",
+      {
+        "manufacturer": "Nantronics",
+        "model": "N25S16",
+        "capacity": 2097152,
+        "variants": [
+          {
+            "manufacturer": "Nantronics",
+            "model": "N25S16",
+            "capacity": 2097152,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_UNTESTED",
+            "source": "flashchips/nantronics.c"
+          }
+        ]
+      }
+    ],
+    [
+      "ef2014",
+      {
+        "manufacturer": "Winbond",
+        "model": "W25P80",
+        "capacity": 1048576,
+        "variants": [
+          {
+            "manufacturer": "Winbond",
+            "model": "W25P80",
+            "capacity": 1048576,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_UNTESTED",
+            "source": "flashchips/winbond.c"
+          }
+        ]
+      }
+    ],
+    [
+      "ef2015",
+      {
+        "manufacturer": "Winbond",
+        "model": "W25P16",
+        "capacity": 2097152,
+        "variants": [
+          {
+            "manufacturer": "Winbond",
+            "model": "W25P16",
+            "capacity": 2097152,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_UNTESTED",
+            "source": "flashchips/winbond.c"
+          }
+        ]
+      }
+    ],
+    [
+      "ef2016",
+      {
+        "manufacturer": "Winbond",
+        "model": "W25P32",
+        "capacity": 4194304,
+        "variants": [
+          {
+            "manufacturer": "Winbond",
+            "model": "W25P32",
+            "capacity": 4194304,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_UNTESTED",
+            "source": "flashchips/winbond.c"
+          }
+        ]
+      }
+    ],
+    [
+      "ef3011",
+      {
+        "manufacturer": "Winbond",
+        "model": "W25X10",
+        "capacity": 131072,
+        "variants": [
+          {
+            "manufacturer": "Winbond",
+            "model": "W25X10",
+            "capacity": 131072,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/winbond.c"
+          }
+        ]
+      }
+    ],
+    [
+      "ef3012",
+      {
+        "manufacturer": "Winbond",
+        "model": "W25X20",
+        "capacity": 262144,
+        "variants": [
+          {
+            "manufacturer": "Winbond",
+            "model": "W25X20",
+            "capacity": 262144,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREWB",
+            "source": "flashchips/winbond.c"
+          }
+        ]
+      }
+    ],
+    [
+      "ef3013",
+      {
+        "manufacturer": "Winbond",
+        "model": "W25X40",
+        "capacity": 524288,
+        "variants": [
+          {
+            "manufacturer": "Winbond",
+            "model": "W25X40",
+            "capacity": 524288,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/winbond.c"
+          }
+        ]
+      }
+    ],
+    [
+      "ef3014",
+      {
+        "manufacturer": "Winbond",
+        "model": "W25X80",
+        "capacity": 1048576,
+        "variants": [
+          {
+            "manufacturer": "Winbond",
+            "model": "W25X80",
+            "capacity": 1048576,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/winbond.c"
+          }
+        ]
+      }
+    ],
+    [
+      "ef3015",
+      {
+        "manufacturer": "Winbond",
+        "model": "W25X16",
+        "capacity": 2097152,
+        "variants": [
+          {
+            "manufacturer": "Winbond",
+            "model": "W25X16",
+            "capacity": 2097152,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/winbond.c"
+          }
+        ]
+      }
+    ],
+    [
+      "ef3016",
+      {
+        "manufacturer": "Winbond",
+        "model": "W25X32",
+        "capacity": 4194304,
+        "variants": [
+          {
+            "manufacturer": "Winbond",
+            "model": "W25X32",
+            "capacity": 4194304,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/winbond.c"
+          }
+        ]
+      }
+    ],
+    [
+      "ef3017",
+      {
+        "manufacturer": "Winbond",
+        "model": "W25X64",
+        "capacity": 8388608,
+        "variants": [
+          {
+            "manufacturer": "Winbond",
+            "model": "W25X64",
+            "capacity": 8388608,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/winbond.c"
+          }
+        ]
+      }
+    ],
+    [
+      "ef4013",
+      {
+        "manufacturer": "Winbond",
+        "model": "W25Q40.V",
+        "capacity": 524288,
+        "variants": [
+          {
+            "manufacturer": "Winbond",
+            "model": "W25Q40.V",
+            "capacity": 524288,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/winbond.c"
+          }
+        ]
+      }
+    ],
+    [
+      "ef4014",
+      {
+        "manufacturer": "Winbond",
+        "model": "W25Q80BV/W25Q80DV / W25Q80RV",
+        "capacity": 1048576,
+        "variants": [
+          {
+            "manufacturer": "Winbond",
+            "model": "W25Q80BV/W25Q80DV",
+            "capacity": 1048576,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREWB",
+            "source": "flashchips/winbond.c"
+          },
+          {
+            "manufacturer": "Winbond",
+            "model": "W25Q80RV",
+            "capacity": 1048576,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/winbond.c"
+          }
+        ]
+      }
+    ],
+    [
+      "ef4015",
+      {
+        "manufacturer": "Winbond",
+        "model": "W25Q16.V",
+        "capacity": 2097152,
+        "variants": [
+          {
+            "manufacturer": "Winbond",
+            "model": "W25Q16.V",
+            "capacity": 2097152,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREWB",
+            "source": "flashchips/winbond.c"
+          }
+        ]
+      }
+    ],
+    [
+      "ef4016",
+      {
+        "manufacturer": "Winbond",
+        "model": "W25Q32BV/W25Q32CV/W25Q32DV / W25Q32FV / W25Q32JV",
+        "capacity": 4194304,
+        "variants": [
+          {
+            "manufacturer": "Winbond",
+            "model": "W25Q32BV/W25Q32CV/W25Q32DV",
+            "capacity": 4194304,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/winbond.c"
+          },
+          {
+            "manufacturer": "Winbond",
+            "model": "W25Q32FV",
+            "capacity": 4194304,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/winbond.c"
+          },
+          {
+            "manufacturer": "Winbond",
+            "model": "W25Q32JV",
+            "capacity": 4194304,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/winbond.c"
+          }
+        ]
+      }
+    ],
+    [
+      "ef4017",
+      {
+        "manufacturer": "Winbond",
+        "model": "W25Q64BV/W25Q64CV/W25Q64FV / W25Q64JV-.Q",
+        "capacity": 8388608,
+        "variants": [
+          {
+            "manufacturer": "Winbond",
+            "model": "W25Q64BV/W25Q64CV/W25Q64FV",
+            "capacity": 8388608,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREWB",
+            "source": "flashchips/winbond.c"
+          },
+          {
+            "manufacturer": "Winbond",
+            "model": "W25Q64JV-.Q",
+            "capacity": 8388608,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREWB",
+            "source": "flashchips/winbond.c"
+          }
+        ]
+      }
+    ],
+    [
+      "ef4018",
+      {
+        "manufacturer": "Winbond",
+        "model": "W25Q128.V",
+        "capacity": 16777216,
+        "variants": [
+          {
+            "manufacturer": "Winbond",
+            "model": "W25Q128.V",
+            "capacity": 16777216,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREWB",
+            "source": "flashchips/winbond.c"
+          }
+        ]
+      }
+    ],
+    [
+      "ef4a17",
+      {
+        "manufacturer": "Winbond",
+        "model": "W77Q64JV",
+        "capacity": 8388608,
+        "variants": [
+          {
+            "manufacturer": "Winbond",
+            "model": "W77Q64JV",
+            "capacity": 8388608,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/winbond.c"
+          }
+        ]
+      }
+    ],
+    [
+      "ef4a18",
+      {
+        "manufacturer": "Winbond",
+        "model": "W77Q128JV",
+        "capacity": 16777216,
+        "variants": [
+          {
+            "manufacturer": "Winbond",
+            "model": "W77Q128JV",
+            "capacity": 16777216,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/winbond.c"
+          }
+        ]
+      }
+    ],
+    [
+      "ef7015",
+      {
+        "manufacturer": "Winbond",
+        "model": "W25Q16JV_M",
+        "capacity": 2097152,
+        "variants": [
+          {
+            "manufacturer": "Winbond",
+            "model": "W25Q16JV_M",
+            "capacity": 2097152,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/winbond.c"
+          }
+        ]
+      }
+    ],
+    [
+      "ef7016",
+      {
+        "manufacturer": "Winbond",
+        "model": "W25Q32JV_M",
+        "capacity": 4194304,
+        "variants": [
+          {
+            "manufacturer": "Winbond",
+            "model": "W25Q32JV_M",
+            "capacity": 4194304,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/winbond.c"
+          }
+        ]
+      }
+    ],
+    [
+      "ef7017",
+      {
+        "manufacturer": "Winbond",
+        "model": "W25Q64JV-.M",
+        "capacity": 8388608,
+        "variants": [
+          {
+            "manufacturer": "Winbond",
+            "model": "W25Q64JV-.M",
+            "capacity": 8388608,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREW",
+            "source": "flashchips/winbond.c"
+          }
+        ]
+      }
+    ],
+    [
+      "ef7018",
+      {
+        "manufacturer": "Winbond",
+        "model": "W25Q128.V..M",
+        "capacity": 16777216,
+        "variants": [
+          {
+            "manufacturer": "Winbond",
+            "model": "W25Q128.V..M",
+            "capacity": 16777216,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREWB",
+            "source": "flashchips/winbond.c"
+          }
+        ]
+      }
+    ],
+    [
+      "ef7019",
+      {
+        "manufacturer": "Winbond",
+        "model": "W25Q256JV_M",
+        "capacity": 33554432,
+        "variants": [
+          {
+            "manufacturer": "Winbond",
+            "model": "W25Q256JV_M",
+            "capacity": 33554432,
+            "voltageMv": [
+              2700,
+              3600
+            ],
+            "upstreamTested": "TEST_OK_PREWB",
+            "source": "flashchips/winbond.c"
+          }
+        ]
+      }
+    ]
+  ],
+  "excluded": [
+    {
+      "jedec": "012018",
+      "models": [
+        "S25FL127S-256kB",
+        "S25FL127S-64kB",
+        "S25FL128P......0",
+        "S25FL128P......1",
+        "S25FL128S......0",
+        "S25FL128S......1",
+        "S25FL129P......0",
+        "S25FL129P......1"
+      ],
+      "reasons": [
+        "nonstandard read/program profile"
+      ]
+    },
+    {
+      "jedec": "1c3018",
+      "models": [
+        "EN25Q128"
+      ],
+      "reasons": [
+        "not a documented 3.3 V part"
+      ]
+    },
+    {
+      "jedec": "1c3811",
+      "models": [
+        "EN25S10"
+      ],
+      "reasons": [
+        "not a documented 3.3 V part"
+      ]
+    },
+    {
+      "jedec": "1c3812",
+      "models": [
+        "EN25S20"
+      ],
+      "reasons": [
+        "not a documented 3.3 V part"
+      ]
+    },
+    {
+      "jedec": "1c3813",
+      "models": [
+        "EN25S40"
+      ],
+      "reasons": [
+        "not a documented 3.3 V part"
+      ]
+    },
+    {
+      "jedec": "1c3814",
+      "models": [
+        "EN25S80"
+      ],
+      "reasons": [
+        "not a documented 3.3 V part"
+      ]
+    },
+    {
+      "jedec": "1c3815",
+      "models": [
+        "EN25S16"
+      ],
+      "reasons": [
+        "not a documented 3.3 V part"
+      ]
+    },
+    {
+      "jedec": "1c3816",
+      "models": [
+        "EN25S32"
+      ],
+      "reasons": [
+        "not a documented 3.3 V part"
+      ]
+    },
+    {
+      "jedec": "1c3817",
+      "models": [
+        "EN25S64"
+      ],
+      "reasons": [
+        "not a documented 3.3 V part"
+      ]
+    },
+    {
+      "jedec": "1f2700",
+      "models": [
+        "AT45DB321C"
+      ],
+      "reasons": [
+        "no documented C7 erase",
+        "nonstandard read/program profile"
+      ]
+    },
+    {
+      "jedec": "1f2920",
+      "models": [
+        "AT45CS1282"
+      ],
+      "reasons": [
+        "no documented C7 erase",
+        "no documented native 13/12 addressing",
+        "nonstandard read/program profile"
+      ]
+    },
+    {
+      "jedec": "1f4218",
+      "models": [
+        "AT25SL128A"
+      ],
+      "reasons": [
+        "not a documented 3.3 V part"
+      ]
+    },
+    {
+      "jedec": "1f4400",
+      "models": [
+        "AT26DF041"
+      ],
+      "reasons": [
+        "no documented C7 erase",
+        "nonstandard read/program profile"
+      ]
+    },
+    {
+      "jedec": "1f4502",
+      "models": [
+        "AT25DF081",
+        "AT25DL081"
+      ],
+      "reasons": [
+        "not a documented 3.3 V part"
+      ]
+    },
+    {
+      "jedec": "1f4603",
+      "models": [
+        "AT25DL161"
+      ],
+      "reasons": [
+        "not a documented 3.3 V part"
+      ]
+    },
+    {
+      "jedec": "1f8901",
+      "models": [
+        "AT25SF128A"
+      ],
+      "reasons": [
+        "not a documented 3.3 V part"
+      ]
+    },
+    {
+      "jedec": "204011",
+      "models": [
+        "M45PE10"
+      ],
+      "reasons": [
+        "no documented C7 erase"
+      ]
+    },
+    {
+      "jedec": "204012",
+      "models": [
+        "M45PE20"
+      ],
+      "reasons": [
+        "no documented C7 erase"
+      ]
+    },
+    {
+      "jedec": "204013",
+      "models": [
+        "M45PE40"
+      ],
+      "reasons": [
+        "no documented C7 erase"
+      ]
+    },
+    {
+      "jedec": "204014",
+      "models": [
+        "M45PE80",
+        "XM25QH80B"
+      ],
+      "reasons": [
+        "no documented C7 erase"
+      ]
+    },
+    {
+      "jedec": "204015",
+      "models": [
+        "M45PE16",
+        "XM25QH16C/XM25QH16D"
+      ],
+      "reasons": [
+        "no documented C7 erase"
+      ]
+    },
+    {
+      "jedec": "204117",
+      "models": [
+        "XM25QU64C/XM25LU64C"
+      ],
+      "reasons": [
+        "not a documented 3.3 V part"
+      ]
+    },
+    {
+      "jedec": "204118",
+      "models": [
+        "XM25QU128C/XM25QU128D"
+      ],
+      "reasons": [
+        "not a documented 3.3 V part"
+      ]
+    },
+    {
+      "jedec": "204119",
+      "models": [
+        "XM25QU256C/XM25QU256D"
+      ],
+      "reasons": [
+        "not a documented 3.3 V part"
+      ]
+    },
+    {
+      "jedec": "204419",
+      "models": [
+        "XM25RU256C"
+      ],
+      "reasons": [
+        "not a documented 3.3 V part"
+      ]
+    },
+    {
+      "jedec": "205014",
+      "models": [
+        "XM25QU80B"
+      ],
+      "reasons": [
+        "not a documented 3.3 V part"
+      ]
+    },
+    {
+      "jedec": "205015",
+      "models": [
+        "XM25QU16C"
+      ],
+      "reasons": [
+        "not a documented 3.3 V part"
+      ]
+    },
+    {
+      "jedec": "205016",
+      "models": [
+        "XM25QU32C"
+      ],
+      "reasons": [
+        "not a documented 3.3 V part"
+      ]
+    },
+    {
+      "jedec": "20ba20",
+      "models": [
+        "MT25QL512",
+        "N25Q512..3G"
+      ],
+      "reasons": [
+        "no documented C7 erase"
+      ]
+    },
+    {
+      "jedec": "20ba21",
+      "models": [
+        "MT25QL01G",
+        "N25Q00A..3G"
+      ],
+      "reasons": [
+        "no documented C7 erase",
+        "outside supported allocation range (up to 64 MiB)"
+      ]
+    },
+    {
+      "jedec": "20ba22",
+      "models": [
+        "MT25QL02G"
+      ],
+      "reasons": [
+        "no documented C7 erase",
+        "outside supported allocation range (up to 64 MiB)"
+      ]
+    },
+    {
+      "jedec": "20bb15",
+      "models": [
+        "N25Q016"
+      ],
+      "reasons": [
+        "not a documented 3.3 V part"
+      ]
+    },
+    {
+      "jedec": "20bb16",
+      "models": [
+        "N25Q032..1E"
+      ],
+      "reasons": [
+        "not a documented 3.3 V part"
+      ]
+    },
+    {
+      "jedec": "20bb17",
+      "models": [
+        "N25Q064..1E"
+      ],
+      "reasons": [
+        "not a documented 3.3 V part"
+      ]
+    },
+    {
+      "jedec": "20bb18",
+      "models": [
+        "MT25QU128",
+        "N25Q128..1E"
+      ],
+      "reasons": [
+        "not a documented 3.3 V part"
+      ]
+    },
+    {
+      "jedec": "20bb19",
+      "models": [
+        "MT25QU256",
+        "N25Q256..1E"
+      ],
+      "reasons": [
+        "not a documented 3.3 V part"
+      ]
+    },
+    {
+      "jedec": "20bb20",
+      "models": [
+        "MT25QU512",
+        "N25Q512..1G"
+      ],
+      "reasons": [
+        "no documented C7 erase",
+        "not a documented 3.3 V part"
+      ]
+    },
+    {
+      "jedec": "20bb21",
+      "models": [
+        "MT25QU01G",
+        "N25Q00A..1G"
+      ],
+      "reasons": [
+        "no documented C7 erase",
+        "not a documented 3.3 V part",
+        "outside supported allocation range (up to 64 MiB)"
+      ]
+    },
+    {
+      "jedec": "20bb22",
+      "models": [
+        "MT25QU02G"
+      ],
+      "reasons": [
+        "no documented C7 erase",
+        "not a documented 3.3 V part",
+        "outside supported allocation range (up to 64 MiB)"
+      ]
+    },
+    {
+      "jedec": "621612",
+      "models": [
+        "SST25WF020A"
+      ],
+      "reasons": [
+        "not a documented 3.3 V part"
+      ]
+    },
+    {
+      "jedec": "621613",
+      "models": [
+        "SST25WF040B"
+      ],
+      "reasons": [
+        "not a documented 3.3 V part"
+      ]
+    },
+    {
+      "jedec": "621614",
+      "models": [
+        "SST25WF080B"
+      ],
+      "reasons": [
+        "not a documented 3.3 V part"
+      ]
+    },
+    {
+      "jedec": "8c2014",
+      "models": [
+        "F25L008A"
+      ],
+      "reasons": [
+        "nonstandard read/program profile"
+      ]
+    },
+    {
+      "jedec": "9d1253",
+      "models": [
+        "IS25WQ040"
+      ],
+      "reasons": [
+        "not a documented 3.3 V part"
+      ]
+    },
+    {
+      "jedec": "9d6021",
+      "models": [
+        "IS25LP01GJ"
+      ],
+      "reasons": [
+        "outside supported allocation range (up to 64 MiB)"
+      ]
+    },
+    {
+      "jedec": "9d7012",
+      "models": [
+        "IS25WP020"
+      ],
+      "reasons": [
+        "not a documented 3.3 V part"
+      ]
+    },
+    {
+      "jedec": "9d7013",
+      "models": [
+        "IS25WP040"
+      ],
+      "reasons": [
+        "not a documented 3.3 V part"
+      ]
+    },
+    {
+      "jedec": "9d7014",
+      "models": [
+        "IS25WP080"
+      ],
+      "reasons": [
+        "not a documented 3.3 V part"
+      ]
+    },
+    {
+      "jedec": "9d7015",
+      "models": [
+        "IS25WP016"
+      ],
+      "reasons": [
+        "not a documented 3.3 V part"
+      ]
+    },
+    {
+      "jedec": "9d7016",
+      "models": [
+        "IS25WP032"
+      ],
+      "reasons": [
+        "not a documented 3.3 V part"
+      ]
+    },
+    {
+      "jedec": "9d7017",
+      "models": [
+        "IS25WP064"
+      ],
+      "reasons": [
+        "not a documented 3.3 V part"
+      ]
+    },
+    {
+      "jedec": "9d7018",
+      "models": [
+        "IS25WP128"
+      ],
+      "reasons": [
+        "not a documented 3.3 V part"
+      ]
+    },
+    {
+      "jedec": "9d7019",
+      "models": [
+        "IS25WP256"
+      ],
+      "reasons": [
+        "not a documented 3.3 V part"
+      ]
+    },
+    {
+      "jedec": "9d7020",
+      "models": [
+        "IS25WP512MG"
+      ],
+      "reasons": [
+        "not a documented 3.3 V part"
+      ]
+    },
+    {
+      "jedec": "9d7021",
+      "models": [
+        "IS25WP01GJ"
+      ],
+      "reasons": [
+        "not a documented 3.3 V part",
+        "outside supported allocation range (up to 64 MiB)"
+      ]
+    },
+    {
+      "jedec": "bf2501",
+      "models": [
+        "SST25WF512"
+      ],
+      "reasons": [
+        "nonstandard read/program profile",
+        "not a documented 3.3 V part"
+      ]
+    },
+    {
+      "jedec": "bf2502",
+      "models": [
+        "SST25WF010"
+      ],
+      "reasons": [
+        "nonstandard read/program profile",
+        "not a documented 3.3 V part"
+      ]
+    },
+    {
+      "jedec": "bf2503",
+      "models": [
+        "SST25WF020"
+      ],
+      "reasons": [
+        "nonstandard read/program profile",
+        "not a documented 3.3 V part"
+      ]
+    },
+    {
+      "jedec": "bf2504",
+      "models": [
+        "SST25WF040"
+      ],
+      "reasons": [
+        "nonstandard read/program profile",
+        "not a documented 3.3 V part"
+      ]
+    },
+    {
+      "jedec": "bf2505",
+      "models": [
+        "SST25WF080"
+      ],
+      "reasons": [
+        "nonstandard read/program profile",
+        "not a documented 3.3 V part"
+      ]
+    },
+    {
+      "jedec": "bf2541",
+      "models": [
+        "SST25VF016B"
+      ],
+      "reasons": [
+        "nonstandard read/program profile"
+      ]
+    },
+    {
+      "jedec": "bf254a",
+      "models": [
+        "SST25VF032B"
+      ],
+      "reasons": [
+        "nonstandard read/program profile"
+      ]
+    },
+    {
+      "jedec": "bf258c",
+      "models": [
+        "SST25VF020B"
+      ],
+      "reasons": [
+        "nonstandard read/program profile"
+      ]
+    },
+    {
+      "jedec": "bf258d",
+      "models": [
+        "SST25VF040B"
+      ],
+      "reasons": [
+        "nonstandard read/program profile"
+      ]
+    },
+    {
+      "jedec": "bf258e",
+      "models": [
+        "SST25VF080B"
+      ],
+      "reasons": [
+        "nonstandard read/program profile"
+      ]
+    },
+    {
+      "jedec": "c2201b",
+      "models": [
+        "MX66L1G45G"
+      ],
+      "reasons": [
+        "outside supported allocation range (up to 64 MiB)"
+      ]
+    },
+    {
+      "jedec": "c22210",
+      "models": [
+        "MX25L5121E"
+      ],
+      "reasons": [
+        "nonstandard read/program profile"
+      ]
+    },
+    {
+      "jedec": "c22315",
+      "models": [
+        "MX25V1635F"
+      ],
+      "reasons": [
+        "no documented C7 erase"
+      ]
+    },
+    {
+      "jedec": "c22534",
+      "models": [
+        "MX25U8032E"
+      ],
+      "reasons": [
+        "not a documented 3.3 V part"
+      ]
+    },
+    {
+      "jedec": "c22535",
+      "models": [
+        "MX25U1635E"
+      ],
+      "reasons": [
+        "not a documented 3.3 V part"
+      ]
+    },
+    {
+      "jedec": "c22536",
+      "models": [
+        "MX25U3235E/F"
+      ],
+      "reasons": [
+        "not a documented 3.3 V part"
+      ]
+    },
+    {
+      "jedec": "c22537",
+      "models": [
+        "MX25U6435E/F"
+      ],
+      "reasons": [
+        "not a documented 3.3 V part"
+      ]
+    },
+    {
+      "jedec": "c22538",
+      "models": [
+        "MX25U12835F/MX25U12873F"
+      ],
+      "reasons": [
+        "not a documented 3.3 V part"
+      ]
+    },
+    {
+      "jedec": "c22539",
+      "models": [
+        "MX25U25635F",
+        "MX25U25643G",
+        "MX25U25645G"
+      ],
+      "reasons": [
+        "not a documented 3.3 V part"
+      ]
+    },
+    {
+      "jedec": "c2253a",
+      "models": [
+        "MX25U51245G"
+      ],
+      "reasons": [
+        "not a documented 3.3 V part"
+      ]
+    },
+    {
+      "jedec": "c27539",
+      "models": [
+        "MX77U25650F"
+      ],
+      "reasons": [
+        "not a documented 3.3 V part"
+      ]
+    },
+    {
+      "jedec": "c2753a",
+      "models": [
+        "MX77U51250F"
+      ],
+      "reasons": [
+        "not a documented 3.3 V part"
+      ]
+    },
+    {
+      "jedec": "c86013",
+      "models": [
+        "GD25LQ40"
+      ],
+      "reasons": [
+        "not a documented 3.3 V part"
+      ]
+    },
+    {
+      "jedec": "c86014",
+      "models": [
+        "GD25LQ80"
+      ],
+      "reasons": [
+        "not a documented 3.3 V part"
+      ]
+    },
+    {
+      "jedec": "c86015",
+      "models": [
+        "GD25LQ16"
+      ],
+      "reasons": [
+        "not a documented 3.3 V part"
+      ]
+    },
+    {
+      "jedec": "c86016",
+      "models": [
+        "GD25LQ32"
+      ],
+      "reasons": [
+        "not a documented 3.3 V part"
+      ]
+    },
+    {
+      "jedec": "c86017",
+      "models": [
+        "GD25LQ64(B)"
+      ],
+      "reasons": [
+        "not a documented 3.3 V part"
+      ]
+    },
+    {
+      "jedec": "c86018",
+      "models": [
+        "GD25LQ128E/GD25LB128E/GD25LR128E/GD25LQ128D/GD25LQ128C"
+      ],
+      "reasons": [
+        "not a documented 3.3 V part"
+      ]
+    },
+    {
+      "jedec": "c86019",
+      "models": [
+        "GD25LQ255E",
+        "GD25LB256F/GD25LR256F"
+      ],
+      "reasons": [
+        "not a documented 3.3 V part"
+      ]
+    },
+    {
+      "jedec": "c8601a",
+      "models": [
+        "GD25LB512MF/GD25LR512MF"
+      ],
+      "reasons": [
+        "not a documented 3.3 V part"
+      ]
+    },
+    {
+      "jedec": "c86318",
+      "models": [
+        "GD25LF128E"
+      ],
+      "reasons": [
+        "not a documented 3.3 V part"
+      ]
+    },
+    {
+      "jedec": "c86319",
+      "models": [
+        "GD25LF256F"
+      ],
+      "reasons": [
+        "not a documented 3.3 V part"
+      ]
+    },
+    {
+      "jedec": "c8631a",
+      "models": [
+        "GD25LF512MF"
+      ],
+      "reasons": [
+        "not a documented 3.3 V part"
+      ]
+    },
+    {
+      "jedec": "c86719",
+      "models": [
+        "GD25LB256E/GD25LR256E"
+      ],
+      "reasons": [
+        "not a documented 3.3 V part"
+      ]
+    },
+    {
+      "jedec": "c8671a",
+      "models": [
+        "GD25LB512ME/GD25LR512ME"
+      ],
+      "reasons": [
+        "not a documented 3.3 V part"
+      ]
+    },
+    {
+      "jedec": "ef3010",
+      "models": [
+        "W25X05"
+      ],
+      "reasons": [
+        "no documented C7 erase"
+      ]
+    },
+    {
+      "jedec": "ef4019",
+      "models": [
+        "W25Q256FV",
+        "W25Q256JV_Q"
+      ],
+      "reasons": [
+        "no documented native 13/12 addressing"
+      ]
+    },
+    {
+      "jedec": "ef5012",
+      "models": [
+        "W25Q20.W"
+      ],
+      "reasons": [
+        "not a documented 3.3 V part"
+      ]
+    },
+    {
+      "jedec": "ef5013",
+      "models": [
+        "W25Q40BW"
+      ],
+      "reasons": [
+        "not a documented 3.3 V part"
+      ]
+    },
+    {
+      "jedec": "ef5014",
+      "models": [
+        "W25Q80BW"
+      ],
+      "reasons": [
+        "not a documented 3.3 V part"
+      ]
+    },
+    {
+      "jedec": "ef6013",
+      "models": [
+        "W25Q40EW"
+      ],
+      "reasons": [
+        "not a documented 3.3 V part"
+      ]
+    },
+    {
+      "jedec": "ef6014",
+      "models": [
+        "W25Q80EW"
+      ],
+      "reasons": [
+        "not a documented 3.3 V part"
+      ]
+    },
+    {
+      "jedec": "ef6015",
+      "models": [
+        "W25Q16.W"
+      ],
+      "reasons": [
+        "not a documented 3.3 V part"
+      ]
+    },
+    {
+      "jedec": "ef6016",
+      "models": [
+        "W25Q32BW/W25Q32CW/W25Q32DW",
+        "W25Q32FW",
+        "W25Q32JW...Q"
+      ],
+      "reasons": [
+        "not a documented 3.3 V part"
+      ]
+    },
+    {
+      "jedec": "ef6017",
+      "models": [
+        "W25Q64.W"
+      ],
+      "reasons": [
+        "not a documented 3.3 V part"
+      ]
+    },
+    {
+      "jedec": "ef6018",
+      "models": [
+        "W25Q128.W"
+      ],
+      "reasons": [
+        "not a documented 3.3 V part"
+      ]
+    },
+    {
+      "jedec": "ef6019",
+      "models": [
+        "W25Q256JW",
+        "W25R256JW"
+      ],
+      "reasons": [
+        "not a documented 3.3 V part"
+      ]
+    },
+    {
+      "jedec": "ef6020",
+      "models": [
+        "W25R512NW/W74M51NW"
+      ],
+      "reasons": [
+        "not a documented 3.3 V part"
+      ]
+    },
+    {
+      "jedec": "ef8016",
+      "models": [
+        "W25Q32JW...M"
+      ],
+      "reasons": [
+        "not a documented 3.3 V part"
+      ]
+    },
+    {
+      "jedec": "ef8017",
+      "models": [
+        "W25Q64JW...M"
+      ],
+      "reasons": [
+        "not a documented 3.3 V part"
+      ]
+    },
+    {
+      "jedec": "ef8018",
+      "models": [
+        "W25Q128.JW.DTR"
+      ],
+      "reasons": [
+        "not a documented 3.3 V part"
+      ]
+    },
+    {
+      "jedec": "ef8019",
+      "models": [
+        "W25Q256JW_DTR"
+      ],
+      "reasons": [
+        "not a documented 3.3 V part"
+      ]
+    },
+    {
+      "jedec": "ef8a16",
+      "models": [
+        "W77Q16JW",
+        "W77Q32JW"
+      ],
+      "reasons": [
+        "not a documented 3.3 V part",
+        "ambiguous capacity for the same JEDEC ID"
+      ]
+    },
+    {
+      "jedec": "ef8a17",
+      "models": [
+        "W77Q64JW"
+      ],
+      "reasons": [
+        "not a documented 3.3 V part"
+      ]
+    },
+    {
+      "jedec": "ef8a18",
+      "models": [
+        "W77Q128JW"
+      ],
+      "reasons": [
+        "not a documented 3.3 V part"
+      ]
+    },
+    {
+      "jedec": "ef8e17",
+      "models": [
+        "W77T64NW"
+      ],
+      "reasons": [
+        "not a documented 3.3 V part"
+      ]
+    },
+    {
+      "jedec": "ef8e18",
+      "models": [
+        "W77T12NW"
+      ],
+      "reasons": [
+        "not a documented 3.3 V part",
+        "requires special access handling"
+      ]
+    }
+  ]
+}
