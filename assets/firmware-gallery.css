@@ -1,0 +1,25 @@
+/* Compact landing gallery; lightbox presentation adapted from modules/modules.css. */
+.brand-signature-card > .firmware-gallery { grid-column: 1 / -1; min-width: 0; }
+.firmware-gallery-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.firmware-capture { margin: 0; min-width: 0; overflow: hidden; border: 1px solid var(--border, #343434); border-radius: var(--radius); background: var(--panel-bg); }
+.firmware-capture button { display: block; position: relative; width: 100%; padding: 0; border: 0; background: #111; cursor: pointer; }
+.firmware-capture img { display: block; width: 100%; height: auto; aspect-ratio: 1174 / 898; object-fit: contain; }
+.firmware-capture-zoom { position: absolute; right: 8px; bottom: 8px; padding: 5px 8px; border: 1px solid #47645d; border-radius: 4px; background: #101514; color: #d8fff2; font-size: .7rem; }
+.firmware-capture figcaption { display: grid; gap: 5px; padding: 14px; }
+.firmware-capture figcaption strong { font-size: .95rem; }
+.firmware-capture figcaption span { color: var(--muted); font-size: .82rem; line-height: 1.5; }
+.firmware-lightbox { position: fixed; inset: 0; width: 100%; max-width: none; height: 100%; height: 100dvh; max-height: none; margin: 0; padding: clamp(12px, 2.4vw, 26px); border: 0; background: rgba(0,0,0,.9); color: #f2fff8; }
+.firmware-lightbox[open] { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; gap: 12px; }
+.firmware-lightbox::backdrop { background: rgba(0,0,0,.86); }
+.firmware-lightbox-top { display: flex; gap: 10px; align-items: center; justify-content: space-between; }
+.firmware-lightbox-controls { display: flex; flex-shrink: 0; gap: 8px; }
+.firmware-lightbox-controls button { width: 44px; height: 44px; padding: 0; border: 1px solid #47645d; border-radius: var(--radius); background: #101514; color: #d8fff2; font-size: 1.3rem; cursor: pointer; }
+.firmware-lightbox-stage { display: flex; min-height: 0; align-items: center; justify-content: center; }
+.firmware-lightbox-stage img { max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain; }
+.firmware-lightbox p { margin: 0; color: #d8e1de; font-size: .85rem; }
+@media (max-width: 640px) {
+  .firmware-gallery-grid { grid-template-columns: 1fr; }
+  .firmware-lightbox-top strong { font-size: .9rem; }
+}
+
+.firmware-capture button img, .firmware-capture-zoom { cursor: pointer; }

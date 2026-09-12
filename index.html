@@ -29,6 +29,8 @@
 <script defer="" src="assets/theme-toggle.js?v=20260702-desktop-sober2"></script>
 <script defer="" src="assets/vendor/matter-js-0.20.0.min.js"></script>
 <script defer="" src="assets/supported-devices-physics.js?v=20260804"></script>
+<link rel="stylesheet" href="assets/firmware-gallery.css?v=20260912-3"/>
+<script defer src="assets/firmware-gallery.js?v=20260912"></script>
 <title>ESP32 Bit Pirate | Hardware Debugging Firmware, Web Tools &amp; Recipes</title>
 <script type="application/ld+json">
   {
@@ -2125,6 +2127,71 @@
       }
 
     }
+    .community-video-player {
+      display: block;
+      width: 100%;
+      height: auto;
+      aspect-ratio: 16 / 9;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: #0f0f0f;
+    }
+    .project-supporters-list {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      padding: 0;
+      margin: 0;
+      list-style: none;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: linear-gradient(145deg, var(--panel-bg), var(--panel-bg-deep));
+    }
+    .project-supporters-list li { min-width: 0; }
+    .project-supporters-list li + li { border-left: 1px solid var(--border); }
+    .project-supporters-list a {
+      display: flex;
+      position: relative;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      height: 100%;
+      min-height: 148px;
+      padding: 24px 12px;
+      color: var(--text);
+      text-decoration: none;
+      text-align: center;
+      font-size: .82rem;
+      font-weight: 700;
+    }
+    .project-supporters-list a::after {
+      content: "↗";
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      color: var(--muted);
+      font-size: .8rem;
+    }
+    .project-supporters-list a:hover,
+    .project-supporters-list a:focus-visible { background: rgba(0, 255, 204, .045); color: var(--cyan); }
+    .project-supporters-list a:focus-visible { outline-offset: -3px; }
+    .project-supporters-list img {
+      display: block;
+      width: 52px;
+      height: 52px;
+      object-fit: contain;
+      border-radius: 6px;
+    }
+    @media (max-width: 640px) {
+      .project-supporters-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .project-supporters-list li + li { border-left: 0; }
+      .project-supporters-list li:nth-child(even) { border-left: 1px solid var(--border); }
+      .project-supporters-list li:nth-child(n + 3) { border-top: 1px solid var(--border); }
+      .project-supporters-list li:last-child { grid-column: 1 / -1; }
+      .project-supporters-list a { min-height: 124px; padding: 20px 12px; }
+      .project-supporters-list li:last-child a { flex-direction: row; min-height: 88px; }
+    }
   </style>
 <link href="https://geo-tp.github.io/ESP32-Bit-Pirate/favicon.ico" rel="icon" sizes="any"/>
 <link href="https://geo-tp.github.io/ESP32-Bit-Pirate/favicon.png" rel="icon" sizes="48x48" type="image/png"/>
@@ -2183,12 +2250,39 @@
 <p class="eyebrow"><span aria-hidden="true" class="eyebrow-mark">ESP32 Bit Pirate</span> project</p>
 <h2 id="bit-pirate-identity-title">Turn a $5 ESP32-S3 into a browser-based hardware workbench.</h2>
 <p>The Bit Pirate firmware is complemented by scripting, hardware dock, extension, adapters, browser tools, documentation and practical embedded workflows to enable comprehensive hardware debugging and development with serial interfaces or Wi-Fi connectivity.</p>
-<ul aria-label="ESP32 Bit Pirate keywords" class="brand-signature-keywords">
-<li><a href="https://github.com/geo-tp/ESP32-Bit-Pirate" rel="noopener">ESP32-S3 firmware</a></li>
-<li><a href="recipes/">hardware debugging</a></li>
-<li><a href="web-tools/">Web Serial tools</a></li>
-<li><a href="protocols/">embedded workflows</a></li>
-</ul>
+
+</div>
+<div class="firmware-gallery" role="group" aria-label="Firmware screenshots">
+<div class="firmware-gallery-grid"><figure class="firmware-capture">
+<button type="button" data-gallery-image="assets/firmware-mode.webp?v=20260912-uniform" data-gallery-title="Choose a protocol mode" data-gallery-caption="Explore the firmware modes for wired buses, wireless protocols and USB tools." aria-label="Enlarge screenshot: Choose a protocol mode">
+<img src="assets/firmware-mode-thumb.webp" alt="ESP32 Bit Pirate Web Serial Terminal: Explore the firmware modes for wired buses, wireless protocols and USB tools." width="560" height="425" loading="lazy" decoding="async" fetchpriority="low"/>
+<span class="firmware-capture-zoom" aria-hidden="true">View screenshot ↗</span>
+</button>
+<figcaption><strong>Choose a protocol mode</strong><span>Explore the firmware modes for wired buses, wireless protocols and USB tools.</span></figcaption>
+</figure>
+<figure class="firmware-capture">
+<button type="button" data-gallery-image="assets/firmware-i2c-discovery.webp?v=20260912-uniform" data-gallery-title="Discover I2C devices" data-gallery-caption="Scan addresses, read registers and identify possible devices on the bus." aria-label="Enlarge screenshot: Discover I2C devices">
+<img src="assets/firmware-i2c-discovery-thumb.webp" alt="ESP32 Bit Pirate Web Serial Terminal: Scan addresses, read registers and identify possible devices on the bus." width="560" height="428" loading="lazy" decoding="async" fetchpriority="low"/>
+<span class="firmware-capture-zoom" aria-hidden="true">View screenshot ↗</span>
+</button>
+<figcaption><strong>Discover I2C devices</strong><span>Scan addresses, read registers and identify possible devices on the bus.</span></figcaption>
+</figure>
+<figure class="firmware-capture">
+<button type="button" data-gallery-image="assets/firmware-subghz-scan.webp?v=20260912-uniform" data-gallery-title="Scan Sub-GHz activity" data-gallery-caption="Use a CC1101 module to find active frequencies and compare signal strength." aria-label="Enlarge screenshot: Scan Sub-GHz activity">
+<img src="assets/firmware-subghz-scan-thumb.webp" alt="ESP32 Bit Pirate Web Serial Terminal: Use a CC1101 module to find active frequencies and compare signal strength." width="560" height="428" loading="lazy" decoding="async" fetchpriority="low"/>
+<span class="firmware-capture-zoom" aria-hidden="true">View screenshot ↗</span>
+</button>
+<figcaption><strong>Scan Sub-GHz activity</strong><span>Use a CC1101 module to find active frequencies and compare signal strength.</span></figcaption>
+</figure></div>
+<dialog class="firmware-lightbox" aria-labelledby="firmware-lightbox-title" aria-describedby="firmware-lightbox-caption">
+<div class="firmware-lightbox-top"><strong id="firmware-lightbox-title"></strong><div class="firmware-lightbox-controls">
+<button type="button" data-gallery-prev aria-label="Previous screenshot">←</button>
+<button type="button" data-gallery-next aria-label="Next screenshot">→</button>
+<button type="button" data-gallery-close aria-label="Close screenshot" autofocus>×</button>
+</div></div>
+<div class="firmware-lightbox-stage"><img data-gallery-full alt="" width="1174" height="898" decoding="async"/></div>
+<p id="firmware-lightbox-caption"></p>
+</dialog>
 </div>
 </div>
 </section>
@@ -2378,6 +2472,16 @@
 </article>
 </div>
 </section>
+<section aria-labelledby="community-video-title" class="community-video">
+<div class="section-head">
+<div>
+<p class="eyebrow"><span aria-hidden="true" class="eyebrow-mark">Community</span> video</p>
+<h2 id="community-video-title">Exploring hardware and UART with the Cardputer ADV.</h2>
+</div>
+<p class="section-intro">Thank you to <a href="https://www.youtube.com/@DouglasHabian-tq5ck" target="_blank" rel="noopener">Douglas Habian</a> for exploring ESP32 Bit Pirate and sharing this tutorial video.</p>
+</div>
+<iframe class="community-video-player" width="960" height="540" src="https://www.youtube-nocookie.com/embed/NBTONYLY584" title="Exploring Hardware And UART With The M5Stack Cardputer ADV — Douglas Habian" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+</section>
 <section aria-labelledby="protocol-workbench-title" id="protocol-workbench">
 <div class="section-head">
 <div>
@@ -2498,6 +2602,22 @@
 <a class="physics-device physics-device--size-sm" data-physics-device="" href="boards/xiao-esp32-s3/"><span class="physics-device__inner"><span class="physics-device__visual"><img alt="" decoding="async" draggable="false" height="320" loading="lazy" src="boards/images/small/seeed-studio-xiao-esp32-s3.webp" width="320"/></span><span class="physics-device__label">XIAO ESP32-S3</span></span></a>
 </nav>
 </div>
+</section>
+<section class="project-supporters" aria-labelledby="project-supporters-title">
+<div class="section-head">
+<div>
+<p class="eyebrow"><span aria-hidden="true" class="eyebrow-mark">Community</span> project supporters</p>
+<h2 id="project-supporters-title">Project supporters.</h2>
+</div>
+<p class="section-intro">ESP32 Bit Pirate is proudly supported by these partners.</p>
+</div>
+<ul class="project-supporters-list">
+<li><a href="https://m5stack.com/" target="_blank" rel="noopener"><img src="assets/supporters/m5stack.webp" width="120" height="120" alt="" loading="lazy" decoding="async"/><span>M5Stack</span></a></li>
+<li><a href="https://www.seeedstudio.com/" target="_blank" rel="noopener"><img src="assets/supporters/seeed-studio.webp" width="120" height="120" alt="" loading="lazy" decoding="async"/><span>Seeed Studio</span></a></li>
+<li><a href="https://heltec.org/" target="_blank" rel="noopener"><img src="assets/supporters/heltec.webp" width="120" height="120" alt="" loading="lazy" decoding="async"/><span>Heltec Automation</span></a></li>
+<li><a href="https://www.pcbway.com/" target="_blank" rel="noopener"><img src="assets/supporters/pcbway.webp" width="120" height="120" alt="" loading="lazy" decoding="async"/><span>PCBWay</span></a></li>
+<li><a href="https://lilygo.cc/" target="_blank" rel="noopener"><img src="assets/supporters/lilygo.webp" width="120" height="120" alt="" loading="lazy" decoding="async"/><span>LILYGO</span></a></li>
+</ul>
 </section>
 <footer class="site-footer">
 <p class="site-footer-title">ESP32 Bit Pirate</p>
