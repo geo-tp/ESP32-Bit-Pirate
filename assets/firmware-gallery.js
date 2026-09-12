@@ -1,7 +1,5 @@
 // Uses the modules gallery's on-demand image loading and keyboard navigation.
-(() => {
-  const gallery = document.querySelector('.firmware-gallery');
-  if (!gallery) return;
+document.querySelectorAll('.firmware-gallery').forEach((gallery) => {
   const items = [...gallery.querySelectorAll('[data-gallery-image]')];
   const box = gallery.querySelector('dialog');
   const image = box.querySelector('[data-gallery-full]');
@@ -14,8 +12,8 @@
     const item = items[active];
     image.src = item.dataset.galleryImage;
     image.alt = item.querySelector('img').alt;
-    box.querySelector('#firmware-lightbox-title').textContent = item.dataset.galleryTitle;
-    box.querySelector('#firmware-lightbox-caption').textContent = `${active + 1} / ${items.length} — ${item.dataset.galleryCaption}`;
+    box.querySelector('[id="' + box.getAttribute('aria-labelledby') + '"]').textContent = item.dataset.galleryTitle;
+    box.querySelector('[id="' + box.getAttribute('aria-describedby') + '"]').textContent = `${active + 1} / ${items.length} — ${item.dataset.galleryCaption}`;
   }
 
   items.forEach((item, index) => item.addEventListener('click', () => {
@@ -42,4 +40,4 @@
     document.documentElement.style.overflow = previousOverflow;
     trigger?.focus();
   });
-})();
+});
