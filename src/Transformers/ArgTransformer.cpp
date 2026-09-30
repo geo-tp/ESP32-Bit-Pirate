@@ -313,6 +313,18 @@ bool ArgTransformer::isValidSignedNumber(const std::string& input) {
     return true;
 }
 
+bool ArgTransformer::isValidAlphanumeric(const std::string& input) {
+    if (input.empty()) return false;
+
+    for (unsigned char c : input) {
+        if (!std::isalnum(c)) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
 uint8_t ArgTransformer::toUint8(const std::string& input) {
     if (input.empty()) return 0;
 

@@ -41,6 +41,7 @@ private:
     static constexpr const char* nvsNamespace = "wifi_settings";
     static constexpr const char* nvsSsidField = "ssid";
     static constexpr const char* nvsPasswordField = "pass";
+    static constexpr const char* nvsHostnameField = "hostname";
 
     // Terminal Web UI
     std::string terminalIp = "0.0.0.0";
@@ -503,6 +504,8 @@ public:
     const char* getNvsPasswordField() const { return nvsPasswordField; }
 
     const char* getNvsSsidField() const { return nvsSsidField; }
+
+    const char* getNvsHostnameField() const { return nvsHostnameField; }
 
     // Protected
     const std::vector<uint8_t>& getProtectedPins() const {

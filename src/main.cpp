@@ -173,6 +173,16 @@ void setup() {
     UtilityService utilityService;
     GlobalState& state = GlobalState::getInstance();
 
+    //Initializing hostname from NVS
+    NvsService hostnameNvsService;
+    hostnameNvsService.open();
+    std::string hostname = hostnameNvsService.getString(state.getNvsHostnameField(),"");
+    hostnameNvsService.close();
+
+    if (!hostname.empty()) {
+        WiFi.setHostname(hostname.c_str());
+    }
+
     // Select the terminal type
     HorizontalSelector selector(deviceView, deviceInput, utilityService);
     TerminalTypeConfigurator configurator(selector);
