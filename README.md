@@ -62,7 +62,7 @@ From there you can [install the firmware](https://geo-tp.github.io/ESP32-Bit-Pir
 | Device               |                                     | Description                       |
 |-----------------------|------------------------------------------|---------------------------------------------------|
 | **ESP32 S3 Dev Kit**  | ![Photo of the ESP32 S3 Dev Kit](/images/s3-devkit_s.jpg)     | More than 20 available GPIO, 1 button |
-| [**M5 AtomS3 Lite**](https://shop.m5stack.com/products/atoms3-lite-esp32s3-dev-kit?ref=pvosfmid)    | [![Photo of the M5 Atom S3 Lite](/images/atom_s.jpg)](https://shop.m5stack.com/products/atoms3-lite-esp32s3-dev-kit?ref=pvosfmid)            | 8 GPIO (Grove, Header), IR TX, 1 buttton                  |
+| [**M5 AtomS3 Lite**](https://shop.m5stack.com/products/atoms3-lite-esp32s3-dev-kit?ref=pvosfmid)    | [![Photo of the M5 Atom S3 Lite](/images/atom_s.jpg)](https://shop.m5stack.com/products/atoms3-lite-esp32s3-dev-kit?ref=pvosfmid)            | 8 GPIO (Grove, Header), IR TX, 1 button                  |
 | **M5 Cardputer**      | ![Photo of the M5 Cardputer](/images/cardputer_s.png)            | 2 GPIO (Grove), screen, keyboard, mic, speaker, IR TX, SD card, battery, [standalone mode](#standalone-mode-for-the-cardputer)            |
 | [**M5 Cardputer ADV**](https://shop.m5stack.com/products/m5stack-cardputer-adv-version-esp32-s3?ref=pvosfmid)  | [![Photo of the M5 Cardputer ADV](/images/cardputer-adv_s.jpg)](https://shop.m5stack.com/products/m5stack-cardputer-adv-version-esp32-s3?ref=pvosfmid)    | 12 GPIO (Grove, Header), screen, keyboard, mic, speaker, IR TX, SD card, IMU, battery, [standalone mode](#standalone-mode-for-the-cardputer)                  |
 | [**M5 StampS3**](https://shop.m5stack.com/products/m5stamps3a-with-2-54-header-pin?ref=pvosfmid)        | [![Photo of the M5 StampS3](/images/stamps3_s.jpg)](https://shop.m5stack.com/products/m5stamps3a-with-2-54-header-pin?ref=pvosfmid)             | 9 GPIO (exposed pins), 1 button                       |
@@ -126,7 +126,7 @@ The wiki is the best place to learn how everything works.
 
 You can write and test scripts directly in the browser with the [ESP32 Bit Pirate Python Lab](https://geo-tp.github.io/ESP32-Bit-Pirate/web-tools/python-lab/).
 
-**Including:** Logging data in a file, eeprom and flash dump, interracting with GPIOs, LED animation...
+**Including:** Logging data in a file, eeprom and flash dump, interacting with GPIOs, LED animation...
 
 ## Expander
 [![Banner of the ESP32 Bit Pirate Expander page](images/bus_pirate_exp.png)](https://github.com/geo-tp/ESP32-Bus-Expander)
