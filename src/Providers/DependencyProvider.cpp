@@ -145,7 +145,7 @@ I2cService &DependencyProvider::getI2cService() { return i2cService; }
 UartService &DependencyProvider::getUartService() { return uartService; }
 OneWireService &DependencyProvider::getOneWireService() { return oneWireService; }
 TwoWireService &DependencyProvider::getTwoWireService() { return twoWireService; }
-InfraredService &DependencyProvider::getInfraredService() { return infraredService; }
+IInfraredService &DependencyProvider::getInfraredService() { return infraredService; }
 UsbS3Service &DependencyProvider::getUsbService() { return usbService; }
 SpiService &DependencyProvider::getSpiService() { return spiService; }
 HdUartService &DependencyProvider::getHdUartService() { return hdUartService; }

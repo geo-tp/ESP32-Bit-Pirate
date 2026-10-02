@@ -131,7 +131,7 @@ void InfraredService::sendInfraredCommand(InfraredCommand command) {
     }
 
     // Fallback MakeHex for all other protcols
-    int frequency = 38;
+    int frequency = IR_DEFAULT_FREQUENCY_KHZ;
     std::vector<float> seq = encodeRemoteCommand(command, protoStr.c_str(), frequency);
     if (seq.empty()) return;
 
@@ -233,7 +233,7 @@ bool InfraredService::receiveRaw(std::vector<uint16_t>& timings, uint32_t& khz) 
 
     if (!_results.rawbuf || _results.rawlen <= 1) return false;
 
-    khz = 38;
+    khz = IR_DEFAULT_FREQUENCY_KHZ;
     timings.clear();
     timings.reserve(_results.rawlen - 1);
 
@@ -327,8 +327,15 @@ Arduino-IRemote
 
 #include <IRremote.hpp> 
 
-void InfraredService::configure(uint8_t tx, uint8_t rx) {
+void InfraredService::configureTransmitter(uint8_t tx) {
     IrSender.begin(tx);
+    // begin() only records the pin; initialize PWM at zero duty for TX idle.
+    IrSender.enableIROut(IR_DEFAULT_FREQUENCY_KHZ);
+    IrSender.IRLedOff();
+}
+
+void InfraredService::configure(uint8_t tx, uint8_t rx) {
+    configureTransmitter(tx);
     IrReceiver.begin(rx, ENABLE_LED_FEEDBACK);
 }
 
@@ -379,7 +386,7 @@ void InfraredService::sendInfraredCommand(InfraredCommand command) {
         
         // Handle by MakeHex
         default: {
-            int frequency = 38; // Default frequency, passed by reference to encodeRemoteCommand
+            int frequency = IR_DEFAULT_FREQUENCY_KHZ; // Default frequency, passed by reference to encodeRemoteCommand
             std::vector<float> sequence = encodeRemoteCommand(command, protocolString.c_str(), frequency);
 
             // Convert for sendRaw
@@ -546,7 +553,7 @@ bool InfraredService::receiveRaw(std::vector<uint16_t>& timings, uint32_t& khz) 
         return false;
     }
 
-    khz = 38; // TODO: default frequency, handle that ?
+    khz = IR_DEFAULT_FREQUENCY_KHZ; // TODO: default frequency, handle that ?
 
     timings.clear();
     timings.reserve(raw->rawlen - 1);

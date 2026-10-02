@@ -48,6 +48,7 @@ private:
     enum class JamMode : uint8_t { CARRIER = 0, SWEEP = 1, RANDOM = 2 };
     inline static const uint16_t carrierKhz[] = {36, 38, 40, 56, 57, 58};
     inline static constexpr uint16_t kRawBufferSize = 512; //Increase raw buffer size from its default value of 100
+    inline static constexpr uint32_t IR_DEFAULT_FREQUENCY_KHZ = 38;
 
     // Helpers
     uint16_t getKaseikyoVendorIdCode(const std::string& input);
@@ -80,10 +81,17 @@ public:
         uint8_t density);
     std::vector<std::string> getCarrierStrings();
     std::vector<std::string> getJamModeStrings();
-private:        
+
+protected:
+    void configureTransmitter(uint8_t tx);
+
+    inline static constexpr uint32_t IR_DEFAULT_FREQUENCY_KHZ = 38;
+
+private:
     inline static constexpr uint16_t carrierKhz[] = {
         30, 33, 36, 38, 40, 42, 56
     };
+
     uint16_t getKaseikyoVendorIdCode(const std::string& input);
 };
 
