@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html class="notranslate" lang="en" translate="no">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="description" content="Live SDR waterfall and spectrum for ESP32 Bit Pirate. Receive IQ captures over USB CDC and analyze RF signals directly in your browser."/>
+  <meta name="google" content="notranslate"/>
+  <meta name="theme-color" content="#121212"/>
+  <meta property="og:type" content="website"/>
+  <meta property="og:title" content="Web ESP SDR for ESP32 Bit Pirate"/>
+  <meta property="og:description" content="Live RF waterfall and spectrum over USB CDC, directly in your browser."/>
+  <meta property="og:url" content="https://geo-tp.github.io/ESP32-Bit-Pirate/web-tools/esp-sdr/"/>
+  <link rel="canonical" href="https://geo-tp.github.io/ESP32-Bit-Pirate/web-tools/esp-sdr/"/>
+  <link rel="icon" href="../../favicon.ico" sizes="any"/>
+  <title>Web ESP SDR for ESP32 Bit Pirate</title>
+  <link rel="stylesheet" href="../styles/main.css"/>
+  <link rel="stylesheet" href="src/styles.css?v=20261004-receiver"/>
+  <script defer src="../../assets/theme-toggle.js?v=20260702-desktop-sober2"></script>
+</head>
+<body>
+<main class="wrap sdr-wrap">
+  <noscript><p class="notice error">This SDR viewer requires JavaScript and Web Serial.</p></noscript>
+  <p class="notice error" id="serialUnsupported" hidden>Web Serial is unavailable. Open this page in a compatible desktop browser such as Chrome or Edge, over HTTPS or localhost.</p>
+  <header class="toolbar">
+    <div class="toolbar-brand">
+      <a class="brand-mark" href="../" aria-label="All web tools">B</a>
+      <h1>Web ESP SDR</h1>
+    </div>
+    <div class="toolbar-actions">
+      <button class="help-icon-button" type="button" data-help-open aria-label="Open Web ESP SDR help" aria-expanded="false"><svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7h.01"/></svg></button>
+      <button class="button primary" id="connectButton" type="button">Connect</button>
+      <button class="button" id="disconnectButton" type="button" hidden>Disconnect</button>
+      <span class="status-pill" id="connectionStatus">Disconnected</span>
+    </div>
+  </header>
+  <nav class="mode-tabs" role="tablist" aria-label="Analyzer mode">
+    <button class="mode-tab is-active" id="wideTab" role="tab" aria-selected="true" aria-controls="widePanel" type="button">Wideband Analyzer <span>Swept scan</span></button>
+    <button class="mode-tab" id="liveTab" role="tab" aria-selected="false" aria-controls="livePanel" tabindex="-1" type="button">Live SDR <span>Instantaneous RX band</span></button>
+    <span id="antennaHint">Antenna quality affects SDR performance</span>
+  </nav>
+  <section class="sdr-workspace" id="livePanel" role="tabpanel" aria-labelledby="liveTab" hidden>
+  <section class="control-strip" aria-label="SDR capture settings">
+    <div class="frequency-gain-controls">
+      <label class="frequency-field"><span>Center frequency · MHz</span>
+        <div class="frequency-input-wrap">
+          <input id="centerFreq" type="number" min="100" max="6000" step="1" value="2437" inputmode="numeric" aria-describedby="configError"/>
+          <button class="frequency-preset-toggle" id="frequencyPresetToggle" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="frequencyPresetMenu" title="Choose a common RF channel">⌄</button>
+          <div class="frequency-preset-menu" id="frequencyPresetMenu" hidden>
+            <div class="frequency-preset-head"><strong>Common channels</strong><span>Sets center frequency</span></div>
+            <section class="frequency-preset-group">
+              <h3>Wi-Fi 2.4 GHz</h3>
+              <div class="frequency-preset-grid wifi-presets" id="wifiFrequencyPresets"></div>
+            </section>
+            <section class="frequency-preset-group">
+              <h3>BLE advertising</h3>
+              <div class="frequency-preset-grid compact-presets">
+                <button type="button" data-frequency="2402" title="BLE advertising channel 37 · 2402 MHz">37 <small>2402</small></button>
+                <button type="button" data-frequency="2426" title="BLE advertising channel 38 · 2426 MHz">38 <small>2426</small></button>
+                <button type="button" data-frequency="2480" title="BLE advertising channel 39 · 2480 MHz">39 <small>2480</small></button>
+              </div>
+            </section>
+            <section class="frequency-preset-group">
+              <h3>802.15.4 · Zigbee / Thread</h3>
+              <div class="frequency-preset-grid compact-presets">
+                <button type="button" data-frequency="2405" title="802.15.4 channel 11 · 2405 MHz">11 <small>2405</small></button>
+                <button type="button" data-frequency="2410" title="802.15.4 channel 12 · 2410 MHz">12 <small>2410</small></button>
+                <button type="button" data-frequency="2425" title="802.15.4 channel 15 · 2425 MHz">15 <small>2425</small></button>
+                <button type="button" data-frequency="2450" title="802.15.4 channel 20 · 2450 MHz">20 <small>2450</small></button>
+                <button type="button" data-frequency="2475" title="802.15.4 channel 25 · 2475 MHz">25 <small>2475</small></button>
+                <button type="button" data-frequency="2480" title="802.15.4 channel 26 · 2480 MHz">26 <small>2480</small></button>
+              </div>
+            </section>
+            <section class="frequency-preset-group">
+              <h3>nRF24 · 2.4 GHz</h3>
+              <div class="frequency-preset-grid compact-presets nrf-presets">
+                <button type="button" data-frequency="2402" title="nRF24 channel 2 · 2402 MHz">2 <small>2402</small></button>
+                <button type="button" data-frequency="2426" title="nRF24 channel 26 · 2426 MHz">26 <small>2426</small></button>
+                <button type="button" data-frequency="2450" title="nRF24 channel 50 · 2450 MHz">50 <small>2450</small></button>
+                <button type="button" data-frequency="2476" title="nRF24 channel 76 · 2476 MHz">76 <small>2476</small></button>
+              </div>
+            </section>
+            <p class="frequency-preset-note">Presets are frequency references only; they do not detect a protocol. nRF24 uses 2400 + channel MHz.</p>
+          </div>
+        </div>
+      </label>
+      <div class="gain-control">
+        <label class="gain-heading" for="liveGainMode"><span>Gain</span><select id="liveGainMode" aria-label="Receiver gain mode" aria-describedby="liveGainHelp"><option value="HARDWARE">Auto</option><option value="MANUAL" selected>Manual</option></select></label>
+        <div class="gain-slider"><input id="liveGainIndex" type="range" min="0" max="82" step="1" value="82" aria-label="Manual receiver gain" aria-describedby="liveGainHelp"/><output for="liveGainIndex">82</output></div>
+        <span class="visually-hidden" id="liveGainHelp">Live SDR starts with maximum manual gain. Adjust the slider or choose Auto. Values are hardware indices, not dB. Applied on Start.</span>
+      </div>
+    </div>
+    <label><span title="Analog receive bandwidth, separate from the selected IQ sample rate. Wider settings show more spectrum but edges may be less reliable.">RX bandwidth</span><select id="rxPreset"><option value="13">Narrow</option><option value="40" selected>Normal</option><option value="WIDE">Wide</option><option value="custom" hidden>Custom</option></select></label>
+    <div class="range-summary"><span id="rangeSummary">RX bandwidth from adapter</span><small id="displayHint">Smoothed display</small></div>
+    <div class="capture-actions">
+      <button class="button" id="peakResetButton" type="button" hidden disabled>Clear peaks</button>
+      <button class="button action-button action-start" id="startButton" type="button" disabled><svg aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="m9 5 11 7-11 7Z" fill="currentColor" stroke="none"/></svg><span class="action-label">Start stream</span></button>
+      <button class="button action-button action-clean" id="cleanButton" type="button" aria-pressed="false" title="Measure several captures and reduce the background with the antenna connected. Click again to compare." disabled><svg aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="m13 3 1.9 5.1L20 10l-5.1 1.9L13 17l-1.9-5.1L6 10l5.1-1.9L13 3ZM5 15v6M2 18h6M20 3v4M18 5h4"/></svg><span class="action-label">Reduce noise</span><span class="action-state">OFF</span></button>
+      <button class="button action-button action-stop" id="stopButton" type="button" disabled><svg aria-hidden="true" focusable="false" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2" fill="currentColor" stroke="none"/></svg><span class="action-label">Stop</span></button>
+    </div>
+    <p class="validation-message" id="configError" role="alert" hidden></p>
+  <details class="advanced-settings" id="advancedSettings">
+    <summary>Advanced settings <span id="liveSettingsStatus">80 MS/s · 4,096 samples</span></summary>
+    <div class="advanced-content">
+      <div class="settings-navigation">
+        <div class="settings-tabs" role="tablist" aria-label="Live SDR settings">
+          <button type="button" id="liveReceiverTab" role="tab" aria-selected="true" aria-controls="liveReceiverSettings" tabindex="0" data-settings-tab="receiver">Receiver</button>
+          <button type="button" id="liveDisplayTab" role="tab" aria-selected="false" aria-controls="liveDisplaySettings" tabindex="-1" data-settings-tab="display">Display</button>
+          <button type="button" id="liveCalibrationTab" role="tab" aria-selected="false" aria-controls="liveCalibrationSettings" tabindex="-1" data-settings-tab="calibration">Calibration</button>
+        </div>
+        <button class="button settings-done" type="button" data-settings-close>Done</button>
+      </div>
+      <section class="settings-panel" id="liveReceiverSettings" role="tabpanel" aria-labelledby="liveReceiverTab" tabindex="0" data-settings-panel="receiver">
+        <div class="settings-heading"><h3>Receiver settings</h3><p>Choose how the radio captures signals. The defaults are a good starting point.</p></div>
+        <p class="settings-state" id="liveReceiverState">Connect your adapter to check available receiver controls.</p>
+        <fieldset class="control-strip settings-fields receiver-fields"><legend>Sampling &amp; bandwidth</legend>
+          <div class="receiver-field">
+            <label><span>Sample rate</span><select id="liveRate" aria-describedby="liveRateHelp"><option value="80" selected>80 MS/s · widest</option><option value="40">40 MS/s</option><option value="16">16 MS/s · finest</option></select></label>
+            <p class="setting-note" id="liveRateHelp">A lower sample rate gives finer frequency detail over a narrower span.</p>
+          </div>
+          <div class="receiver-field">
+            <label><span>Samples per capture</span><select id="sampleCount" aria-describedby="sampleCountHelp"><option value="256">256</option><option value="512">512</option><option value="1024">1,024</option><option value="2048">2,048</option><option value="4096" selected>4,096 · recommended</option><option value="8192">8,192</option><option value="16384">16,384 · legacy maximum</option></select></label>
+            <p class="setting-note" id="sampleCountHelp">More samples add frequency detail but take longer to process.</p>
+          </div>
+          <div class="receiver-field">
+            <label><span>RX bandwidth · MHz</span><input id="rxExact" value="40" aria-label="Exact RX bandwidth in MHz, AUTO or WIDE" aria-describedby="rxHelp"/></label>
+            <p class="setting-note" id="rxHelp">Choose 13–69 MHz, WIDE or AUTO. This is the analog receive bandwidth, separate from the sample rate.</p>
+          </div>
+        </fieldset>
+        <div class="settings-readout"><span id="rxSummary">Sample rate · 80 MS/s · RX bandwidth awaiting adapter</span><span id="binSummary">19.53 kHz / bin · 80 MS/s acquisition</span></div>
+      </section>
+      <section class="settings-panel" id="liveDisplaySettings" role="tabpanel" aria-labelledby="liveDisplayTab" tabindex="0" data-settings-panel="display" hidden>
+        <div class="settings-heading"><h3>Display &amp; processing</h3><p>Adjust how captures appear in the spectrum and waterfall.</p></div>
+        <div class="settings-columns">
+          <fieldset class="control-strip settings-fields"><legend>Signal processing</legend>
+            <label><span>Spectrum display</span><select id="modeSelect"><option value="average" selected>Smoothed</option><option value="instant">Live</option><option value="peak">Hold peaks</option><option value="welch">Noise detail (Welch)</option></select></label>
+            <label><span>Signal view</span><select id="viewSelect"><option value="raw">Raw FFT</option><option value="dc">DC removed</option><option value="corrected" selected>Corrected</option></select></label>
+            <label><span>Smoothing · α</span><input id="alphaInput" type="number" min="0.01" max="1" step="0.01" value="0.2" aria-describedby="liveSmoothingHelp"/></label>
+            <label><span>FFT window</span><select id="windowSelect"><option value="hann" selected>Hann</option><option value="blackman-harris">Blackman-Harris</option></select></label>
+            <p class="setting-note" id="liveSmoothingHelp">Lower smoothing values give a steadier trace; higher values respond faster.</p>
+            <label class="check"><input id="diversityToggle" type="checkbox" aria-describedby="liveDiversityHelp"/><span>Tune diversity</span></label>
+            <p class="setting-note" id="liveDiversityHelp">Combines nearby tuning centers to reduce receiver artifacts. Stop to change it; short bursts may be missed. Changing diversity or the FFT window resets calibration.</p>
+          </fieldset>
+          <fieldset class="control-strip settings-fields"><legend>Plot appearance</legend>
+            <label><span>Waterfall detail</span><select id="liveAggregation" title="This changes only the waterfall. The spectrum always preserves narrow peaks."><option value="mean" selected>Balanced (mean)</option><option value="median">Smooth (median)</option><option value="peak">Show every peak</option></select></label>
+            <label class="check"><input id="rawOverlay" type="checkbox"/><span>Overlay raw spectrum</span></label>
+            <label class="check"><input id="autoScale" type="checkbox" checked/><span>Automatic color scale</span></label>
+            <label><span>Minimum · dB</span><input id="scaleFloor" type="number" step="1" value="-100" disabled/></label>
+            <label><span>Maximum · dB</span><input id="scaleCeiling" type="number" step="1" value="0" disabled/></label>
+          </fieldset>
+        </div>
+        <div class="settings-footer"><button class="button" id="resetButton" type="button" disabled>Reset history</button><span class="setting-note">Clear averages and held peaks. Your calibration is kept.</span></div>
+        <details class="settings-diagnostics"><summary>Capture details &amp; band limits</summary><div class="processing-details">
+          <div class="band-guide"><span id="liveRegionHint">Recommended RF band: 2400–2483.5 MHz</span><span class="edge-key">Hatched edges: lower confidence</span></div>
+          <p class="processing-state" id="processingState">DC corrected ✓ · Baseline not calibrated</p>
+          <p class="analysis-text" id="analysisText"></p>
+          <p class="stream-stats" id="streamStats">80 MS/s acquisition · separate IQ capture blocks</p>
+        </div></details>
+      </section>
+      <section class="settings-panel" id="liveCalibrationSettings" role="tabpanel" aria-labelledby="liveCalibrationTab" tabindex="0" data-settings-panel="calibration" hidden>
+        <div class="settings-heading"><h3>Receiver calibration</h3><p>Optional noise-only measurement to correct the receiver response. You can stream without it.</p></div>
+        <section class="calibration-panel" aria-label="Optional calibration">
+    <div class="calibration-bar">
+      <div class="calibration-copy"><strong id="calibrationLabel">Calibration · optional</strong><p id="calibrationSummary" role="status">Start a stream to calibrate, or just listen as you are.</p></div>
+      <div class="calibration-buttons"><button class="button" id="calibrateButton" type="button" aria-expanded="false" aria-controls="calibrationGuide" disabled>Calibrate…</button><button class="button" id="clearBaselineButton" type="button" disabled>Remove calibration</button></div>
+    </div>
+    <div class="calibration-guide" id="calibrationGuide" hidden>
+      <div class="calibration-instruction" role="status"><strong id="calibrationTitle"></strong><p id="calibrationText"></p></div>
+      <div id="calibrationProgressWrap" hidden><progress id="calibrationProgress" max="64" value="0" aria-label="Calibration progress"></progress><span id="calibrationProgressText"></span></div>
+      <div class="calibration-actions">
+        <button class="button primary" id="calibrationStartButton" type="button">Input ready · calibrate</button>
+        <button class="button primary" id="calibrationDoneButton" type="button" hidden>Antenna reconnected</button>
+        <button class="button" id="calibrationCancelButton" type="button">Cancel</button>
+      </div>
+    </div>
+
+  </section>
+        <fieldset class="control-strip settings-fields"><legend>Reference correction</legend>
+          <label class="check"><input id="spurToggle" type="checkbox" checked/><span>Suppress calibrated receiver spurs</span></label>
+          <p class="setting-note">Removes narrow artifacts identified in the noise-only reference. Applied in the Corrected signal view.</p>
+        </fieldset>
+        <p class="setting-note">Set gain, sample rate and bandwidth before calibrating. A new stream or capture setting needs a new reference.</p>
+        <p class="settings-tip">For quick cleanup with the antenna connected, use <strong>Reduce noise</strong> beside Start stream.</p>
+      </section>
+    </div>
+  </details>
+  </section>
+  <section class="plot-panel waterfall-panel" aria-labelledby="waterfallTitle">
+    <div class="plot-heading"><div class="plot-heading-left"><h2 id="waterfallTitle">Waterfall <span>320 rows · newest at top</span></h2><span class="cursor-readout" id="waterfallReadout"></span></div><div class="color-scale" aria-label="Color scale"><span id="scaleMin">−100</span><i></i><span id="scaleMax">0 dBFS</span></div></div>
+    <div class="plot-area">
+      <canvas id="waterfallCanvas" aria-label="Waterfall showing signal intensity by frequency and recent capture">Live waterfall requires canvas support.</canvas>
+      <div class="empty-overlay" id="emptyState"><div><svg viewBox="0 0 64 40" aria-hidden="true"><path d="M2 28h10l6-8 6 11 8-25 8 25 7-14 6 11h9"/></svg><strong>Listen to the spectrum</strong><p>Select a frequency center,<br/>then start a stream.</p></div></div>
+    </div>
+  </section>
+  <section class="plot-panel spectrum-panel" aria-labelledby="spectrumTitle">
+    <div class="plot-heading"><div class="plot-heading-left"><h2 id="spectrumTitle">Spectrum <span id="spectrumUnit">Relative level · dBFS</span></h2><span class="cursor-readout" id="cursorReadout">Hann window · 80 MS/s</span></div></div>
+    <div class="plot-area"><canvas id="spectrumCanvas" aria-label="Spectrum showing relative signal level in dBFS against frequency in MHz">Live spectrum requires canvas support.</canvas></div>
+  </section>
+  </section>
+  <section class="sdr-workspace" id="widePanel" role="tabpanel" aria-labelledby="wideTab">
+    <section class="control-strip" aria-label="Scan range">
+      <div class="frequency-gain-controls">
+        <div class="dual-range-field" id="scanRangeField">
+          <span>Scan range · MHz</span>
+          <div class="dual-range-values"><output id="scanFromValue">2330</output><span>–</span><output id="scanToValue">2550</output></div>
+          <div class="dual-range">
+            <div class="dual-range-track"></div>
+            <input id="scanFrom" type="range" min="2200" max="2800" step="0.5" value="2330" aria-label="Scan range start" aria-describedby="scanError"/>
+            <input id="scanTo" type="range" min="2200" max="2800" step="0.5" value="2550" aria-label="Scan range end" aria-describedby="scanError"/>
+          </div>
+        </div>
+        <div class="gain-control">
+          <label class="gain-heading" for="scanGainMode"><span>Gain</span><select id="scanGainMode" aria-label="Receiver gain mode" aria-describedby="scanGainHelp"><option value="HARDWARE" selected>Auto</option><option value="MANUAL">Manual</option></select></label>
+          <div class="gain-slider"><input id="scanGainIndex" type="range" min="0" max="82" step="1" value="40" disabled aria-label="Manual receiver gain" aria-describedby="scanGainHelp"/><output for="scanGainIndex">AGC</output></div>
+          <span class="visually-hidden" id="scanGainHelp">Auto adjusts receiver gain for you. Select Manual to adjust the slider. Values are hardware indices, not dB. Applied on Start.</span>
+        </div>
+      </div>
+      <label class="scan-profile"><span>Scan detail</span><select id="scanProfile" title="Changing the range selects Sensitive below 100 MHz, Balanced from 100 to below 300 MHz, or Fast from 300 MHz upward. You can then choose another detail level."><option value="fast">Fast</option><option value="balanced" selected>Balanced</option><option value="sensitive">Sensitive</option></select></label>
+      <div class="range-summary"><span id="scanSummary">220 MHz · 0.5 MHz detail</span><small id="scanHint">Fine · slower refresh</small></div>
+      <div class="capture-actions"><button class="button action-button action-start" id="scanStart" type="button" disabled><svg aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="m9 5 11 7-11 7Z" fill="currentColor" stroke="none"/></svg><span class="action-label">Start scan</span></button><button class="button action-button action-clean" id="scanCleanButton" type="button" aria-pressed="false" title="Measure several captures and reduce the background with the antenna connected. Click again to compare." disabled><svg aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="m13 3 1.9 5.1L20 10l-5.1 1.9L13 17l-1.9-5.1L6 10l5.1-1.9L13 3ZM5 15v6M2 18h6M20 3v4M18 5h4"/></svg><span class="action-label">Reduce noise</span><span class="action-state">OFF</span></button><button class="button action-button action-stop" id="scanStop" type="button" disabled><svg aria-hidden="true" focusable="false" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2" fill="currentColor" stroke="none"/></svg><span class="action-label">Stop</span></button></div>
+      <p class="validation-message" id="scanError" role="alert" hidden></p>
+    <details class="advanced-settings" id="scanAdvanced">
+      <summary>Advanced settings <span id="scanSettingsStatus">80 MS/s · Wide RX</span></summary>
+      <div class="advanced-content">
+      <div class="settings-navigation">
+        <div class="settings-tabs" role="tablist" aria-label="Wideband Analyzer settings">
+          <button type="button" id="scanReceiverTab" role="tab" aria-selected="true" aria-controls="scanReceiverSettings" tabindex="0" data-settings-tab="receiver">Receiver</button>
+          <button type="button" id="scanDisplayTab" role="tab" aria-selected="false" aria-controls="scanDisplaySettings" tabindex="-1" data-settings-tab="display">Display</button>
+          <button type="button" id="scanCalibrationTab" role="tab" aria-selected="false" aria-controls="scanCalibrationSettings" tabindex="-1" data-settings-tab="calibration">Calibration</button>
+        </div>
+        <button class="button settings-done" type="button" data-settings-close>Done</button>
+      </div>
+        <section class="settings-panel" id="scanReceiverSettings" role="tabpanel" aria-labelledby="scanReceiverTab" tabindex="0" data-settings-panel="receiver">
+          <div class="settings-heading"><h3>Receiver settings</h3><p>Choose how the radio captures signals at each scan step.</p></div>
+          <p class="settings-state" id="scanReceiverState">Connect your adapter to check available receiver controls.</p>
+          <fieldset class="control-strip settings-fields receiver-fields"><legend>Sampling &amp; bandwidth</legend>
+            <div class="receiver-field">
+              <label><span>Sample rate</span><select id="scanRate" aria-describedby="scanRateHelp"><option value="80" selected>80 MS/s · fastest sweep</option><option value="40">40 MS/s</option><option value="16">16 MS/s · narrowest slices</option></select></label>
+              <p class="setting-note" id="scanRateHelp">80 MS/s covers more spectrum per step. Lower rates use narrower slices and need more steps. Scan detail sets the sample count automatically.</p>
+            </div>
+            <div class="receiver-field">
+              <label><span>RX bandwidth</span><select id="scanBandwidth" aria-describedby="scanBandwidthHelp"><option value="WIDE" selected>Wide</option><option value="AUTO">Auto</option></select></label>
+              <p class="setting-note" id="scanBandwidthHelp">Wide requests the broadest available receive filter. Auto lets the firmware choose the filter automatically.</p>
+            </div>
+          </fieldset>
+          <fieldset class="control-strip settings-fields extended-range-card"><legend>Extended range</legend>
+            <label class="check"><input id="scanExtendedRange" type="checkbox" aria-describedby="scanExtendedRangeHelp"/><span>Enable experimental 100–6000 MHz range</span></label>
+            <p class="setting-note" id="scanExtendedRangeHelp"><strong>Experimental.</strong> Outside the normal 2.4 GHz region, PLL lock, sensitivity and RF response are not guaranteed.</p>
+          </fieldset>
+          <div class="settings-readout"><span id="scanRxSummary">RX bandwidth checked on Start · sample rate 80 MS/s</span></div>
+        </section>
+        <section class="settings-panel" id="scanDisplaySettings" role="tabpanel" aria-labelledby="scanDisplayTab" tabindex="0" data-settings-panel="display" hidden>
+          <div class="settings-heading"><h3>Display &amp; history</h3><p>Adjust spectrum smoothing, the waterfall and frequency guides. Choose the spectrum view above the plot.</p></div>
+          <fieldset class="control-strip settings-fields"><legend>Plot appearance</legend>
+            <label><span>Spectrum smoothing</span><select id="scanSmoothing" aria-describedby="scanSmoothingHelp"><option value="0">Off (instant)</option><option value="100" selected>Fast · 100 ms</option><option value="500">Balanced · 500 ms</option><option value="1000">Smooth · 1 s</option></select></label>
+            <p class="setting-note" id="scanSmoothingHelp">Steadies the Current trace when sweeps refresh quickly. Longer times give a calmer display. Average, Peak hold and Occupancy keep all measurements; the waterfall shows each sweep.</p>
+            <label><span>Waterfall detail</span><select id="scanAggregation" title="Mean reduces the visual weight of very narrow spikes. The spectrum always preserves peaks."><option value="mean" selected>Balanced (mean)</option><option value="median">Smooth (median)</option><option value="peak">Show every peak</option></select></label>
+            <label class="check"><input id="scanAutoScale" type="checkbox" checked/><span title="Turn off to hold the current color scale for comparisons.">Automatic color scale</span></label>
+            <fieldset class="guide-options"><legend>Frequency guides</legend>
+            <label class="check"><input id="scanGuides" type="checkbox"/><span title="Marks common 2.4 GHz Wi-Fi channel centers 1, 6 and 11. Reference only; not protocol detection.">Wi-Fi 1 / 6 / 11</span></label>
+            <label class="check"><input id="scanBleGuides" type="checkbox"/><span title="Marks BLE advertising channels 37, 38 and 39 at 2402, 2426 and 2480 MHz.">BLE advertising</span></label>
+            <label class="check"><input id="scanZigbeeGuides" type="checkbox"/><span title="Marks IEEE 802.15.4 channels 11–26, used by Zigbee and Thread.">802.15.4 / Zigbee</span></label>
+          </fieldset>
+            <p class="setting-note">Channel guides mark frequencies; they do not identify protocols. One guide set can be shown at a time. Turn off automatic color scaling to compare signal levels over time.</p>
+          </fieldset>
+          <div class="settings-footer"><button class="button" id="scanReset" type="button" disabled>Reset history &amp; occupancy</button><span class="setting-note">Start fresh averages, peaks and activity counts. Your calibration is kept.</span></div>
+          <details class="settings-diagnostics"><summary>Scan details &amp; coverage</summary><div class="processing-details">
+            <p class="setting-note" id="scanTechnical"></p>
+            <p class="setting-note">Gaps indicate missing valid coverage. Short bursts between visits may be missed.</p>
+          </div></details>
+        </section>
+        <section class="settings-panel" id="scanCalibrationSettings" role="tabpanel" aria-labelledby="scanCalibrationTab" tabindex="0" data-settings-panel="calibration" hidden>
+          <div class="settings-heading"><h3>Receiver calibration</h3><p>Optional noise-only measurement at every tuning center. You can scan without it.</p></div>
+          <section class="calibration-panel" aria-label="Optional scan calibration">
+            <div class="calibration-bar"><div class="calibration-copy"><strong>Scan calibration · optional</strong><p id="scanCalibrationSummary" role="status">Uses a noise-only reference at every tuning center. No calibration needed to start.</p></div><div class="calibration-buttons"><button class="button" id="scanCalibrate" type="button" aria-expanded="false" aria-controls="scanCalibrationGuide" disabled>Calibrate…</button><button class="button" id="scanClearCalibration" type="button" disabled>Remove calibration</button></div></div>
+        <div class="calibration-guide" id="scanCalibrationGuide" hidden>
+          <div class="calibration-instruction" role="status"><strong id="scanCalibrationTitle">Disconnect the antenna</strong><p id="scanCalibrationText">Remove the antenna or terminate the RF input. Signals present during calibration can be removed from the corrected view.</p></div>
+          <progress id="scanCalibrationProgress" value="0" max="100" aria-label="Scan calibration progress" hidden></progress>
+          <div class="calibration-actions"><button class="button primary" id="scanCalibrationStart" type="button">Input ready · calibrate</button><button class="button primary" id="scanCalibrationDone" type="button" hidden>Antenna reconnected</button><button class="button" id="scanCalibrationCancel" type="button">Cancel</button></div>
+        </div>
+          </section>
+          <fieldset class="control-strip settings-fields"><legend>Reference correction</legend>
+            <label class="check"><input id="scanClean" type="checkbox" checked/><span>Suppress calibrated receiver spurs</span></label>
+            <p class="setting-note">Removes narrow artifacts identified in the noise-only reference. Stop the scan to change this option.</p>
+          </fieldset>
+          <p class="setting-note">Set gain, sample rate and bandwidth before calibrating. The reference is specific to this scan range and profile, and resets when you restart.</p>
+          <p class="settings-tip">For quick cleanup with the antenna connected, use <strong>Reduce noise</strong> beside Start scan.</p>
+        </section>
+      </div>
+    </details>
+    </section>
+    <section class="plot-panel spectrum-panel wide-spectrum" aria-labelledby="scanSpectrumTitle">
+      <div class="plot-heading"><div class="plot-heading-left"><div class="plot-title"><h2 id="scanSpectrumTitle">Wideband spectrum <span id="scanUnit">Relative level · dBFS</span></h2><span id="scanRegionHint" class="region-badge experimental" tabindex="0" title="Amber areas outside 2400–2483.5 MHz are experimental / uncharacterized. Reception may be unreliable.">Experimental regions</span></div><span class="cursor-readout" id="scanReadout"></span></div>
+        <div class="spectrum-modes" aria-label="Swept spectrum display"><button type="button" data-scan-view="current" aria-pressed="true" title="Recent complete sweeps with adjustable time smoothing. Set Spectrum smoothing to Off for the latest sweep.">Current</button><button type="button" data-scan-view="average" aria-pressed="false" title="Average complete sweeps in linear power for a steadier spectrum.">Average</button><button type="button" data-scan-view="peak" aria-pressed="false" title="Hold the strongest level seen at each frequency until history is reset.">Peak hold</button><button type="button" data-scan-view="occupancy" aria-pressed="false" title="Share of sampled visits above the local noise floor; not continuous airtime.">Occupancy</button></div>
+      </div>
+      <div class="plot-area"><canvas id="scanSpectrum" aria-label="Swept spectrum showing signal level by frequency">Spectrum requires canvas support.</canvas><div class="plot-click-hint" aria-hidden="true">Click a frequency to open it in Live SDR.</div><div class="empty-overlay" id="scanEmpty"><div><strong>Find activity across a wider band</strong><p>Choose a range and start a scan.</p></div></div></div>
+    </section>
+    <section class="plot-panel waterfall-panel wide-waterfall" aria-labelledby="scanWaterfallTitle">
+      <div class="plot-heading"><div class="plot-heading-left"><h2 id="scanWaterfallTitle">Wideband waterfall <span>1 row = 1 complete sweep</span></h2><span class="cursor-readout" id="scanWaterfallReadout"></span></div><div class="color-scale"><span id="scanScaleMin">−100</span><i></i><span id="scanScaleMax">0 dBFS</span></div></div>
+      <div class="plot-area"><canvas id="scanWaterfall" aria-label="Wideband waterfall; each row is one complete sequential sweep">Waterfall requires canvas support.</canvas><div class="plot-click-hint" aria-hidden="true">Click a frequency to open it in Live SDR.</div></div>
+    </section>
+  </section>
+  <p class="status-message" id="statusMessage" role="status" hidden></p>
+  <details class="technical"><summary>Technical log</summary><pre id="technicalLog"></pre></details>
+</main>
+<section class="tool-help-source" id="toolHelpContent" hidden>
+  <h2 id="toolHelpTitle">Web ESP SDR help</h2>
+  <section><h3>What this tool does</h3><p>Boot Bit Pirate in <strong>USB SDR adapter mode</strong> and connect to USB. <strong>Wideband Analyzer</strong> sweeps a frequency range to find activity; <strong>Live SDR</strong> gives a closer real-time view around one center frequency.</p></section>
+  <section><h3>ESP32-S3 RF limits</h3><p>The ESP32-S3 radio is designed for <strong>2.4 GHz</strong>, with <strong>2400–2483.5 MHz</strong> as the most useful region. Low-level tuning can go beyond this for <strong>experimental tests</strong> (currently up to 100–6000 MHz), but sensitivity, PLL lock and level accuracy are not guaranteed outside 2.4 GHz. Treat out-of-band results as indications of activity, not calibrated measurements.</p></section>
+  <section><h3>Antenna matters</h3><p><strong>The antenna strongly affects what you can see.</strong> A 2.4 GHz antenna may perform poorly outside its intended frequency range. Antenna type, matching, connectors and nearby objects can all change sensitivity, so a weak or missing signal may come from the antenna rather than the SDR processing. The antenna does not extend the tuning range; it determines how much RF energy reaches the radio.</p></section>
+  <section><h3>Improving the view</h3><p>Live SDR starts with <strong>maximum manual gain</strong>; Wideband starts with <strong>Auto gain</strong>. Adjust gain beside the frequency controls. Use <strong>Reduce noise</strong> to learn the current background with the antenna connected; signals present during learning may also be reduced. Advanced settings provides additional receiver and calibration controls when needed.</p></section>
+</section>
+<script type="module" src="../shared/help-modal.js"></script>
+<script type="module" src="src/App.js?v=20261004-live-gain"></script>
+</body>
+</html>

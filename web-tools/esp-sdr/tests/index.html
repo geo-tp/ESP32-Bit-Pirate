@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html lang="en"><meta charset="utf-8"/><title>SDR protocol and DSP tests</title>
+<body><pre id="results">Running…</pre><script type="module">
+import { runTests } from "./protocol-tests.js";
+import { runPipelineTests } from "./pipeline-tests.js";
+import { runSweepTests } from "./sweep-tests.js";
+const output = document.getElementById("results");
+output.textContent = "";
+const report = line => { output.textContent += line + "\n"; };
+const protocol = await runTests(report), dsp = await runPipelineTests(report), sweep = await runSweepTests(report);
+window.testResult = { total: protocol.total + dsp.total + sweep.total, failures: protocol.failures + dsp.failures + sweep.failures };
+output.textContent += JSON.stringify(window.testResult);
+</script></body></html>
