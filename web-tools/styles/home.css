@@ -1,0 +1,238 @@
+/* Landing page only; the individual tools keep their shared UI styles. */
+.web-tools-home {
+  --home-font: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --home-heading: #eceeec;
+  --home-copy: #afb5af;
+  --home-accent: #91c9ae;
+  --home-line: #303530;
+  --home-surface: #181b19;
+}
+
+.web-tools-home .hero {
+  margin-bottom: 12px;
+}
+
+.web-tools-home .web-tools-banner {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 12px 16px;
+  border: 1px solid var(--home-line);
+  border-radius: 5px;
+  background: var(--home-surface);
+  font-family: var(--home-font);
+  font-size: 0.875rem;
+  line-height: 1.6;
+}
+
+.web-tools-home .web-tools-banner-icon {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 18px;
+  margin-top: 2px;
+  color: var(--home-accent);
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+}
+
+.web-tools-home .web-tools-banner h1 {
+  display: inline;
+  width: auto;
+  margin: 0;
+  color: var(--home-heading);
+  font-size: inherit;
+  font-weight: 600;
+  line-height: inherit;
+  text-wrap: initial;
+}
+
+.web-tools-home .web-tools-banner p {
+  display: inline;
+  width: auto;
+  color: var(--home-copy);
+  font-size: inherit;
+  line-height: inherit;
+}
+
+.web-tools-home .featured-tools {
+  gap: 24px;
+}
+
+.web-tools-home .tool-card {
+  padding: 0;
+  border-color: var(--home-line);
+  border-radius: 5px;
+  background: var(--home-surface);
+  box-shadow: none;
+  font-family: var(--home-font);
+  text-decoration: none;
+  transition: border-color 160ms ease;
+}
+
+.web-tools-home .tool-card:focus-within {
+  border-color: var(--home-accent);
+}
+
+.web-tools-home .tool-card .tool-image {
+  margin: 0;
+  border: 0;
+  border-bottom: 1px solid var(--home-line);
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.web-tools-home .tool-card > :is(h2, p) {
+  margin-inline: 24px;
+}
+
+.web-tools-home .tool-card .eyebrow {
+  gap: 7px;
+  margin-top: 22px;
+  margin-bottom: 8px;
+  color: var(--home-accent);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 400;
+  line-height: 1.4;
+  text-transform: none;
+}
+
+.web-tools-home .tool-card :is(.eyebrow-icon, .eyebrow-text-mark) {
+  color: currentColor;
+}
+
+.web-tools-home .tool-card .eyebrow-icon {
+  width: 16px;
+  height: 16px;
+  flex-basis: 16px;
+}
+
+.web-tools-home .tool-card h2 {
+  margin-bottom: 10px;
+  color: var(--home-heading);
+  font-size: 1.5rem;
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  line-height: 1.25;
+}
+
+.web-tools-home .tool-card p:not(.eyebrow) {
+  margin-bottom: 22px;
+  color: var(--home-copy);
+  font-size: 0.9375rem;
+  line-height: 1.65;
+  text-wrap: pretty;
+}
+
+.web-tools-home .tool-card .button {
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 54px;
+  margin: auto 24px 0;
+  padding: 14px 0;
+  border: 0;
+  border-top: 1px solid var(--home-line);
+  border-radius: 0;
+  background: transparent;
+  color: var(--home-accent);
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.5;
+  box-shadow: none;
+}
+
+.web-tools-home .tool-card .button span {
+  flex: 0 0 auto;
+  font-size: 1.2rem;
+  line-height: 1;
+}
+
+.web-tools-home .tool-card:focus-visible {
+  outline: 2px solid var(--home-accent);
+  outline-offset: -3px;
+}
+
+@media (hover: hover) {
+  .web-tools-home .tool-card:hover {
+    border-color: #63796b;
+  }
+
+  .web-tools-home .tool-card:hover .button {
+    color: var(--home-heading);
+  }
+}
+
+.web-tools-home .companion-tools-card {
+  margin-top: 28px;
+}
+
+html[data-theme="light"] .web-tools-home {
+  --home-heading: #202e26;
+  --home-copy: #506158;
+  --home-accent: #276747;
+  --home-line: #ccd6cf;
+  --home-surface: #fff;
+}
+
+/* The shared theme injects broad !important rules; keep these overrides local. */
+html[data-theme="light"] .web-tools-home .tool-card {
+  border-color: var(--home-line) !important;
+  background: var(--home-surface) !important;
+  box-shadow: none !important;
+}
+
+html[data-theme="light"] .web-tools-home :is(.web-tools-banner h1, .tool-card h2) {
+  color: var(--home-heading) !important;
+}
+
+html[data-theme="light"] .web-tools-home .tool-card .eyebrow {
+  color: var(--home-accent) !important;
+}
+
+html[data-theme="light"] .web-tools-home .tool-card .button {
+  border-color: var(--home-line) !important;
+  background: transparent !important;
+  color: var(--home-accent) !important;
+  box-shadow: none !important;
+}
+
+html[data-theme="light"] .web-tools-home .tool-card:focus-within {
+  border-color: var(--home-accent) !important;
+}
+
+@media (hover: hover) {
+  html[data-theme="light"] .web-tools-home .tool-card:hover {
+    border-color: #7d9c88 !important;
+  }
+
+  html[data-theme="light"] .web-tools-home .tool-card:hover .button {
+    color: var(--home-heading) !important;
+  }
+}
+
+@media (max-width: 760px) {
+  .web-tools-home .wrap {
+    width: calc(100% - 32px);
+    padding-top: 16px;
+  }
+
+  .web-tools-home .web-tools-banner {
+    padding: 12px;
+  }
+
+  .web-tools-home .tool-card > :is(h2, p) {
+    margin-inline: 20px;
+  }
+
+  .web-tools-home .tool-card .button {
+    margin-inline: 20px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .web-tools-home .tool-card {
+    transition: none;
+  }
+}

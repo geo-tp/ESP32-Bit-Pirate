@@ -1,43 +1,66 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="760" height="420" viewBox="0 0 760 420" role="img" aria-labelledby="title desc">
-  <title id="title">Hardware analysis companion web tools</title>
-  <desc id="desc">Stylized hardware data flowing from ESP32 Bit Pirate tools into hex inspection and binary analysis panels.</desc>
-  <defs>
-    <linearGradient id="panel" x1="0" x2="1" y1="0" y2="1">
-      <stop offset="0" stop-color="#17211e"/>
-      <stop offset="1" stop-color="#0b0f0e"/>
-    </linearGradient>
-    <linearGradient id="accent" x1="0" x2="1" y1="0" y2="0">
-      <stop offset="0" stop-color="#00ffcc"/>
-      <stop offset="1" stop-color="#00ff66"/>
-    </linearGradient>
-    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
-      <feGaussianBlur stdDeviation="7" result="blur"/>
-      <feMerge>
-        <feMergeNode in="blur"/>
-        <feMergeNode in="SourceGraphic"/>
-      </feMerge>
-    </filter>
-  </defs>
-  <rect width="760" height="420" rx="22" fill="#090c0b"/>
-  <path d="M0 76h760M0 148h760M0 220h760M0 292h760M0 364h760M94 0v420M188 0v420M282 0v420M376 0v420M470 0v420M564 0v420M658 0v420" stroke="#00ffcc" stroke-opacity=".07"/>
-  <rect x="42" y="50" width="220" height="320" rx="16" fill="url(#panel)" stroke="#2d5b51"/>
-  <rect x="74" y="82" width="156" height="76" rx="10" fill="#101817" stroke="#315f52"/>
-  <path d="M112 112h80M112 132h50" stroke="#00ffcc" stroke-width="8" stroke-linecap="round"/>
-  <rect x="88" y="190" width="128" height="112" rx="12" fill="#0d1312" stroke="#2f3a2f"/>
-  <path d="M104 218h96M104 244h74M104 270h88" stroke="#b8ffb8" stroke-width="7" stroke-linecap="round" opacity=".9"/>
-  <text x="152" y="342" fill="#00ff66" font-family="Menlo, Courier New, monospace" font-size="18" font-weight="800" text-anchor="middle">BP DATA</text>
-  <path d="M286 210h74" stroke="url(#accent)" stroke-width="6" stroke-linecap="round" filter="url(#glow)"/>
-  <path d="M344 188l34 22-34 22" fill="none" stroke="#00ffcc" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
-  <rect x="402" y="48" width="300" height="142" rx="16" fill="url(#panel)" stroke="#2d5b51"/>
-  <text x="432" y="88" fill="#00ffcc" font-family="Menlo, Courier New, monospace" font-size="20" font-weight="900">HEX VIEW</text>
-  <g font-family="Menlo, Courier New, monospace" font-size="16" font-weight="700">
-    <text x="432" y="126" fill="#d8fff2">0000  7F 45 4C 46 02 01</text>
-    <text x="432" y="152" fill="#b8ffb8">0010  AA 55 10 00 FF 3C</text>
+<svg xmlns="http://www.w3.org/2000/svg" width="520" height="300" viewBox="0 0 520 300" role="img" aria-labelledby="title desc">
+  <title id="title">Firmware analysis companion tools</title>
+  <desc id="desc">An illustrative binary analysis interface with a hex dump, detected file signatures and a map of firmware regions.</desc>
+  <rect width="520" height="300" rx="8" fill="#0b0d0c"/>
+  <rect x="16" y="16" width="488" height="268" rx="8" fill="#121615" stroke="#333"/>
+  <rect x="16" y="16" width="488" height="42" rx="8" fill="#101412" stroke="#333"/>
+  <rect x="30" y="27" width="22" height="22" rx="5" fill="#1a1a1a" stroke="#2f3a2f"/>
+  <text x="37" y="43" fill="#00ff00" font-family="Menlo, Courier New, monospace" font-size="13" font-weight="900">B</text>
+  <text x="64" y="41" fill="#e0e0e0" font-family="Menlo, Courier New, monospace" font-size="17" font-weight="700">Firmware analysis</text>
+  <rect x="329" y="26" width="70" height="22" rx="5" fill="#0d0d0d" stroke="#2b2b2b"/>
+  <text x="352" y="41" fill="#00ffcc" font-family="Menlo, Courier New, monospace" font-size="9">4 MB</text>
+  <rect x="410" y="26" width="76" height="22" rx="5" fill="#26332a" stroke="#2b2b2b"/>
+  <text x="424" y="41" fill="#b8ffb8" font-family="Menlo, Courier New, monospace" font-size="10" font-weight="700">Open BIN</text>
+
+  <rect x="28" y="72" width="464" height="28" rx="6" fill="#0f0f0f" stroke="#333"/>
+  <rect x="28" y="72" width="88" height="28" rx="6" fill="#17252b" stroke="#00ffcc" stroke-opacity=".55"/>
+  <g font-family="Menlo, Courier New, monospace" font-size="10">
+    <text x="47" y="90" fill="#00ffcc" font-weight="700">Hex view</text>
+    <text x="131" y="90" fill="#d8ddd8">Signatures</text>
+    <text x="220" y="90" fill="#d8ddd8">Strings</text>
+    <text x="402" y="90" fill="#9aa0a6">firmware.bin</text>
   </g>
-  <rect x="402" y="230" width="300" height="142" rx="16" fill="url(#panel)" stroke="#2d5b51"/>
-  <text x="432" y="270" fill="#00ffcc" font-family="Menlo, Courier New, monospace" font-size="20" font-weight="900">BINWALK</text>
-  <g fill="none" stroke-width="8" stroke-linecap="round">
-    <path d="M436 306h196" stroke="#00ff66"/>
-    <path d="M436 332h132" stroke="#f4d06f"/>
+
+  <rect x="28" y="112" width="282" height="112" rx="7" fill="#080a09" stroke="#333"/>
+  <path d="M28 140h282M82 140v84M256 140v84" stroke="#262d29"/>
+  <g font-family="Menlo, Courier New, monospace" font-size="9">
+    <text x="40" y="130" fill="#9aa0a6">OFFSET</text>
+    <text x="94" y="130" fill="#00ff00" font-weight="700">HEX</text>
+    <text x="267" y="130" fill="#9aa0a6">ASCII</text>
+    <rect x="88" y="148" width="66" height="15" rx="3" fill="#153c32"/>
+    <text x="40" y="159" fill="#9aa0a6">0000</text>
+    <text x="94" y="159" fill="#d8fff2"><tspan fill="#00ffcc">7F 45 4C 46</tspan> 01 01 01 00</text>
+    <text x="267" y="159" fill="#00ffcc">.ELF</text>
+    <text x="40" y="177" fill="#9aa0a6">0008</text>
+    <text x="94" y="177" fill="#d8ddd8">00 00 00 00 00 00 00 00</text>
+    <text x="267" y="177" fill="#9aa0a6">....</text>
+    <text x="40" y="195" fill="#9aa0a6">0010</text>
+    <text x="94" y="195" fill="#d8ddd8">02 00 28 00 01 00 00 00</text>
+    <text x="267" y="195" fill="#9aa0a6">..(.</text>
+    <text x="40" y="213" fill="#9aa0a6">0018</text>
+    <text x="94" y="213" fill="#d8ddd8">00 80 00 08 34 00 00 00</text>
+    <text x="267" y="213" fill="#9aa0a6">....</text>
+  </g>
+
+  <rect x="322" y="112" width="170" height="112" rx="7" fill="#0f0f0f" stroke="#333"/>
+  <text x="336" y="130" fill="#00ff00" font-family="Menlo, Courier New, monospace" font-size="10" font-weight="700">SIGNATURE SCAN</text>
+  <path d="M322 140h170" stroke="#262d29"/>
+  <g font-family="Menlo, Courier New, monospace" font-size="9">
+    <circle cx="339" cy="155" r="3" fill="#00ffcc"/>
+    <text x="351" y="159" fill="#d8fff2">ELF executable</text>
+    <text x="351" y="173" fill="#9aa0a6">0x000000</text>
+    <circle cx="339" cy="192" r="3" fill="#ffd166"/>
+    <text x="351" y="196" fill="#d8fff2">LZMA data</text>
+    <text x="351" y="210" fill="#9aa0a6">0x010000</text>
+  </g>
+
+  <rect x="28" y="238" width="464" height="30" rx="6" fill="#101412" stroke="#333"/>
+  <g font-family="Menlo, Courier New, monospace" font-size="9">
+    <text x="40" y="257" fill="#9aa0a6">REGIONS</text>
+    <rect x="98" y="247" width="38" height="12" rx="3" fill="#0ea86b"/>
+    <rect x="139" y="247" width="174" height="12" rx="3" fill="#b59d55"/>
+    <rect x="316" y="247" width="64" height="12" rx="3" fill="#30473e"/>
+    <circle cx="400" cy="253" r="3" fill="#00ff00"/>
+    <text x="410" y="257" fill="#b8ffb8">2 matches</text>
   </g>
 </svg>

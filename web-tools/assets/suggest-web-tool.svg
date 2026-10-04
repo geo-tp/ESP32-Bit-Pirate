@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="520" height="300" viewBox="0 0 520 300" role="img" aria-labelledby="title desc">
+  <title id="title">Suggest the next web tool</title>
+  <desc id="desc">An empty browser workspace with a plus sign and space for a hardware tool idea.</desc>
+  <rect width="520" height="300" rx="8" fill="#0b0d0c"/>
+  <rect x="16" y="16" width="488" height="268" rx="8" fill="#121615" stroke="#333"/>
+  <rect x="16" y="16" width="488" height="42" rx="8" fill="#101412" stroke="#333"/>
+  <rect x="30" y="27" width="22" height="22" rx="5" fill="#1a1a1a" stroke="#2f3a2f"/>
+  <g font-family="Menlo, Courier New, monospace">
+    <text x="37" y="43" fill="#00ff00" font-size="13" font-weight="900">B</text>
+    <text x="64" y="42" fill="#e0e0e0" font-size="17" font-weight="700">Your next web tool</text>
+    <rect x="414" y="28" width="72" height="20" rx="5" fill="#18372a" stroke="#26734e"/>
+    <text x="427" y="42" fill="#b8ffb8" font-size="10">IDEA #?</text>
+    <rect x="32" y="76" width="456" height="148" rx="7" fill="#0b1110" stroke="#355347" stroke-dasharray="5 6"/>
+    <circle cx="260" cy="123" r="25" fill="#15281f" stroke="#26734e"/>
+    <path d="M260 111v24M248 123h24" fill="none" stroke="#52d6c8" stroke-width="2" stroke-linecap="round"/>
+    <text x="260" y="176" text-anchor="middle" fill="#d8fff2" font-size="14" font-weight="700">What would you build?</text>
+    <text x="260" y="200" text-anchor="middle" fill="#9aa0a6" font-size="11">A device. A protocol. A better workflow.</text>
+    <path d="M42 246h16v13H47l-5 4z" fill="none" stroke="#52d6c8" stroke-width="1.5" stroke-linejoin="round"/>
+    <text x="70" y="258" fill="#9aa0a6" font-size="11">Share your idea on GitHub Issues</text>
+    <path d="M458 256h16m-6-6 6 6-6 6" fill="none" stroke="#52d6c8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+</svg>
