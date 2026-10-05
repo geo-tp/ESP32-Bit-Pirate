@@ -225,9 +225,9 @@
           </div>
         </div>
         <div class="gain-control">
-          <label class="gain-heading" for="scanGainMode"><span>Gain</span><select id="scanGainMode" aria-label="Receiver gain mode" aria-describedby="scanGainHelp"><option value="HARDWARE" selected>Auto</option><option value="MANUAL">Manual</option></select></label>
-          <div class="gain-slider"><input id="scanGainIndex" type="range" min="0" max="82" step="1" value="40" disabled aria-label="Manual receiver gain" aria-describedby="scanGainHelp"/><output for="scanGainIndex">AGC</output></div>
-          <span class="visually-hidden" id="scanGainHelp">Auto adjusts receiver gain for you. Select Manual to adjust the slider. Values are hardware indices, not dB. Applied on Start.</span>
+          <label class="gain-heading" for="scanGainMode"><span>Gain</span><select id="scanGainMode" aria-label="Receiver gain mode" aria-describedby="scanGainHelp"><option value="HARDWARE">Auto</option><option value="MANUAL" selected>Manual</option></select></label>
+          <div class="gain-slider"><input id="scanGainIndex" type="range" min="0" max="82" step="1" value="41" aria-label="Manual receiver gain" aria-describedby="scanGainHelp"/><output for="scanGainIndex">41</output></div>
+          <span class="visually-hidden" id="scanGainHelp">Wideband starts with manual gain at 41 of 82, halfway along the slider. Adjust the slider or choose Auto. Values are hardware indices, not dB. Applied on Start.</span>
         </div>
       </div>
       <label class="scan-profile"><span>Scan detail</span><select id="scanProfile" title="Changing the range selects Sensitive below 100 MHz, Balanced from 100 to below 300 MHz, or Fast from 300 MHz upward. You can then choose another detail level."><option value="fast">Fast</option><option value="balanced" selected>Balanced</option><option value="sensitive">Sensitive</option></select></label>
@@ -321,9 +321,10 @@
 <section class="tool-help-source" id="toolHelpContent" hidden>
   <h2 id="toolHelpTitle">Web ESP SDR help</h2>
   <section><h3>What this tool does</h3><p>Boot Bit Pirate in <strong>USB SDR adapter mode</strong> and connect to USB. <strong>Wideband Analyzer</strong> sweeps a frequency range to find activity; <strong>Live SDR</strong> gives a closer real-time view around one center frequency.</p></section>
+  <section><h3>Step-by-step recipes</h3><ol><li><a href="../../recipes/use-esp-sdr-usb-adapter/">Use the ESP SDR USB adapter</a></li><li><a href="../../recipes/connect-esp-sdr-web-tool/">Connect ESP SDR to the browser</a></li><li><a href="../../recipes/scan-24ghz-band-esp-sdr/">Scan the 2.4 GHz band with ESP SDR</a></li><li><a href="../../recipes/inspect-24ghz-channel-esp-sdr/">Inspect a 2.4 GHz channel with Live SDR</a></li><li><a href="../../recipes/reduce-noise-calibrate-esp-sdr/">Reduce noise and calibrate ESP SDR</a></li></ol></section>
   <section><h3>ESP32-S3 RF limits</h3><p>The ESP32-S3 radio is designed for <strong>2.4 GHz</strong>, with <strong>2400–2483.5 MHz</strong> as the most useful region. Low-level tuning can go beyond this for <strong>experimental tests</strong> (currently up to 100–6000 MHz), but sensitivity, PLL lock and level accuracy are not guaranteed outside 2.4 GHz. Treat out-of-band results as indications of activity, not calibrated measurements.</p></section>
   <section><h3>Antenna matters</h3><p><strong>The antenna strongly affects what you can see.</strong> A 2.4 GHz antenna may perform poorly outside its intended frequency range. Antenna type, matching, connectors and nearby objects can all change sensitivity, so a weak or missing signal may come from the antenna rather than the SDR processing. The antenna does not extend the tuning range; it determines how much RF energy reaches the radio.</p></section>
-  <section><h3>Improving the view</h3><p>Live SDR starts with <strong>maximum manual gain</strong>; Wideband starts with <strong>Auto gain</strong>. Adjust gain beside the frequency controls. Use <strong>Reduce noise</strong> to learn the current background with the antenna connected; signals present during learning may also be reduced. Advanced settings provides additional receiver and calibration controls when needed.</p></section>
+  <section><h3>Improving the view</h3><p>Live SDR starts with <strong>maximum manual gain</strong>; Wideband starts with <strong>manual gain at 41 of 82</strong>, halfway along the slider. Adjust gain beside the frequency controls. Use <strong>Reduce noise</strong> to learn the current background with the antenna connected; signals present during learning may also be reduced. Advanced settings provides additional receiver and calibration controls when needed.</p></section>
 </section>
 <script type="module" src="../shared/help-modal.js"></script>
 <script type="module" src="src/App.js?v=20261004-live-gain"></script>
