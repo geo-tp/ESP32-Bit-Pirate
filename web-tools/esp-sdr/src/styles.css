@@ -2,7 +2,10 @@ html, body { min-width: 0; }
 .sdr-wrap { width: 100%; max-width: none; min-height: 100dvh; padding: 8px; display: flex; flex-direction: column; gap: 8px; }
 .sdr-workspace { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
 .mode-tabs { display: flex; align-items: center; gap: 6px; padding: 6px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--panel-bg); }
-#antennaHint { margin-left: auto; min-height: 36px; display: inline-flex; align-items: center; padding: 8px 10px; border: 1px solid #5d4624; border-radius: var(--radius); background: var(--panel-bg-deep); color: #ffd27d; font-size: .68rem; white-space: nowrap; }
+#antennaHint { margin-left: auto; min-height: 36px; display: inline-flex; align-items: center; gap: 7px; padding: 8px 10px; border: 1px solid #5d4624; border-radius: var(--radius); background: var(--panel-bg-deep); color: #ffd27d; font-size: .68rem; white-space: nowrap; }
+#antennaHint[data-state="connected"] { border-color: #26734e; color: var(--cyan); }
+html[data-theme="light"] #antennaHint[data-state="hint"] { border-color: #b88935; background: #fff8e8; color: #7a4d00; }
+#antennaHint[data-state="connected"]::before { content: ""; width: 6px; height: 6px; flex: 0 0 6px; border-radius: 50%; background: currentColor; }
 .mode-tab { display: flex; align-items: center; gap: 12px; min-height: 36px; padding: 8px 14px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--panel-bg-deep); color: var(--text); font: 700 .8rem var(--font-mono); cursor: pointer; }
 .mode-tab span { color: var(--muted); font-size: .64rem; font-weight: 400; }
 .mode-tab.is-active { border-color: var(--cyan); color: var(--cyan); background: var(--panel-bg); }

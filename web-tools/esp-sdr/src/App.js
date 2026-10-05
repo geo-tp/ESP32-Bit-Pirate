@@ -92,10 +92,25 @@ function extendedRangeAvailable() {
 function selectedSampleRate() { return Number(ui.liveRate?.value || 80) * 1_000_000; }
 function effectiveDisplayWidth() { return Math.min(bandwidthMHz(client?.bandwidth), selectedSampleRate() / 1e6); }
 
+function adapterConnectionLabel(info) {
+  const rawVersion = String(info?.adapter_version || info?.firmware_version || info?.fw_version || "").trim();
+  const version = rawVersion ? (/^v/i.test(rawVersion) ? rawVersion : `v${rawVersion}`) : "BPRF1";
+  return `ESP SDR Adapter · ${version}`;
+}
+
 function updateControls() {
   const locked = ["connecting", "streaming", "scanning", "stopping", "disconnecting"].includes(state);
   ui.connectButton.hidden = ["connected", "streaming", "scanning", "stopping", "disconnecting"].includes(state);
-  ui.antennaHint.hidden = ui.connectButton.hidden;
+  if (client?.info) {
+    ui.antennaHint.textContent = adapterConnectionLabel(client.info);
+    ui.antennaHint.dataset.state = "connected";
+    ui.antennaHint.title = "ESP SDR adapter connected";
+  } else {
+    ui.antennaHint.textContent = "Antenna quality affects SDR performance";
+    ui.antennaHint.dataset.state = "hint";
+    ui.antennaHint.title = "";
+  }
+  ui.antennaHint.hidden = false;
   ui.connectButton.disabled = !supported || locked;
   ui.disconnectButton.hidden = !ui.connectButton.hidden;
   ui.disconnectButton.disabled = state === "disconnecting";
