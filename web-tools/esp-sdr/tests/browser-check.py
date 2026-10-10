@@ -55,7 +55,7 @@ until('location.href === ' + json.dumps(base_url) + ' && document.readyState ===
 js('document.documentElement.dataset.theme = "dark"')
 assert js('!document.querySelector("#advancedSettings").open && !document.querySelector("#rawOverlay").checked && document.querySelector("#autoScale").checked')
 assert js('document.querySelector("#liveGainMode").value === "MANUAL" && document.querySelector("#liveGainIndex").value === document.querySelector("#liveGainIndex").max && document.querySelector("output[for=liveGainIndex]").value === "82"')
-assert js('document.querySelector("#scanGainMode").value === "HARDWARE" && document.querySelector("#scanGainIndex").value === "40"')
+assert js('document.querySelector("#scanGainMode").value === "MANUAL" && document.querySelector("#scanGainIndex").value === "41" && document.querySelector("output[for=scanGainIndex]").value === "41"')
 assert js('document.querySelector("#calibrationGuide").hidden && document.querySelector("#calibrateButton").disabled')
 assert js('document.querySelector("#cleanButton").parentElement === document.querySelector("#startButton").parentElement && document.querySelector("#scanCleanButton").parentElement === document.querySelector("#scanStart").parentElement')
 assert js('!document.querySelector("#scanRecommended, #scanExperimental, #scanProgress, #scanStatus, .scan-progress")')
@@ -126,6 +126,7 @@ js('''(async () => {
 })()''')
 js('document.querySelector("#connectButton").click()')
 until('document.querySelector("#connectionStatus").textContent === "Connected"')
+assert js('document.querySelector("#antennaHint").textContent === "ESP SDR Adapter · BPRF1" && document.querySelector("#antennaHint").dataset.state === "connected" && !document.querySelector("#antennaHint").hidden')
 # Live always exposes the full firmware range; Wideband keeps a separate opt-in range.
 assert js('document.querySelector("#centerFreq").min === "100" && document.querySelector("#centerFreq").max === "6000"')
 assert js('document.querySelector("#scanFrom").min === "2200" && document.querySelector("#scanTo").max === "2800" && !document.querySelector("#scanExtendedRange").checked')
@@ -144,7 +145,7 @@ for prefix, mode, settings in [('scan', 'wide', 'scanAdvanced'), ('live', 'live'
     assert js(f'document.getElementById("{prefix}GainMode").closest(".frequency-gain-controls") !== null')
     js(f'document.getElementById("{prefix}GainMode").value="MANUAL"; document.getElementById("{prefix}GainMode").dispatchEvent(new Event("change"))')
     assert js(f'!document.getElementById("{prefix}GainIndex").disabled && document.getElementById("{prefix}GainIndex").checkVisibility()')
-    initial_gain = '82' if prefix == 'live' else '40'
+    initial_gain = '82' if prefix == 'live' else '41'
     expected_status = "4,096 samples" if prefix == "live" else "Wide RX"
     assert js(f'document.getElementById("{prefix}SettingsStatus").textContent.includes("{expected_status}")')
     js(f'document.getElementById("{prefix}GainIndex").value="57"; document.getElementById("{prefix}GainIndex").dispatchEvent(new Event("input"))')

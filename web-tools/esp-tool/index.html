@@ -71,6 +71,14 @@
 <svg aria-hidden="true" class="tab-icon" viewbox="0 0 24 24"><path d="M12 4v11"></path><path d="M8 11l4 4 4-4"></path><path d="M5 20h14"></path></svg>
           Read
         </button>
+<button aria-selected="false" class="mode-tab" data-mode-tab="nvs" role="tab" type="button">
+<svg aria-hidden="true" class="tab-icon" viewbox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"></rect><path d="M8 9h8M8 13h8M8 17h5"></path></svg>
+          NVS
+        </button>
+<button aria-selected="false" class="mode-tab" data-mode-tab="littlefs" role="tab" type="button">
+<svg aria-hidden="true" class="tab-icon" viewbox="0 0 24 24"><path d="M3 6h7l2 2h9v11H3z"></path><path d="M7 12h10M7 16h7"></path></svg>
+          LittleFS
+        </button>
 <button aria-selected="false" class="mode-tab" data-mode-tab="merge" role="tab" type="button">
 <svg aria-hidden="true" class="tab-icon" viewbox="0 0 24 24"><path d="M6 4v5a3 3 0 0 0 3 3h6"></path><path d="M6 20v-5a3 3 0 0 1 3-3"></path><path d="M15 8l4 4-4 4"></path></svg>
           Merge
@@ -177,6 +185,58 @@
 <div><span>Read</span><strong id="readAmount">0 B</strong></div>
 <div><span>Elapsed</span><strong id="readElapsed">0s</strong></div>
 </div>
+</section>
+<section class="mode-panel nvs-panel" data-mode-panel="nvs" hidden="">
+<div class="panel-header">
+<div>
+<p class="eyebrow">Non-volatile storage</p>
+<h2>NVS Explorer</h2>
+</div>
+<button class="button action-button subtle" id="nvsDetectButton" type="button">Detect partitions</button>
+</div>
+<p class="nvs-description">Read the ESP-IDF partition table, extract NVS data and decode stored namespaces, keys and values. All decoding happens locally in your browser.</p>
+<div class="nvs-config">
+<label for="nvsPartition">NVS partition</label>
+<select class="inline-select" id="nvsPartition"><option value="">Auto-detect</option></select>
+<details class="nvs-advanced">
+<summary>Partition table offset</summary>
+<div class="nvs-offset-row"><label for="nvsTableOffset">Address</label><input id="nvsTableOffset" value="0x8000" spellcheck="false"/><span>ESP-IDF default: 0x8000</span></div>
+</details>
+</div>
+<div class="nvs-summary" id="nvsSummary" aria-live="polite">Connect an ESP, then extract its NVS partition.</div>
+<div class="nvs-output-header">
+<strong>Decoded keys</strong>
+<div class="nvs-export-actions">
+<button class="button action-button subtle" id="nvsDownloadTxt" disabled type="button">Download TXT</button>
+<button class="button action-button subtle" id="nvsDownloadBin" disabled type="button">Download BIN</button>
+</div>
+</div>
+<pre class="nvs-output" id="nvsOutput" tabindex="0" aria-label="Decoded NVS keys">No data extracted yet.</pre>
+<p class="nvs-warning">NVS may contain Wi-Fi passwords, tokens and other secrets. Downloads stay on your computer. Encrypted NVS cannot be decoded without the appropriate keys.</p>
+</section>
+<section class="mode-panel littlefs-panel" data-mode-panel="littlefs" hidden="">
+<div class="panel-header">
+<div><p class="eyebrow">File system / Backup</p><h2>LittleFS Explorer</h2></div>
+<button class="button action-button subtle" id="littlefsDetectButton" type="button">Detect partitions</button>
+</div>
+<p class="nvs-description">Read a LittleFS partition directly from ESP flash, browse its files and folders, or download the complete tree as ZIP. Read-only, entirely local.</p>
+<div class="nvs-config">
+<label for="littlefsPartition">Partition</label>
+<select class="inline-select" id="littlefsPartition"><option value="">Auto-detect</option></select>
+<details class="nvs-advanced"><summary>Partition table offset</summary>
+<div class="nvs-offset-row"><label for="littlefsTableOffset">Address</label><input id="littlefsTableOffset" value="0x8000" spellcheck="false"/><span>ESP-IDF default: 0x8000</span></div>
+</details>
+</div>
+<div class="nvs-summary" id="littlefsSummary" aria-live="polite">Connect an ESP, then extract its LittleFS filesystem.</div>
+<div class="nvs-output-header">
+<strong>Files and folders</strong>
+<div class="nvs-export-actions">
+<button class="button action-button subtle" id="littlefsDownloadZip" disabled type="button">Download ZIP</button>
+<button class="button action-button subtle" id="littlefsDownloadBin" disabled type="button">Download BIN</button>
+</div>
+</div>
+<div class="littlefs-tree" id="littlefsTree" aria-label="LittleFS file explorer"><p class="littlefs-empty">No files extracted yet.</p></div>
+<p class="nvs-warning">Some data partitions use SPIFFS or another format. LittleFS needs a valid superblock; encrypted flash or unsupported layouts cannot be decoded. Raw BIN remains available after extraction.</p>
 </section>
 <section class="mode-panel" data-mode-panel="merge" hidden="">
 <div class="panel-header">
@@ -293,7 +353,15 @@
 <h2 id="toolHelpTitle">Web ESP Tool help</h2>
 <section>
 <h3>What it does</h3>
-<p>Flash, read, erase and merge firmware images for ESP8266, ESP32 and newer ESP variants through the ROM serial bootloader.</p>
+<p>Flash, read, erase and merge firmware images, and inspect ESP-IDF NVS and LittleFS partitions through the ROM serial bootloader.</p>
+</section>
+<section>
+<h3>NVS explorer</h3>
+<p>Open the NVS tab, connect in download mode and click Extract NVS. The tool locates NVS partitions using the ESP-IDF partition table (usually at 0x8000), then decodes active entries locally.</p>
+</section>
+<section>
+<h3>LittleFS explorer</h3>
+<p>Connect an ESP in download mode, open LittleFS, and select Extract LittleFS. Files are reconstructed from the flash image without writing to the device. Expand folders to download individual files or choose Download ZIP for a complete archive.</p>
 </section>
 <section>
 <h3>Adapter</h3>

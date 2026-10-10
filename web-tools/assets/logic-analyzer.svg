@@ -33,7 +33,7 @@
   </g>
   <g fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="3">
     <path d="M64 142h40v-12h46v12h36v-12h68v12h54v-12h88v12h92" stroke="#8ab4ff"/>
-    <path d="M64 172h70v12h48v-12h82v12h72v-12h50v12h62" stroke="#00ffcc"/>
+    <path d="M64 160h70v12h48v-12h82v12h72v-12h50v12h62" stroke="#00ffcc"/>
     <path d="M64 204h28v-12h90v12h44v-12h112v12h38v-12h72" stroke="#ffd166"/>
   </g>
 

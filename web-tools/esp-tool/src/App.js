@@ -1,5 +1,8 @@
 import { downloadBytes } from "../../shared/files/download.js";
 import { EspToolAdapter, flashSizeToBytes } from "./EspToolAdapter.js";
+import { parsePartitionTable, parseNvsPartition, formatNvsText } from "./NvsParser.js";
+import { parseLittleFs } from "./LittleFsParser.js";
+import { createZip } from "./ZipWriter.js";
 
 const PRESETS = {
   "esp8266-bin": [
@@ -155,6 +158,20 @@ const elements = {
   readSpeed: document.querySelector("#readSpeed"),
   readAmount: document.querySelector("#readAmount"),
   readElapsed: document.querySelector("#readElapsed"),
+  nvsDetectButton: document.querySelector("#nvsDetectButton"),
+  nvsPartition: document.querySelector("#nvsPartition"),
+  nvsTableOffset: document.querySelector("#nvsTableOffset"),
+  nvsSummary: document.querySelector("#nvsSummary"),
+  nvsOutput: document.querySelector("#nvsOutput"),
+  nvsDownloadTxt: document.querySelector("#nvsDownloadTxt"),
+  nvsDownloadBin: document.querySelector("#nvsDownloadBin"),
+  littlefsDetectButton: document.querySelector("#littlefsDetectButton"),
+  littlefsPartition: document.querySelector("#littlefsPartition"),
+  littlefsTableOffset: document.querySelector("#littlefsTableOffset"),
+  littlefsSummary: document.querySelector("#littlefsSummary"),
+  littlefsTree: document.querySelector("#littlefsTree"),
+  littlefsDownloadZip: document.querySelector("#littlefsDownloadZip"),
+  littlefsDownloadBin: document.querySelector("#littlefsDownloadBin"),
   addMergeRowButton: document.querySelector("#addMergeRowButton"),
   mergeLayoutPreset: document.querySelector("#mergeLayoutPreset"),
   mergeDropZone: document.querySelector("#mergeDropZone"),
@@ -194,6 +211,15 @@ let detectedFlashSizeLabel = null;
 let detectedChipName = null;
 let lastActionHint = "";
 let completedMode = null;
+let nvsPartitions = [];
+let nvsExtract = null;
+let nvsTableAddress = null;
+let nvsError = "";
+let littlefsPartitions = [];
+let littlefsExtract = null;
+let littlefsTableAddress = null;
+let littlefsError = "";
+let littlefsRendered = null;
 
 init();
 
@@ -222,6 +248,26 @@ function bindEvents() {
   elements.addMergeRowButton.addEventListener("click", () => addMergeRow({ address: nextAddress(mergeRows) }));
   elements.mergeLayoutPreset.addEventListener("change", () => applyMergeLayout(elements.mergeLayoutPreset.value));
   elements.readPreset.addEventListener("change", applyReadPreset);
+  elements.nvsDetectButton.addEventListener("click", detectNvsPartitions);
+  elements.nvsTableOffset.addEventListener("change", invalidateNvsDiscovery);
+  elements.nvsPartition.addEventListener("change", () => {
+    nvsExtract = null;
+    nvsError = "";
+    renderNvs();
+    renderActions();
+  });
+  elements.nvsDownloadTxt.addEventListener("click", downloadNvsText);
+  elements.nvsDownloadBin.addEventListener("click", downloadNvsBinary);
+  elements.littlefsDetectButton.addEventListener("click", detectLittlefsPartitions);
+  elements.littlefsTableOffset.addEventListener("change", invalidateLittlefsDiscovery);
+  elements.littlefsPartition.addEventListener("change", () => {
+    littlefsExtract = null;
+    littlefsError = "";
+    littlefsRendered = null;
+    render();
+  });
+  elements.littlefsDownloadZip.addEventListener("click", downloadLittlefsZip);
+  elements.littlefsDownloadBin.addEventListener("click", downloadLittlefsBinary);
   elements.flashSizeSelect.addEventListener("change", syncReadPresetWithDevice);
   elements.primaryAction.addEventListener("click", runPrimaryAction);
   elements.clearLogButton.addEventListener("click", () => {
@@ -278,6 +324,8 @@ async function connect() {
     detectedFlashSizeLabel = normalizeFlashSizeLabel(info.flashSize);
     detectedFlashBytes = flashSizeToBytes(info.flashSize);
     detectedChipName = info.chipName;
+    invalidateNvsDiscovery();
+    invalidateLittlefsDiscovery();
     setConnectionButtons(true);
     renderDeviceInfo(info);
     updateReadPresetOptions();
@@ -293,6 +341,8 @@ async function disconnect() {
     detectedFlashBytes = null;
     detectedFlashSizeLabel = null;
     detectedChipName = null;
+    invalidateNvsDiscovery();
+    invalidateLittlefsDiscovery();
     setConnectionButtons(false);
     updateReadPresetOptions();
     syncReadPresetWithDevice();
@@ -305,6 +355,8 @@ function handleDeviceLost() {
   detectedFlashBytes = null;
   detectedFlashSizeLabel = null;
   detectedChipName = null;
+  invalidateNvsDiscovery();
+  invalidateLittlefsDiscovery();
   setConnectionButtons(false);
   updateReadPresetOptions();
   syncReadPresetWithDevice();
@@ -332,6 +384,8 @@ function selectMode(nextMode) {
 async function runPrimaryAction() {
   if (mode === "flash") await flashFirmware();
   if (mode === "read") await readFlash();
+  if (mode === "nvs") await extractNvs();
+  if (mode === "littlefs") await extractLittlefs();
   if (mode === "merge") await mergeAndDownload();
   if (mode === "erase") await eraseFlash();
 }
@@ -414,6 +468,264 @@ async function eraseFlash() {
     completedMode = "erase";
     setStatus("Complete");
     log("Full flash erase complete.");
+  });
+}
+
+
+function invalidateNvsDiscovery() {
+  nvsPartitions = [];
+  nvsExtract = null;
+  nvsError = "";
+  nvsTableAddress = null;
+  elements.nvsPartition.replaceChildren(new Option("Auto-detect", ""));
+  renderNvs();
+  if (mode === "nvs") renderMemory();
+}
+
+function renderNvs() {
+  const unsupported = String(detectedChipName ?? "").toUpperCase().includes("ESP8266");
+  elements.nvsDetectButton.disabled = busy || !connected || unsupported;
+  elements.nvsPartition.disabled = busy || nvsPartitions.length === 0;
+  elements.nvsTableOffset.disabled = busy;
+  elements.nvsDownloadTxt.disabled = busy || !nvsExtract?.text;
+  elements.nvsDownloadBin.disabled = busy || !nvsExtract?.data;
+  if (nvsExtract?.result) {
+    const { partition, result, text } = nvsExtract;
+    elements.nvsSummary.textContent = `${partition.label} · ${formatHex(partition.start)} · ${formatBytes(partition.size)} · ${result.entries.length} keys · ${result.namespaces} namespaces${result.warnings.length ? ` · ${result.warnings.length} warning(s)` : ""}`;
+    elements.nvsOutput.textContent = text;
+  } else {
+    const selected = nvsPartitions[Number(elements.nvsPartition.value)];
+    elements.nvsSummary.textContent = unsupported ? "ESP8266 has no ESP-IDF NVS partition table." : selected
+      ? `${selected.label} · ${formatHex(selected.start)} · ${formatBytes(selected.size)}${selected.encrypted ? " · Encrypted flag" : ""}`
+      : nvsError || (nvsPartitions.length ? `${nvsPartitions.length} NVS partition(s) detected.` : "Connect an ESP, then extract its NVS partition.");
+    elements.nvsOutput.textContent = nvsError ? `${nvsError}\n${nvsExtract?.data ? "Raw NVS backup available as BIN." : ""}` : "No data extracted yet.";
+  }
+}
+
+async function findNvsPartitions() {
+  if (String(detectedChipName ?? "").toUpperCase().includes("ESP8266")) throw new Error("ESP8266 does not use the ESP-IDF NVS format.");
+  const tableAddress = parseNumber(elements.nvsTableOffset.value);
+  if (!Number.isSafeInteger(tableAddress) || tableAddress < 0 || tableAddress % 0x1000 || tableAddress + 0x1000 > getReadFlashCapacity()) {
+    throw new Error("Partition table offset must be a 4 KB-aligned flash address.");
+  }
+  const table = await adapter.readFlash({ start: tableAddress, size: 0x1000 });
+  const partitions = parsePartitionTable(table, getReadFlashCapacity());
+  if (!partitions.length) throw new Error("No ESP-IDF NVS partition found (data/0x02). Check the partition table offset.");
+  nvsPartitions = partitions;
+  nvsTableAddress = tableAddress;
+  nvsExtract = null;
+  nvsError = "";
+  elements.nvsPartition.replaceChildren(...partitions.map((partition, index) => new Option(
+    `${partition.label || "nvs"} · ${formatHex(partition.start)} · ${formatBytes(partition.size)}`,
+    String(index),
+  )));
+  const preferred = partitions.findIndex((partition) => partition.label === "nvs");
+  elements.nvsPartition.value = String(Math.max(0, preferred));
+  log(`NVS partitions detected: ${partitions.map((p) => `${p.label} @ ${formatHex(p.start)}, ${formatBytes(p.size)}`).join("; ")}.`);
+  renderNvs();
+  if (mode === "nvs") renderMemory();
+  return partitions;
+}
+
+async function detectNvsPartitions() {
+  await runOperation("Detecting NVS", async () => {
+    try { await findNvsPartitions(); }
+    catch (error) { nvsError = error.message; throw error; }
+  });
+}
+
+async function extractNvs() {
+  await runOperation("Reading NVS", async () => {
+    nvsError = "";
+    nvsExtract = null;
+    try {
+      const tableAddress = parseNumber(elements.nvsTableOffset.value);
+      if (!nvsPartitions.length || nvsTableAddress !== tableAddress) await findNvsPartitions();
+      const partition = nvsPartitions[Number(elements.nvsPartition.value)];
+      if (!partition) throw new Error("Select a valid NVS partition.");
+      const started = performance.now();
+      const data = await adapter.readFlash({
+        start: partition.start,
+        size: partition.size,
+        onProgress: ({ done, total }) => renderReadProgress(done, total, started),
+      });
+      if (data.length !== partition.size) throw new Error("Incomplete NVS flash read.");
+      renderReadProgress(data.length, data.length, started);
+      // Keep the original bytes for local backup even if decoding fails.
+      nvsExtract = { partition, data, result: null, text: "" };
+      const result = parseNvsPartition(data);
+      const text = formatNvsText(result, partition);
+      nvsExtract = { partition, data, result, text };
+      log(`Decoded ${result.entries.length} NVS key(s) from ${partition.label}.`);
+      if (result.warnings.length) log(`NVS decoder: ${result.warnings.length} warning(s).`);
+    } catch (error) {
+      nvsError = error instanceof Error ? error.message : String(error);
+      renderNvs();
+      throw error;
+    }
+  });
+}
+
+function downloadNvsText() {
+  if (!nvsExtract?.text) return;
+  const bytes = new TextEncoder().encode(nvsExtract.text);
+  downloadBytes(bytes, `${safeNvsFilename(nvsExtract.partition.label)}-nvs.txt`);
+}
+function downloadNvsBinary() {
+  if (!nvsExtract?.data) return;
+  downloadBytes(nvsExtract.data, `${safeNvsFilename(nvsExtract.partition.label)}-nvs.bin`);
+}
+function safeNvsFilename(label) {
+  return (label || "esp").replace(/[^a-z0-9_-]/gi, "_");
+}
+
+// LittleFS partition detection, browsing and exports.
+function invalidateLittlefsDiscovery() {
+  littlefsPartitions = [];
+  littlefsExtract = null;
+  littlefsTableAddress = null;
+  littlefsError = "";
+  littlefsRendered = null;
+  elements.littlefsPartition.replaceChildren(new Option("Auto-detect", ""));
+  renderLittlefs();
+  if (mode === "littlefs") renderMemory();
+}
+
+function renderLittlefs() {
+  const unsupported = String(detectedChipName ?? "").toUpperCase().includes("ESP8266");
+  elements.littlefsDetectButton.disabled = busy || !connected || unsupported;
+  elements.littlefsPartition.disabled = busy || littlefsPartitions.length === 0;
+  elements.littlefsTableOffset.disabled = busy;
+  elements.littlefsDownloadZip.disabled = busy || !littlefsExtract?.fs;
+  elements.littlefsDownloadBin.disabled = busy || !littlefsExtract?.data;
+  const selected = littlefsPartitions[Number(elements.littlefsPartition.value)];
+  if (littlefsExtract?.fs) {
+    const { fs, partition } = littlefsExtract;
+    const bytes = fs.entries.filter((e) => e.kind === "file").reduce((n, e) => n + e.size, 0);
+    elements.littlefsSummary.textContent = `${partition.label} · ${formatHex(partition.start)} · ${formatBytes(partition.size)} · ${fs.files} files · ${fs.folders} folders · ${formatBytes(bytes)} data`;
+  } else {
+    elements.littlefsSummary.textContent = unsupported ? "ESP8266 is not supported by this ESP-IDF partition explorer."
+      : littlefsError || (selected ? `${selected.label} · ${formatHex(selected.start)} · ${formatBytes(selected.size)}${selected.encrypted ? " · Encrypted flag" : ""}`
+        : "Connect an ESP, then detect and extract a LittleFS partition.");
+  }
+  if (littlefsExtract && littlefsRendered === littlefsExtract) return;
+  littlefsRendered = littlefsExtract;
+  elements.littlefsTree.replaceChildren();
+  if (!littlefsExtract?.fs) {
+    const text = document.createElement("p");
+    text.className = "littlefs-empty";
+    text.textContent = littlefsError || "No files extracted yet.";
+    elements.littlefsTree.append(text);
+    return;
+  }
+  const fs = littlefsExtract.fs;
+  if (!fs.entries.length) {
+    const text = document.createElement("p"); text.className = "littlefs-empty";
+    text.textContent = "Filesystem is empty."; elements.littlefsTree.append(text);
+    return;
+  }
+  const folderMap = new Map([["", elements.littlefsTree]]);
+  const sorted = [...fs.entries].sort((a, b) => a.path.localeCompare(b.path));
+  for (const item of sorted) {
+    const parent = item.path.includes("/") ? item.path.slice(0, item.path.lastIndexOf("/")) : "";
+    const container = folderMap.get(parent);
+    if (!container) continue;
+    if (item.kind === "dir") {
+      const details = document.createElement("details"); details.className = "littlefs-folder";
+      const title = document.createElement("summary"); title.textContent = `📁 ${item.name}`;
+      details.append(title);
+      const content = document.createElement("div"); content.className = "littlefs-children";
+      details.append(content); container.append(details); folderMap.set(item.path, content);
+    } else {
+      const row = document.createElement("div"); row.className = "littlefs-file";
+      const name = document.createElement("span"); name.className = "littlefs-file-name";
+      name.textContent = `📄 ${item.name}`; name.title = item.path;
+      const size = document.createElement("span"); size.className = "littlefs-file-size"; size.textContent = formatBytes(item.size);
+      const download = document.createElement("button"); download.type = "button";
+      download.className = "button action-button subtle"; download.textContent = "Download";
+      download.title = `Download ${item.path}`;
+      download.addEventListener("click", () => {
+        try { downloadBytes(fs.readFile(item), item.name); }
+        catch (error) { showError(error); }
+      });
+      row.append(name, size, download); container.append(row);
+    }
+  }
+}
+
+async function findLittlefsPartitions() {
+  if (String(detectedChipName ?? "").toUpperCase().includes("ESP8266")) throw new Error("ESP8266 has no ESP-IDF partition table.");
+  const offset = parseNumber(elements.littlefsTableOffset.value);
+  if (!Number.isSafeInteger(offset) || offset < 0 || offset % 0x1000 || offset + 0x1000 > getReadFlashCapacity()) {
+    throw new Error("Partition table offset must be a 4 KB-aligned flash address.");
+  }
+  const table = await adapter.readFlash({ start: offset, size: 0x1000 });
+  const candidates = parsePartitionTable(table, getReadFlashCapacity(), "all").filter((p) =>
+    p.type === 0x01 && (p.subtype === 0x82 || p.subtype === 0x83 || /littlefs|(?:^|[_-])lfs(?:$|[_-])|storage|filesystem|^fs$/i.test(p.label)) && p.size >= 8192);
+  if (!candidates.length) throw new Error("No filesystem partition found. LittleFS typically uses data/spiffs (0x82). Check the partition table offset.");
+  littlefsPartitions = candidates;
+  littlefsTableAddress = offset;
+  littlefsExtract = null;
+  littlefsRendered = null;
+  littlefsError = "";
+  elements.littlefsPartition.replaceChildren(...candidates.map((p, i) => new Option(
+    `${p.label || "filesystem"} · ${formatHex(p.start)} · ${formatBytes(p.size)}`, String(i))));
+  elements.littlefsPartition.value = String(Math.max(0, candidates.findIndex((p) => /littlefs|lfs/i.test(p.label))));
+  log(`Filesystem partitions: ${candidates.map((p) => `${p.label} @ ${formatHex(p.start)}`).join(", ")}.`);
+  renderLittlefs();
+  if (mode === "littlefs") renderMemory();
+  return candidates;
+}
+async function detectLittlefsPartitions() {
+  await runOperation("Detecting partitions", async () => {
+    try { await findLittlefsPartitions(); }
+    catch (error) { littlefsError = error.message; throw error; }
+  });
+}
+async function extractLittlefs() {
+  await runOperation("Reading LittleFS", async () => {
+    littlefsExtract = null; littlefsError = ""; littlefsRendered = null;
+    try {
+      const offset = parseNumber(elements.littlefsTableOffset.value);
+      if (!littlefsPartitions.length || littlefsTableAddress !== offset) await findLittlefsPartitions();
+      const partition = littlefsPartitions[Number(elements.littlefsPartition.value)];
+      if (!partition) throw new Error("Select a valid filesystem partition.");
+      const started = performance.now();
+      const data = await adapter.readFlash({ start: partition.start, size: partition.size,
+        onProgress: ({ done, total }) => renderReadProgress(done, total, started) });
+      if (data.length !== partition.size) throw new Error("Incomplete filesystem flash read.");
+      renderReadProgress(data.length, data.length, started);
+      littlefsExtract = { partition, data, fs: null }; // Preserve BIN after decode failure.
+      if (partition.encrypted) throw new Error("Partition has the encrypted flag. The raw BIN is available, but LittleFS cannot be decoded without decryption.");
+      const fs = parseLittleFs(data);
+      littlefsExtract = { partition, data, fs };
+      log(`LittleFS extracted: ${fs.files} files, ${fs.folders} folders from ${partition.label}.`);
+    } catch (error) {
+      littlefsError = error instanceof Error ? error.message : String(error);
+      throw error;
+    }
+  });
+}
+function downloadLittlefsBinary() {
+  if (!littlefsExtract?.data) return;
+  downloadBytes(littlefsExtract.data, `${safeNvsFilename(littlefsExtract.partition.label)}-littlefs.bin`);
+}
+async function downloadLittlefsZip() {
+  if (busy || !littlefsExtract?.fs) return;
+  await runOperation("Creating ZIP", async () => {
+    const { partition, fs } = littlefsExtract;
+    const items = fs.entries.map((item) => ({
+      path: item.path, directory: item.kind === "dir",
+      data: item.kind === "file" ? fs.readFile(item) : new Uint8Array(),
+    }));
+    const blob = createZip(items);
+    // Download a Blob directly to avoid another in-memory copy of a large ZIP.
+    const url = URL.createObjectURL(blob), link = document.createElement("a");
+    link.href = url; link.download = `${safeNvsFilename(partition.label)}-littlefs.zip`;
+    document.body.append(link); link.click(); link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 30000);
+    renderProgress(100);
+    log(`LittleFS ZIP generated: ${items.filter((i) => !i.directory).length} files.`);
   });
 }
 
@@ -603,6 +915,8 @@ function addMergeRow(initial = {}) {
 }
 
 function render() {
+  renderNvs();
+  renderLittlefs();
   renderFlashRows();
   renderMergeRows();
   renderMemory();
@@ -678,7 +992,13 @@ function renderRows(tbody, rows, kind) {
 }
 
 function renderMemory() {
-  const rows = validRows(mode === "merge" ? mergeRows : flashRows).sort((a, b) => a.address - b.address);
+  const rows = ((mode === "nvs" || mode === "littlefs")
+    ? (mode === "nvs" ? nvsPartitions : littlefsPartitions).map((partition) => ({
+      name: partition.label || "nvs",
+      address: partition.start,
+      bytes: { length: partition.size },
+    }))
+    : validRows(mode === "merge" ? mergeRows : flashRows)).sort((a, b) => a.address - b.address);
   const capacity = getFlashCapacity();
   const validation = validateRows(rows, capacity);
   elements.memorySizeLabel.textContent = `${formatBytes(capacity)} view`;
@@ -706,7 +1026,11 @@ function renderMemory() {
   }
 
   const messages = [...validation.errors, ...validation.warnings];
-  if (!rows.length) {
+  if (mode === "nvs" || mode === "littlefs") {
+    elements.validationList.textContent = rows.length
+      ? `${rows.length} ${mode === "nvs" ? "NVS" : "LittleFS candidate"} partition(s) located in flash.`
+      : "Detect partitions to locate the filesystem in flash.";
+  } else if (!rows.length) {
     elements.validationList.textContent = "No files loaded.";
   } else if (!messages.length) {
     elements.validationList.textContent = `${rows.length} file(s), final span ${formatBytes(finalSpan(rows))}.`;
@@ -732,6 +1056,16 @@ function renderActions() {
     elements.primaryAction.textContent = "Read and Download";
     elements.primaryAction.disabled = busy || !connected;
     lastActionHint = connected ? "Choose a region, then read." : "Connect first.";
+  }
+  if (mode === "nvs") {
+    elements.primaryAction.textContent = "Extract NVS";
+    elements.primaryAction.disabled = busy || !connected || String(detectedChipName ?? "").toUpperCase().includes("ESP8266");
+    lastActionHint = !connected ? "Connect first." : "Detect the NVS partition and read its keys (read-only).";
+  }
+  if (mode === "littlefs") {
+    elements.primaryAction.textContent = "Extract LittleFS";
+    elements.primaryAction.disabled = busy || !connected || String(detectedChipName ?? "").toUpperCase().includes("ESP8266");
+    lastActionHint = !connected ? "Connect first." : "Read the filesystem without modifying flash.";
   }
   if (mode === "merge") {
     const rows = validRows(mergeRows);
