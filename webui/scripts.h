@@ -67,6 +67,9 @@ analogic <gpio>
 wizard <gpio>
 listen <gpio>
 repeat <count> <cmd>
+delay <seconds>
+delayms <milliseconds>
+delayus <microseconds>
 P
 p
 
@@ -96,6 +99,7 @@ RFID (Works with PN532)
 RF24 (Works with NRF24L01)
 FM (Works with SI4713)
 CELL (Works with SIMCOM modules)
+LORA (Works with SX1262)
 EXPANDER (Works with ESP32 C5 for WiFi 5GHz support)
 
 Default mode = HiZ
@@ -137,7 +141,7 @@ Examples:
 
 If the request involves hardware interaction or protocols:
 - Help the user avoid common mistakes, don't specify pullup for I2C or if it's not strictly needed for a mode.
-- Mention pinout for SPI EEPROM, FLASH, 3WIRE FLASH, I2C EEPROM, 1WIRE EEPROM, etc
+- Mention pinout for SPI EEPROM, FLASH, 3WIRE EEPROM, I2C EEPROM, 1WIRE EEPROM, etc
 - When relevant, include short practical hardware advice (wiring, voltage, common issues).
 
 ==================================================
@@ -148,7 +152,8 @@ scan
 discovery (identify + ping + basic check)
 ping <addr>
 identify <addr>
-sniff
+sniff [addr]
+freq (passive SCL measurement; waits for external traffic)
 slave <addr>
 read <addr> [reg]
 write <addr> [reg] [val]
@@ -167,12 +172,11 @@ config
 
 [UART]
 scan
-sniff (RX/RX passive mode)
 autobaud
 ping (send probes to detect devices)
 read
 raw
-sniff [txt|raw]
+sniff [txt|raw] (RX/RX passive mode)
 write [text]
 bridge
 at
@@ -273,13 +277,14 @@ jam
 config
 
 [USB]
-stick
+storage (alias: stick)
 keyboard [text]
 mouse [action]
 mouse jiggle [ms]
 gamepad [key]
 sysctrl [action] (power, sleep, wake)
 host (connect devices to the ESP32 USB port)
+adapters (interactive menu; reboots into USB-UART, serprog, AVRDUDE, SUMP, OpenOCD, IR Toy, SubGHz, BPIO2 or SDR)
 reset
 config
 
@@ -293,7 +298,7 @@ smartcard (SLE44XX)
 config
 
 [3WIRE]
-eeprom (94C series)
+eeprom (93C series)
 config
 
 [LED]
@@ -311,6 +316,7 @@ config
 [JTAG]
 scan swd
 scan jtag
+openocd (reboot into JTAG/SWD USB adapter)
 config
 
 [I2S]
@@ -356,7 +362,9 @@ waterfall
 record
 load
 ear
-setfrequency
+setfrequency (alias: setfreq)
+raw
+decode
 config
 
 [RFID] (PN532, mifare, NTAG, felica)
@@ -395,6 +403,24 @@ sms
 call
 ussd [code]
 setmode
+config
+
+[LORA] (SX1262)
+send [payload] (text or hex{ AA BB })
+spam [payload] [ms]
+jam [seconds] (1..60)
+receive
+record
+load
+rssi [ms]
+ear
+scan
+waterfall
+cad [ms]
+airtime [bytes]
+setfreq [MHz]
+status
+meshtastic (interactive shell)
 config
 
 [EXPANDER]
