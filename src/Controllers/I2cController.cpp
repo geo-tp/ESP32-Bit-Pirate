@@ -172,7 +172,13 @@ void I2cController::handleSniff(const TerminalCommand& cmd) {
 }
 
 void I2cController::handleFrequency() {
-    terminalView.println("I2C Freq: Listening on SCL to estimate frequency.... Press [ENTER] to stop.");
+    terminalView.println("I2C Freq: Listening on SCL... Press [ENTER] to stop.");
+
+    terminalView.println("");
+    terminalView.println(" [ℹ️  INFORMATION] ");
+    terminalView.println(" Wait for I2C traffic from a master");
+    terminalView.println(" to measure the SCL clock frequency.");
+    terminalView.println("");
 
     i2cService.end();
     I2cFrequencyResult result;
