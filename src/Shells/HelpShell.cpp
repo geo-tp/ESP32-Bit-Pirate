@@ -115,6 +115,11 @@ void HelpShell::cmdGeneral() {
         "P                    - Enable pull-up",
         "p                    - Disable pull-up",
         "",
+#if defined(DEVICE_S3DEVKIT) && defined(LED_PIN) && LED_TYPE_RGB
+        "Board LED: off HIZ, blue I2C, green SPI,",
+        "  yellow UART/HDUART, cyan 1WIRE, white other",
+        "",
+#endif
         "Tip: use 'mode' (or 'm')."
     };
 
