@@ -11,6 +11,8 @@ void WifiController::handleCommand(const TerminalCommand &cmd)
     if (root == "connect") handleConnect(cmd);
     else if (root == "disconnect") handleDisconnect(cmd);
     else if (root == "status") handleStatus(cmd);
+    else if (root == "config" && cmd.getSubcommand() == "hostname") handleHostname(cmd);
+    else if (root == "config") handleConfig();
     else if (root == "ap") handleAp(cmd);
     else if (root == "spam") handleApSpam();
     else if (root == "spoof") handleSpoof(cmd);
@@ -207,6 +209,42 @@ void WifiController::handleStatus(const TerminalCommand &cmd)
     terminalView.println("Mode         : " + std::string(IWifiService::wifiModeToStr(wifiService.getWifiModeRaw())));
     terminalView.println("Status       : " + std::string(IWifiService::wlStatusToStr(status)));
     terminalView.println("====================\n");
+}
+
+/*
+Hostname
+*/
+void WifiController::handleHostname(const TerminalCommand &cmd)
+{
+    const std::string hostname = cmd.getArgs();
+
+    if (hostname.empty()) {
+        nvsService.open();
+        const auto saved = nvsService.getString(state.getNvsHostnameField(), "");
+        nvsService.close();
+        terminalView.println("Saved hostname: " + (saved.empty() ? std::string("default") : saved));
+        terminalView.println("Active hostname: " + wifiService.getHostname());
+        terminalView.println("Usage: config hostname <name> (applied after reboot)");
+        return;
+    }
+
+    if (!argTransformer.isValidHostname(hostname)) {
+        terminalView.println("Invalid hostname. Use 1-31 ASCII letters, digits or hyphens; no leading or trailing hyphen.");
+        return;
+    }
+    // Save only: changing the active interface could disconnect the Web CLI.
+    nvsService.open();
+    nvsService.saveString(GlobalState::getInstance().getNvsHostnameField(), hostname);
+    nvsService.close();
+    nvsService.open();
+    const auto saved = nvsService.getString(state.getNvsHostnameField(), "");
+    nvsService.close();
+    if (saved != hostname) {
+        terminalView.println("WiFi: Failed to save hostname.");
+        return;
+    }
+    terminalView.println("WiFi: Hostname saved: " + saved);
+    terminalView.println("Restart your device to apply it. The current connection is unchanged.");
 }
 
 /*
@@ -850,6 +888,7 @@ Config
 */
 void WifiController::handleConfig()
 {
+    terminalView.println("config hostname [name] - Show or save hostname for the next reboot.");
     if (state.getTerminalMode() == TerminalTypeEnum::WiFiClient) {
         terminalView.println(" [⚠️  WARNING] ");
         terminalView.println(" You are connected via the Web CLI,");

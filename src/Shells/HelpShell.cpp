@@ -346,6 +346,7 @@ void HelpShell::cmdWifi() {
         "spoof ap <mac>       - Spoof AP MAC",
         "spoof sta <mac>      - Spoof Station MAC",
         "status               - Show Wi-Fi status",
+        "config hostname [name] - Show/save hostname (apply after reboot)",
         "deauth [ssid]        - Deauthenticate hosts",
         "disconnect           - Disconnect from Wi-Fi",
         "ap <ssid> <password> - Set access point",

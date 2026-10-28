@@ -10,6 +10,15 @@ namespace arg_transformer_tests {
 
 ArgTransformer transformer;
 
+void test_hostname_validation() {
+    TEST_ASSERT_TRUE(transformer.isValidHostname("Bit-Pirate-01"));
+    TEST_ASSERT_TRUE(transformer.isValidHostname("a"));
+    TEST_ASSERT_TRUE(transformer.isValidHostname(std::string(31, 'a')));
+    for (const auto& name : std::vector<std::string>{"", "-pirate", "pirate-", "a_b", "a.b", "a b", "a\tb", std::string(32, 'a'), std::string("a\0b", 3), "caf\xC3\xA9"}) {
+        TEST_ASSERT_FALSE_MESSAGE(transformer.isValidHostname(name), name.c_str());
+    }
+}
+
 void test_parse_byte_list_parses_decimal_and_hex_values() {
     const auto actual = transformer.parseByteList("10 0x2A 64");
     const uint8_t expected[] = {10, 42, 64};
@@ -280,6 +289,7 @@ void test_pattern_parser_rejects_empty_and_malformed_hex_patterns() {
 
 void runArgTransformerTests() {
     using namespace arg_transformer_tests;
+    RUN_TEST(test_hostname_validation);
     RUN_TEST(test_parse_byte_list_parses_decimal_and_hex_values);
     RUN_TEST(test_parse_byte_list_accepts_all_spellings_of_255);
     RUN_TEST(test_parse_byte_list_returns_empty_vector_for_empty_input);

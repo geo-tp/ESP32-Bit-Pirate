@@ -41,6 +41,9 @@ private:
     // Display current Wi-Fi status
     void handleStatus(const TerminalCommand& cmd);
 
+    // Handle hostname configuration
+    void handleHostname(const TerminalCommand& cmd);
+
     // Configure and start Access Point mode
     void handleAp(const TerminalCommand& cmd);
 
