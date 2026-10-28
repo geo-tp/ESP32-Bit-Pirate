@@ -5,7 +5,7 @@
 #include "../Services/FakeI2cService.h"
 #include "../Services/FakeUtilityService.h"
 #include "../Shells/FakeI2cEepromShell.h"
-#include "../Vendors/FakeI2cSniffer.h"
+#include "../Services/FakeI2cSnifferService.h"
 #include "../Views/FakeTerminalView.h"
 
 namespace i2c_controller_tests {
@@ -15,6 +15,7 @@ struct I2cControllerFixture {
     FakeInput input;
     FakeUtilityService utility;
     FakeI2cService i2cService;
+    FakeI2cSnifferService snifferService;
     FakeI2cEepromShell eepromShell;
     ArgTransformer transformer;
     UserInputManager userInput{view, input, transformer};
@@ -24,6 +25,7 @@ struct I2cControllerFixture {
         input,
         utility,
         i2cService,
+        snifferService,
         transformer,
         userInput,
         eepromShell,
@@ -442,8 +444,87 @@ void test_sniff_uses_current_pins_then_reconfigures_service() {
     TEST_ASSERT_EQUAL_UINT32(1, fakeI2cSnifferBeginCalls);
     TEST_ASSERT_EQUAL_UINT8(1, fakeI2cSnifferScl);
     TEST_ASSERT_EQUAL_UINT8(2, fakeI2cSnifferSda);
+    TEST_ASSERT_EQUAL_UINT32(1, fixture.i2cService.endCalls);
     TEST_ASSERT_EQUAL_UINT32(1, fixture.i2cService.configurations.size());
     TEST_ASSERT_TRUE(fixture.view.contains("I2C Sniffer: Stopped"));
+}
+
+void test_sniff_applies_address_filter_then_clears_it() {
+    I2cControllerFixture fixture;
+
+    fixture.controller.handleCommand(TerminalCommand("sniff", "0x53"));
+
+    TEST_ASSERT_EQUAL_UINT32(2, fakeI2cSnifferFilterCalls);
+    TEST_ASSERT_EQUAL_HEX8(0x53, fakeI2cSnifferLastEnabledAddress);
+    TEST_ASSERT_FALSE(fakeI2cSnifferFilterEnabled);
+    TEST_ASSERT_EQUAL_HEX8(0x00, fakeI2cSnifferFilterAddress);
+    TEST_ASSERT_TRUE(fixture.view.contains("Listening for address 0x53"));
+}
+
+void test_frequency_waits_without_timeout_and_restores_bus_without_changing_speed() {
+    I2cControllerFixture fixture;
+    fixture.snifferService.frequencyResult = {true, 30, 27, 400000, 2.5, 1.5, 1.0};
+    fixture.snifferService.onFrequencyMeasure = [&fixture]() {
+        TEST_ASSERT_EQUAL_UINT32(1, fixture.i2cService.endCalls);
+        TEST_ASSERT_TRUE(fixture.i2cService.configurations.empty());
+    };
+
+    fixture.controller.handleCommand(TerminalCommand("freq"));
+
+    TEST_ASSERT_EQUAL_UINT32(1, fixture.snifferService.frequencyCalls);
+    TEST_ASSERT_EQUAL_UINT8(1, fixture.snifferService.frequencyScl);
+    TEST_ASSERT_EQUAL_UINT32(0, fixture.snifferService.frequencyTimeoutMs);
+    TEST_ASSERT_EQUAL_UINT32(1, fixture.i2cService.configurations.size());
+    TEST_ASSERT_EQUAL_UINT8(2, fixture.i2cService.configurations[0].sda);
+    TEST_ASSERT_EQUAL_UINT8(1, fixture.i2cService.configurations[0].scl);
+    TEST_ASSERT_EQUAL_UINT32(100000, fixture.i2cService.configurations[0].frequency);
+    TEST_ASSERT_EQUAL_UINT32(100000, GlobalState::getInstance().getI2cFrequency());
+    TEST_ASSERT_TRUE(fixture.i2cService.beginAddresses.empty());
+    TEST_ASSERT_TRUE(fixture.view.contains("I2C Freq: Listening"));
+    TEST_ASSERT_TRUE(fixture.view.contains("[ENTER] to stop"));
+    TEST_ASSERT_TRUE(fixture.view.contains("Freq: 400.00 kHz"));
+    TEST_ASSERT_TRUE(fixture.view.contains("LOW: 1.50 us"));
+    TEST_ASSERT_TRUE(fixture.view.contains("HIGH: 1.00 us"));
+    TEST_ASSERT_TRUE(fixture.view.contains("Cycles: 27/30"));
+    TEST_ASSERT_TRUE(fixture.view.contains("Save frequency to the configuration? [n]"));
+    TEST_ASSERT_FALSE(fixture.view.contains("Frequency saved"));
+}
+
+void test_frequency_saves_detected_speed_only_after_confirmation() {
+    for (bool confirm : {false, true}) {
+        I2cControllerFixture fixture;
+        fixture.snifferService.frequencyResult = {true, 30, 27, 400000, 2.5, 1.5, 1.0};
+        fixture.input.queueLine(confirm ? "y" : "n");
+
+        fixture.controller.handleCommand(TerminalCommand("freq"));
+
+        TEST_ASSERT_EQUAL_UINT32(confirm ? 400000 : 100000,
+                                GlobalState::getInstance().getI2cFrequency());
+        TEST_ASSERT_EQUAL(confirm, fixture.view.contains("Frequency saved to configuration."));
+    }
+}
+
+void test_frequency_reports_unreliable_capture() {
+    I2cControllerFixture fixture;
+    fixture.controller.handleCommand(TerminalCommand("freq"));
+    TEST_ASSERT_TRUE(fixture.view.contains("Freq: No stable clock."));
+    TEST_ASSERT_FALSE(fixture.view.contains("kHz"));
+    TEST_ASSERT_EQUAL_UINT32(1, fixture.i2cService.configurations.size());
+}
+
+void test_frequency_failure_and_enter_cancellation_restore_bus() {
+    for (bool fail : {true, false}) {
+        I2cControllerFixture fixture;
+        fixture.snifferService.frequencySuccess = !fail;
+        fixture.snifferService.pollFrequencyCancellation = !fail;
+        fixture.input.queueReadChar('\n');
+        fixture.controller.handleCommand(TerminalCommand("freq"));
+        TEST_ASSERT_EQUAL_UINT32(1, fixture.i2cService.configurations.size());
+        TEST_ASSERT_TRUE(fixture.view.contains(fail ? "Freq error:" : "Stopped by user."));
+        TEST_ASSERT_EQUAL(!fail, fixture.snifferService.frequencyCancelled);
+        TEST_ASSERT_FALSE(fixture.view.contains("kHz"));
+        TEST_ASSERT_FALSE(fixture.view.contains("Save frequency"));
+    }
 }
 
 void test_release_frees_sniffer_and_forces_next_configuration_prompt() {
@@ -514,6 +595,11 @@ void runI2cControllerTests() {
     RUN_TEST(test_eeprom_delegates_valid_address_and_restores_i2c_config);
     RUN_TEST(test_eeprom_rejects_reserved_or_overflowing_address);
     RUN_TEST(test_sniff_uses_current_pins_then_reconfigures_service);
+    RUN_TEST(test_sniff_applies_address_filter_then_clears_it);
+    RUN_TEST(test_frequency_waits_without_timeout_and_restores_bus_without_changing_speed);
+    RUN_TEST(test_frequency_saves_detected_speed_only_after_confirmation);
+    RUN_TEST(test_frequency_reports_unreliable_capture);
+    RUN_TEST(test_frequency_failure_and_enter_cancellation_restore_bus);
     RUN_TEST(test_release_frees_sniffer_and_forces_next_configuration_prompt);
     RUN_TEST(test_identify_uses_known_address_database);
     RUN_TEST(test_unknown_command_displays_i2c_help);

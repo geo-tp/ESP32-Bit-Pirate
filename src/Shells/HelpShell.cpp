@@ -115,6 +115,11 @@ void HelpShell::cmdGeneral() {
         "P                    - Enable pull-up",
         "p                    - Disable pull-up",
         "",
+#if defined(DEVICE_S3DEVKIT) && defined(LED_PIN) && LED_TYPE_RGB
+        "Board LED: off HIZ, blue I2C, green SPI,",
+        "  yellow UART/HDUART, cyan 1WIRE, white other",
+        "",
+#endif
         "Tip: use 'mode' (or 'm')."
     };
 
@@ -181,7 +186,8 @@ void HelpShell::cmdI2c() {
         "discovery            - Report on devices",
         "ping <addr>          - Check ACK",
         "identify <addr>      - Identify device",
-        "sniff                - View traffic",
+        "sniff [addr]         - View/filter traffic",
+        "freq                 - Measure SCL clock",
         "slave <addr>         - Emulate I2C device",
         "read <addr> [reg]    - Read register",
         "write <a> [r] [val]  - Write register",

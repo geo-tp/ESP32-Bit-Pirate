@@ -139,6 +139,24 @@ void test_format_analysis_summarizes_empty_and_non_empty_results() {
     TEST_ASSERT_TRUE(formatted.find("0xFF bytes:      5.00%") != std::string::npos);
 }
 
+void test_analyze_bounds_findings_and_continues_counting_all_bytes() {
+    BinaryAnalyzerFixture fixture;
+    const uint32_t blocks = BinaryAnalyzer::maxFindingsPerType + 50;
+    for (uint32_t i = 0; i < blocks; ++i) fixture.input.queueReadChar(KEY_NONE);
+    const auto result = fixture.analyzer.analyze(0, blocks * 512,
+        [](uint32_t address, uint8_t* buffer, uint32_t size) {
+            for (uint32_t i = 0; i < size; ++i) {
+                const uint32_t position = (address + i) % 512;
+                const char signature[] = "\x89PNG password=example";
+                buffer[i] = position < sizeof(signature) - 1 ? signature[position] : 0;
+            }
+        });
+    TEST_ASSERT_EQUAL_UINT32(blocks * 512, result.totalBytes);
+    TEST_ASSERT_EQUAL_UINT32(BinaryAnalyzer::maxFindingsPerType, result.foundFiles.size());
+    TEST_ASSERT_EQUAL_UINT32(BinaryAnalyzer::maxFindingsPerType, result.foundSecrets.size());
+    TEST_ASSERT_TRUE(result.findingsTruncated);
+}
+
 }  // namespace binary_analyzer_tests
 
 void runBinaryAnalyzerTests() {
@@ -147,4 +165,5 @@ void runBinaryAnalyzerTests() {
     RUN_TEST(test_analyze_accumulates_printable_null_and_ff_stats);
     RUN_TEST(test_analyze_counts_partial_result_when_user_stops);
     RUN_TEST(test_format_analysis_summarizes_empty_and_non_empty_results);
+    RUN_TEST(test_analyze_bounds_findings_and_continues_counting_all_bytes);
 }

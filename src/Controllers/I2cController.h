@@ -12,7 +12,7 @@
 #include "States/GlobalState.h"
 #include "Transformers/ArgTransformer.h"
 #include "Managers/UserInputManager.h"
-#include "Vendors/i2c_sniffer.h"
+#include "Interfaces/II2cSnifferService.h"
 #include "Interfaces/II2cEepromShell.h"
 #include "Shells/HelpShell.h"
 #include "Data/I2cKnownAdresses.h"
@@ -20,7 +20,7 @@
 class I2cController {
 public:
     // Constructor
-    I2cController(ITerminalView& terminalView, IInput& terminalInput, IUtilityService& utilityService, II2cService& i2cService, ArgTransformer& argTransformer, UserInputManager& userInputManager, II2cEepromShell& eepromShell, HelpShell& helpShell);
+    I2cController(ITerminalView& terminalView, IInput& terminalInput, IUtilityService& utilityService, II2cService& i2cService, II2cSnifferService& i2cSnifferService, ArgTransformer& argTransformer, UserInputManager& userInputManager, II2cEepromShell& eepromShell, HelpShell& helpShell);
 
     // Entry point for I2C command
     void handleCommand(const TerminalCommand& cmd);
@@ -63,12 +63,14 @@ private:
     IInput& terminalInput;
     IUtilityService& utilityService;
     II2cService& i2cService;
+    II2cSnifferService& i2cSnifferService;
     ArgTransformer& argTransformer;
     UserInputManager& userInputManager;
     II2cEepromShell& eepromShell;
     HelpShell& helpShell;
     GlobalState& state = GlobalState::getInstance();
     bool configured = false;
+    std::string sniffLine; // lazily reserved on first sniff, released on I2C mode exit
     
     // Ping an I2C address
     void handlePing(const TerminalCommand& cmd);
@@ -77,7 +79,10 @@ private:
     void handleScan();
 
     // Start sniffing I2C traffic passively
-    void handleSniff();
+    void handleSniff(const TerminalCommand& cmd);
+
+    // Estimate external bus frequency from passive SCL observations
+    void handleFrequency();
 
     // Read data from an I2C device
     void handleRead(const TerminalCommand& cmd);

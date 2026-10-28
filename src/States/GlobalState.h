@@ -12,7 +12,7 @@
 class GlobalState {
 private:
     // Version
-    static constexpr const char* version = "1.7";
+    static constexpr const char* version = "1.8";
 
     //Pin in use
     std::vector<uint8_t> protectedPins;
@@ -29,6 +29,8 @@ private:
     uint8_t spiCLKPin = 40;
     uint8_t spiMISOPin = 39;
     uint8_t spiMOSIPin = 14;
+    int8_t spiWPPin = -1;
+    int8_t spiHOLDPin = -1;
     uint32_t spiFrequency = 20000000;
 
     // WiFi AP Credentials
@@ -36,7 +38,6 @@ private:
     static constexpr const char* apPassword = "readytoboard";
 
     // NVS
-    static constexpr const char* nvsNamespace = "wifi_settings";
     static constexpr const char* nvsSsidField = "ssid";
     static constexpr const char* nvsPasswordField = "pass";
     static constexpr const char* nvsHostnameField = "hostname";
@@ -215,12 +216,16 @@ public:
     uint8_t getSpiCLKPin() const { return spiCLKPin; }
     uint8_t getSpiMISOPin() const { return spiMISOPin; }
     uint8_t getSpiMOSIPin() const { return spiMOSIPin; }
+    int8_t getSpiWPPin() const { return spiWPPin; }
+    int8_t getSpiHOLDPin() const { return spiHOLDPin; }
     uint32_t getSpiFrequency() const { return spiFrequency; }
     
     void setSpiCSPin(uint8_t pin) { spiCSPin = pin; }
     void setSpiCLKPin(uint8_t pin) { spiCLKPin = pin; }
     void setSpiMISOPin(uint8_t pin) { spiMISOPin = pin; }
     void setSpiMOSIPin(uint8_t pin) { spiMOSIPin = pin; }
+    void setSpiWPPin(int8_t pin) { spiWPPin = pin; }
+    void setSpiHOLDPin(int8_t pin) { spiHOLDPin = pin; }
     void setSpiFrequency(uint32_t freq) { spiFrequency = freq; }
 
     // AP WiFi
@@ -494,9 +499,7 @@ public:
     size_t getFileCacheLimit() const { return fileCacheLimit; }
 
     // NVS
-    const char* getNvsNamespace() const { return nvsNamespace; }
     const char* getNvsPasswordField() const { return nvsPasswordField; }
-
     const char* getNvsSsidField() const { return nvsSsidField; }
 
     const char* getNvsHostnameField() const { return nvsHostnameField; }

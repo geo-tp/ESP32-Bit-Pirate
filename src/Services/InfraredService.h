@@ -1,6 +1,14 @@
 #pragma once
 
 #include <stdint.h>
+#include <stddef.h>
+#if defined(INFRARED_RMT) && defined(INFRARED_IREMOTE_ESP8266)
+#error "INFRARED_RMT requires Arduino-IRremote (remove INFRARED_IREMOTE_ESP8266)."
+#endif
+#if defined(INFRARED_RMT)
+#include <array>
+#include <esp32-hal-rmt.h>
+#endif
 #include <vector>
 #include <string>
 
@@ -48,6 +56,7 @@ private:
     enum class JamMode : uint8_t { CARRIER = 0, SWEEP = 1, RANDOM = 2 };
     inline static const uint16_t carrierKhz[] = {36, 38, 40, 56, 57, 58};
     inline static constexpr uint16_t kRawBufferSize = 512; //Increase raw buffer size from its default value of 100
+    inline static constexpr uint32_t IR_DEFAULT_FREQUENCY_KHZ = 38;
 
     // Helpers
     uint16_t getKaseikyoVendorIdCode(const std::string& input);
@@ -80,10 +89,32 @@ public:
         uint8_t density);
     std::vector<std::string> getCarrierStrings();
     std::vector<std::string> getJamModeStrings();
-private:        
+
+protected:
+    void configureTransmitter(uint8_t tx);
+    InfraredCommand decodeIrCommand(bool injected);
+
+    inline static constexpr uint32_t IR_DEFAULT_FREQUENCY_KHZ = 38;
+
+private:
+#if defined(INFRARED_RMT)
+    uint8_t rxPin = 0xFF;
+    bool receiving = false;
+#if defined(DEVICE_STICKS3)
+    bool restoreSpeaker = false;
+#endif
+    std::array<rmt_data_t, RMT_SYMBOLS_PER_CHANNEL_BLOCK * 3> rxSymbols{};
+    size_t rxSymbolCount = 0;
+    uint32_t lastFrameEndUs = 0;
+    uint16_t initialGapTicks = 0;
+    bool armReceiver();
+    bool receiveRmtRaw(std::vector<uint16_t>& timings, uint32_t& khz);
+    InfraredCommand receiveRmtCommand();
+#endif
     inline static constexpr uint16_t carrierKhz[] = {
         30, 33, 36, 38, 40, 42, 56
     };
+
     uint16_t getKaseikyoVendorIdCode(const std::string& input);
 };
 

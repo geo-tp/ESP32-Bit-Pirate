@@ -25,6 +25,7 @@ struct FileSignature {
 
 class BinaryAnalyzer {
 public:
+    static constexpr size_t maxFindingsPerType = 128;
     struct AnalysisResult {
         float avgEntropy;
         uint32_t totalBytes;
@@ -34,6 +35,7 @@ public:
         uint32_t ffTotal;
         std::vector<std::string> foundFiles;
         std::vector<std::string> foundSecrets;
+        bool findingsTruncated = false;
     };
 
     BinaryAnalyzer(ITerminalView& view, IInput& input);

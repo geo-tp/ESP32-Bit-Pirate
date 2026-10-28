@@ -77,6 +77,13 @@ public:
     uint8_t eepromDetectWriteTime(uint8_t testCount = 8) override;
 
 private:
+    mutable void* probeDevice = nullptr;
+    mutable uint32_t probeSpeed = 0;
+    uint8_t txAddress = 0;
+    bool txStarted = false;
+    bool probeAddress(uint8_t address);
+    void releaseProbeDevice() const;
+
     ExternalEEPROM eeprom;
     bool probeReadableReg(uint8_t addr, uint8_t reg);
 

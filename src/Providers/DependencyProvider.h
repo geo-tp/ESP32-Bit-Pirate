@@ -15,6 +15,7 @@ and injecting shared instances of core components
 #include "Services/UartService.h"
 #include "Services/UartSnifferService.h"
 #include "Services/I2cService.h"
+#include "Services/I2cSnifferService.h"
 #include "Services/OneWireService.h"
 #include "Services/TwoWireService.h"
 #include "Services/InfraredService.h"
@@ -135,6 +136,7 @@ public:
     LedService &getLedService();
     UartService &getUartService();
     I2cService &getI2cService();
+    I2cSnifferService &getI2cSnifferService();
     OneWireService &getOneWireService();
     TwoWireService &getTwoWireService();
     ThreeWireService& getThreeWireService();
@@ -266,6 +268,7 @@ private:
     UartService uartSnifferSecondPort;
     UartSnifferService uartSnifferService;
     I2cService i2cService;
+    I2cSnifferService i2cSnifferService;
     OneWireService oneWireService;
     TwoWireService twoWireService;
     ThreeWireService threeWireService;

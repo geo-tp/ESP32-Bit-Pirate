@@ -7,23 +7,33 @@
 #include <cstring>
 #include <sstream>
 #include <iomanip>
+#include <utility>
 
 BinaryAnalyzer::BinaryAnalyzer(ITerminalView& view, IInput& input)
     : terminalView(view), terminalInput(input) {}
 
 const char* BinaryAnalyzer::detectSensitivePattern(const uint8_t* buf, size_t size) {
     static const char* patterns[] = {
-        "-----BEGIN RSA PRIVATE KEY-----", "-----BEGIN PRIVATE KEY-----", "-----BEGIN CERTIFICATE-----",
-        "ssh-rsa", "ssh-ed25519", "password=", "pwd=", "pass:", "login:", "user:", "admin",
+        "-----BEGIN RSA PRIVATE KEY-----", "-----BEGIN DSA PRIVATE KEY-----", "-----BEGIN EC PRIVATE KEY-----",
+        "-----BEGIN OPENSSH PRIVATE KEY-----", "-----BEGIN PGP PRIVATE KEY BLOCK-----", "-----BEGIN PRIVATE KEY-----",
+        "-----BEGIN CERTIFICATE-----", "ssh-rsa", "ssh-ed25519", "ssh-dss", "ecdsa-sha2-",
+        "AKIA", "eyJhbGciOi", "root:$", "WPA-PSK", "psk=",
+        "api_key=", "apikey=", "secret=", "token=", "Authorization: Basic ", "Authorization: Bearer ",
+        "telnetd", "password=", "pwd=", "pass:", "login:", "user:", "admin",
         "http://", "https://", "ftp://", "CONFIG_", "ENV_", "PATH=", "HOME=", "DEVICE="
     };
     static const char* labels[] = {
-        "RSA Private Key", "Private Key", "Certificate", "SSH RSA Key", "SSH Ed25519 Key",
-        "Password", "Password", "Password", "Login", "Username", "Admin string",
+        "RSA Private Key", "DSA Private Key", "EC Private Key",
+        "OpenSSH Private Key", "PGP Private Key", "Private Key",
+        "Certificate", "SSH RSA Key", "SSH Ed25519 Key", "SSH DSA Key", "SSH ECDSA Key",
+        "AWS Access Key ID", "JWT Token", "Shadow Password Hash", "WiFi WPA PSK", "WiFi PSK",
+        "API Key", "API Key", "Secret", "Token", "HTTP Basic Auth", "HTTP Bearer Token",
+        "Telnet Daemon String", "Password", "Password", "Password", "Login", "Username", "Admin string",
         "URL", "URL", "FTP URL", "Config Variable", "Environment Variable",
         "Path Variable", "Home Variable", "Device Variable"
     };
     static const size_t patternCount = sizeof(patterns) / sizeof(patterns[0]);
+
 
     for (size_t i = 0; i < patternCount; ++i) {
         size_t len = strlen(patterns[i]);
@@ -86,6 +96,7 @@ BinaryAnalyzer::AnalysisResult BinaryAnalyzer::analyze(
     uint32_t printableTotal = 0, nullsTotal = 0, ffTotal = 0, blocks = 0;
     float entropySum = 0;
     std::vector<std::string> foundFiles, foundSecrets;
+    bool findingsTruncated = false;
     uint32_t totalBlocks = (totalSize - start) / blockSize;
     size_t dotIntervalSz = std::max<size_t>(totalBlocks / 30, (size_t)1);
     uint32_t dotInterval = (uint32_t)dotIntervalSz;
@@ -105,19 +116,23 @@ BinaryAnalyzer::AnalysisResult BinaryAnalyzer::analyze(
         nullsTotal += stats.nulls;
         ffTotal += stats.ff;
 
-        if (stats.signature) {
+        if (stats.signature && foundFiles.size() < maxFindingsPerType) {
             std::stringstream ss;
             ss << "0x" << std::hex << std::uppercase << std::setw(6) << std::setfill('0') << addr;
             ss << " → " << stats.signature;
             foundFiles.push_back(ss.str());
+        } else if (stats.signature) {
+            findingsTruncated = true;
         }
 
         const char* sensitive = detectSensitivePattern(buffer, readSize);
-        if (sensitive) {
+        if (sensitive && foundSecrets.size() < maxFindingsPerType) {
             std::stringstream ss;
             ss << "0x" << std::hex << std::uppercase << std::setw(6) << std::setfill('0') << addr;
             ss << " → Possible " << sensitive;
             foundSecrets.push_back(ss.str());
+        } else if (sensitive) {
+            findingsTruncated = true;
         }
 
         ++blocks;
@@ -134,7 +149,8 @@ BinaryAnalyzer::AnalysisResult BinaryAnalyzer::analyze(
     }
 
     float avgEntropy = (blocks > 0) ? (entropySum / blocks) : 0;
-    return {avgEntropy, blocks * blockSize, blocks, printableTotal, nullsTotal, ffTotal, foundFiles, foundSecrets};
+    return {avgEntropy, blocks * blockSize, blocks, printableTotal, nullsTotal, ffTotal,
+            std::move(foundFiles), std::move(foundSecrets), findingsTruncated};
 }
 
 std::string BinaryAnalyzer::formatAnalysis(const AnalysisResult& result) {
@@ -191,7 +207,11 @@ std::string BinaryAnalyzer::formatAnalysis(const AnalysisResult& result) {
         dataPct
     );
 
-    return std::string(line);
+    std::string summary(line);
+    if (result.findingsTruncated)
+        summary += "\nResult list limited to the first " + std::to_string(maxFindingsPerType) +
+                   " matches per type to conserve RAM. Statistics cover all analyzed bytes.\n";
+    return summary;
 }
 
 std::vector<std::string> BinaryAnalyzer::extractPrintableStrings(const uint8_t* buf, size_t size, size_t minLen) {
@@ -216,6 +236,8 @@ const FileSignature BinaryAnalyzer::knownSignatures[] = {
     // Executables / Boot
     { "ELF Executable",          (const uint8_t*)"\x7F""ELF", 4 },
     { "U-Boot uImage",           (const uint8_t*)"\x27\x05\x19\x56", 4 },
+    { "Device Tree Blob (FDT)",  (const uint8_t*)"\xD0\x0D\xFE\xED", 4 },
+    { "TRX Firmware Header",     (const uint8_t*)"HDR0", 4 },
 
     // Archives / Compression
     { "GZIP Archive",            (const uint8_t*)"\x1F\x8B", 2 },
@@ -224,10 +246,18 @@ const FileSignature BinaryAnalyzer::knownSignatures[] = {
     { "XZ Compressed",           (const uint8_t*)"\xFD\x37\x7A\x58\x5A\x00", 6 },
     { "LZMA compressed",         (const uint8_t*)"\x5D\x00\x00", 3 },
     { "LZ4 Frame",               (const uint8_t*)"\x04\x22\x4D\x18", 4 },
+    { "BZIP2 Compressed",        (const uint8_t*)"BZh", 3 },
+    { "Zstandard Compressed",    (const uint8_t*)"\x28\xB5\x2F\xFD", 4 },
+    { "LZO Compressed",          (const uint8_t*)"\x89LZO\x00\x0D\x0A\x1A\x0A", 9 },
+    { "RAR Archive",             (const uint8_t*)"Rar!\x1A\x07\x00", 7 },
+    { "MS Cabinet (CAB)",        (const uint8_t*)"MSCF", 4 },
+    { "CPIO Archive (newc)",     (const uint8_t*)"070701", 6 },
 
     // File systems
-    { "SquashFS",                (const uint8_t*)"hsqs", 4 },
-    { "CRAMFS",                  (const uint8_t*)"\x45\x3D\xCD\x28", 4 },
+    { "SquashFS (little-endian)", (const uint8_t*)"hsqs", 4 },
+    { "SquashFS (big-endian)",   (const uint8_t*)"sqsh", 4 },
+    { "CRAMFS (little-endian)",  (const uint8_t*)"\x45\x3D\xCD\x28", 4 },
+    { "CRAMFS (big-endian)",     (const uint8_t*)"\x28\xCD\x3D\x45", 4 },
     { "JFFS2",                   (const uint8_t*)"\x85\x19\x03\x20", 4 },
     { "UBI/UBIFS",               (const uint8_t*)"\x55\x42\x49\x23", 4 },
     { "Ext2/3/4 Superblock",     (const uint8_t*)"\x53\xEF", 2 }, // offset 0x438 en réalité

@@ -4,7 +4,7 @@
 // Base
 
 bool SubGhzService::configure(SPIClass& spi, uint8_t sck, uint8_t miso, uint8_t mosi, uint8_t ss,
-                              uint8_t gdo0, float mhz, int paDbm)
+                              uint8_t gdo0, float mhz, int paDbm, bool useCardputerAdvCap)
 {
     // Value assignment
     sck_ = sck; 
@@ -15,6 +15,14 @@ bool SubGhzService::configure(SPIClass& spi, uint8_t sck, uint8_t miso, uint8_t 
     mhz_ = mhz;
     paDbm_ = paDbm;
     ccMode_ = true;
+    rfSel_ = 0xFF; // Re-apply the RF path after each CC1101 initialization
+
+    #ifdef DEVICE_CARDPUTERADV
+    useCardputerAdvCap_ = useCardputerAdvCap;
+    #else
+    (void)useCardputerAdvCap;
+    useCardputerAdvCap_ = false;
+    #endif
 
     #ifdef DEVICE_TEMBEDS3CC1101
 
@@ -55,6 +63,7 @@ bool SubGhzService::configure(SPIClass& spi, uint8_t sck, uint8_t miso, uint8_t 
 
     ELECHOUSE_cc1101.setPA(paDbm_);
     ELECHOUSE_cc1101.SetRx(mhz_);
+    selectRfPathFor(mhz_);
 
     return isConfigured_;
 }
@@ -64,12 +73,7 @@ void SubGhzService::tune(float mhz)
     if (!isConfigured_) return;
     mhz_ = mhz;
     ELECHOUSE_cc1101.SetRx(mhz_);
-
-    #ifdef DEVICE_TEMBEDS3CC1101
-
     selectRfPathFor(mhz_);
-
-    #endif
 }
 
 int SubGhzService::measurePeakRssi(uint32_t holdMs)
@@ -572,6 +576,8 @@ bool SubGhzService::applyScanProfile(float dataRateKbps,
     ELECHOUSE_cc1101.setLengthConfig(1);
     ELECHOUSE_cc1101.setPacketLength(0xFF);
     ELECHOUSE_cc1101.SetRx(mhz_);
+    // setCCMode() rewrites IOCFG2, which drives the Cap's RF_SW1 line.
+    selectRfPathFor(mhz_, true);
     return true;
 }
 
@@ -591,7 +597,7 @@ bool SubGhzService::applyDefaultProfile(float mhz) {
     ELECHOUSE_cc1101.setCrc(false);
     ELECHOUSE_cc1101.setCRC_AF(false);
     ELECHOUSE_cc1101.setAdrChk(0);
-
+    selectRfPathFor(mhz, true);
     return true;
 }
 
@@ -610,6 +616,7 @@ bool SubGhzService::applySniffProfile(float mhz) {
     ELECHOUSE_cc1101.setDcFilterOff(true);
     ELECHOUSE_cc1101.setPktFormat(3);    // *** ASYNCHRONOUS SERIAL MODE ***
     ELECHOUSE_cc1101.SetRx(mhz);
+    selectRfPathFor(mhz);
     return true;
 }
 
@@ -627,6 +634,7 @@ bool SubGhzService::applyRawSendProfile(float mhz) {
     ELECHOUSE_cc1101.setDcFilterOff(true);
     ELECHOUSE_cc1101.setPktFormat(3);    // ASYNC SERIAL MODE (GDO0 = data)
     ELECHOUSE_cc1101.SetTx();
+    selectRfPathFor(mhz);
     return true;
 }
 
@@ -634,6 +642,7 @@ bool SubGhzService::applyPresetByName(const std::string& name, float mhz) {
     if (!isConfigured_) return false;
     ELECHOUSE_cc1101.setSidle();
     ELECHOUSE_cc1101.setMHZ(mhz);
+    selectRfPathFor(mhz);
 
     // Default
     ELECHOUSE_cc1101.setWhiteData(0);
@@ -904,6 +913,7 @@ void SubGhzService::deinitRfModule() {
     
     // Return to RX mode on last configured frequency
     ELECHOUSE_cc1101.SetRx(mhz_);
+    selectRfPathFor(mhz_);
 }
 
 
@@ -948,11 +958,8 @@ void SubGhzService::initTembed() {
     delay(50);
 }
 
-void SubGhzService::selectRfPathFor(float mhz) {
-    if (rfSw0_ < 0 || rfSw1_ < 0) return;
-
-    // Map CC1101 antenna to bands
-
+void SubGhzService::selectRfPathFor(float mhz, bool force) {
+    // Match the CC1101's supported bands to the available matching networks.
     uint8_t sel; // 0=315, 1=868/915, 2=433
     if (mhz >= 300.0f && mhz <= 348.0f) {
         sel = 0; // 315
@@ -965,9 +972,8 @@ void SubGhzService::selectRfPathFor(float mhz) {
         sel = 2;
     }
 
-    if (sel == rfSel_) return; // no change
-    rfSel_ = sel;
-
+    #ifdef DEVICE_TEMBEDS3CC1101
+    if (!force && sel == rfSel_) return;
     switch (sel) {
         case 0: // 315 MHz: SW1=1, SW0=0
             digitalWrite(rfSw1_, HIGH);
@@ -983,4 +989,29 @@ void SubGhzService::selectRfPathFor(float mhz) {
             digitalWrite(rfSw0_, HIGH);
             break;
     }
+    rfSel_ = sel;
+    #elif defined(DEVICE_CARDPUTERADV)
+    // The official Cap's RF_SW0 is GPIO13; RF_SW1 is CC1101 GDO2.
+    // Other CC1101 modules must never have their antenna switch driven here.
+    if (!useCardputerAdvCap_) return;
+    if (!force && sel == rfSel_) return;
+
+    // Cap CC1101 schematic V0.3 board-level truth table:
+    //   315 MHz     -> RF_SW0=0, RF_SW1=1
+    //   433 MHz     -> RF_SW0=1, RF_SW1=0
+    //   868/915 MHz -> RF_SW0=1, RF_SW1=1
+    // Do not use 0/0: the BGS13SN8 defines that state as RF isolation.
+    const bool sw0 = (sel != 0); // 433 and 868/915 MHz
+    const bool sw1 = (sel != 2); // 315 and 868/915 MHz
+    constexpr uint8_t kRfSw0Pin = 13;
+    pinMode(kRfSw0Pin, OUTPUT);
+    digitalWrite(kRfSw0Pin, sw0 ? HIGH : LOW);
+
+    // IOCFG2=0x2F forces GDO2 LOW; 0x6F uses GDO2_INV to force HIGH.
+    ELECHOUSE_cc1101.SpiWriteReg(CC1101_IOCFG2, sw1 ? 0x6F : 0x2F);
+    rfSel_ = sel;
+    #else
+    (void)sel;
+    (void)force;
+    #endif
 }

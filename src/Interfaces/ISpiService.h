@@ -11,7 +11,9 @@ class ISpiService {
 public:
     virtual ~ISpiService() = default;
 
-    virtual void configure(uint8_t mosi, uint8_t miso, uint8_t sclk, uint8_t cs, uint32_t frequency = 1000000) = 0;
+    // Optional active-low WP/HOLD lines are held HIGH in master mode; -1 disables them.
+    virtual void configure(uint8_t mosi, uint8_t miso, uint8_t sclk, uint8_t cs, uint32_t frequency = 1000000,
+                           int8_t wp = -1, int8_t hold = -1) = 0;
     virtual void end() = 0;
     virtual void beginTransaction() = 0;
     virtual void endTransaction() = 0;
@@ -20,12 +22,11 @@ public:
     virtual std::string readFlashID() = 0;
     virtual void readFlashIdRaw(uint8_t* buffer) = 0;
     virtual void readFlashData(uint32_t address, uint8_t* buffer, size_t length) = 0;
-    virtual uint32_t calculateFlashCapacity(uint8_t code) = 0;
-    virtual void eraseFlashSector(uint32_t address, uint32_t freq) = 0;
-    virtual void enableFlashWrite(uint32_t freq) = 0;
-    virtual void waitForFlashWriteComplete(uint32_t freq) = 0;
-    virtual void writeFlashPage(uint32_t address, const std::vector<uint8_t>& data, uint32_t freq) = 0;
-    virtual void writeFlashPatch(uint32_t address, const std::vector<uint8_t>& data, uint32_t freq) = 0;
+    virtual bool eraseFlashChip(uint32_t freq) = 0;
+    // Erases one database-defined block (4/32/64/256 KiB) at an aligned address.
+    virtual bool eraseFlashSector(uint32_t address, uint32_t freq) = 0;
+    virtual bool writeFlashPage(uint32_t address, const std::vector<uint8_t>& data, uint32_t freq) = 0;
+    virtual bool writeFlashPatch(uint32_t address, const std::vector<uint8_t>& data, uint32_t freq) = 0;
 
     virtual bool initEeprom(uint8_t mosi,
                             uint8_t miso,

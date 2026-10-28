@@ -1,21 +1,95 @@
 #include "I2cService.h"
 #include "driver/gpio.h"
+#include "esp_idf_version.h"
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 4, 0)
+#include "driver/i2c_master.h"
+#include "esp32-hal-i2c.h"
+#endif
 
 void I2cService::configure(uint8_t sda, uint8_t scl, uint32_t frequency) {
+    releaseProbeDevice();
     Wire.end();
     Wire.begin(sda, scl, frequency);
 }
 
 void I2cService::beginTransmission(uint8_t address) {
-    Wire.beginTransmission(address);
+    // Defer Wire.beginTransmission until there is data to send. Otherwise
+    // Arduino-ESP32 3.3.x uses i2c_master_probe() for address-only writes,
+    // which drives SCL at 100 kHz regardless of Wire.getClock().
+    txAddress = address;
+    txStarted = false;
 }
 
 void I2cService::write(uint8_t data) {
+    if (!txStarted) {
+        Wire.beginTransmission(txAddress);
+        txStarted = true;
+    }
     Wire.write(data);
 }
 
 bool I2cService::endTransmission(bool sendStop) {
-    return Wire.endTransmission(sendStop);
+    if (txStarted) {
+        txStarted = false;
+        return Wire.endTransmission(sendStop) != 0;
+    }
+
+    if (!sendStop) {
+        // Preserve Arduino's deferred repeated-START transaction semantics.
+        // The eventual requestFrom() supplies the actual transfer clock.
+        Wire.beginTransmission(txAddress);
+        return Wire.endTransmission(false) != 0;
+    }
+
+    // II2cService::endTransmission retains Arduino's error convention:
+    // false (0) means ACK/success; true means NACK/another error.
+    return !probeAddress(txAddress);
+}
+
+bool I2cService::probeAddress(uint8_t address) {
+    if (address > 0x7F || !i2cIsInit(Wire.getBusNum())) return false;
+
+    const uint32_t speed = Wire.getClock();
+    if (!speed) return false;
+    if (probeDevice && probeSpeed != speed) releaseProbeDevice();
+
+    if (!probeDevice) {
+        auto bus = static_cast<i2c_master_bus_handle_t>(i2cBusHandle(Wire.getBusNum()));
+        if (!bus) return false;
+
+        // The address is sent manually in the custom transaction below.
+        // A single on-demand handle is reused for all probes (e.g. scan).
+        i2c_device_config_t cfg = {};
+        cfg.dev_addr_length = I2C_ADDR_BIT_LEN_7;
+        cfg.device_address = I2C_DEVICE_ADDRESS_NOT_USED;
+        cfg.scl_speed_hz = speed;
+        i2c_master_dev_handle_t device = nullptr;
+        if (i2c_master_bus_add_device(bus, &cfg, &device) != ESP_OK) return false;
+        probeDevice = device;
+        probeSpeed = speed;
+    }
+
+    uint8_t addressByte = static_cast<uint8_t>(address << 1); // 7-bit address + WRITE
+    i2c_operation_job_t ops[3] = {};
+    ops[0].command = I2C_MASTER_CMD_START;
+    ops[1].command = I2C_MASTER_CMD_WRITE;
+    ops[1].write.data = &addressByte;
+    ops[1].write.total_bytes = 1;
+    ops[1].write.ack_check = true;
+    ops[2].command = I2C_MASTER_CMD_STOP;
+
+    return i2c_master_execute_defined_operations(
+        static_cast<i2c_master_dev_handle_t>(probeDevice), ops, 3, Wire.getTimeOut()) == ESP_OK;
+}
+
+void I2cService::releaseProbeDevice() const {
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 4, 0)
+    if (probeDevice) {
+        i2c_master_bus_rm_device(static_cast<i2c_master_dev_handle_t>(probeDevice));
+        probeDevice = nullptr;
+        probeSpeed = 0;
+    }
+#endif
 }
 
 uint8_t I2cService::requestFrom(uint8_t address, uint8_t quantity, bool sendStop) {
@@ -31,6 +105,7 @@ bool I2cService::available() const {
 }
 
 bool I2cService::end() const {
+    releaseProbeDevice();
     return Wire.end();
 }
 
@@ -48,7 +123,7 @@ std::string I2cService::executeByteCode(const std::vector<ByteCode>& bytecodes) 
 
             case ByteCodeEnum::Stop:
                 if (transmissionStarted) {
-                    Wire.endTransmission();
+                    endTransmission();
                     transmissionStarted = false;
                 }
                 break;
@@ -56,23 +131,23 @@ std::string I2cService::executeByteCode(const std::vector<ByteCode>& bytecodes) 
             case ByteCodeEnum::Write:
                 if (expectAddress) {
                     currentAddress = code.getData();
-                    Wire.beginTransmission(currentAddress);
+                    beginTransmission(currentAddress);
                     transmissionStarted = true;
                     expectAddress = false;
                 } else {
                     if (!transmissionStarted) {
-                        Wire.beginTransmission(currentAddress);
+                        beginTransmission(currentAddress);
                         transmissionStarted = true;
                     }
                     for (uint32_t i = 0; i < code.getRepeat(); ++i) {
-                        Wire.write(code.getData());
+                        write(code.getData());
                     }
                 }
                 break;
 
                 case ByteCodeEnum::Read: {
                     if (transmissionStarted) {
-                        Wire.endTransmission(false);  // release bus
+                        endTransmission(false);  // release bus
                         transmissionStarted = false;
                     }
 
@@ -105,7 +180,7 @@ std::string I2cService::executeByteCode(const std::vector<ByteCode>& bytecodes) 
 
     // If no end stop
     if (transmissionStarted) {
-        Wire.endTransmission();
+        endTransmission();
     }
 
     return result;
@@ -129,6 +204,7 @@ Slave
 */
 
 void I2cService::beginSlave(uint8_t address, uint8_t sda, uint8_t scl, uint32_t freq) {
+    releaseProbeDevice();
     Wire.end();
     Wire1.end();
     Wire1.begin(address, sda, scl, freq);

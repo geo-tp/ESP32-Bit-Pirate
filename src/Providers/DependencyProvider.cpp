@@ -18,6 +18,7 @@ DependencyProvider::DependencyProvider(ITerminalView &terminalView, IDeviceView 
       uartSnifferSecondPort(),
       uartSnifferService(uartSnifferFirstPort, &Serial1, uartSnifferSecondPort, &Serial2),
       i2cService(),
+      i2cSnifferService(),
       oneWireService(),
       twoWireService(),
       threeWireService(),
@@ -100,7 +101,7 @@ DependencyProvider::DependencyProvider(ITerminalView &terminalView, IDeviceView 
 
       // Controllers
       uartController(terminalView, terminalInput, deviceView, deviceInput, utilityService, uartService, sdService, hdUartService, uartSnifferService, argTransformer, userInputManager, uartAtShell, helpShell, uartEmulationShell),
-      i2cController(terminalView, terminalInput, utilityService, i2cService, argTransformer, userInputManager, i2cEepromShell, helpShell),
+      i2cController(terminalView, terminalInput, utilityService, i2cService, i2cSnifferService, argTransformer, userInputManager, i2cEepromShell, helpShell),
       oneWireController(terminalView, terminalInput, utilityService, oneWireService, argTransformer, userInputManager, ibuttonShell, oneWireEepromShell, helpShell),
       infraredController(terminalView, terminalInput, deviceView, utilityService, infraredService, littleFsService, i2cService, argTransformer, infraredTransformer, userInputManager, universalRemoteShell, helpShell),
       utilityController(terminalView, deviceView, terminalInput, utilityService, pinService, i2sService, userInputManager, pinAnalyzer, aliasManager, argTransformer, commandTransformer, sysInfoShell, guideShell, helpShell, profileShell),
@@ -142,6 +143,7 @@ SdService &DependencyProvider::getSdService() { return sdService; }
 NvsService &DependencyProvider::getNvsService() { return nvsService; }
 LedService &DependencyProvider::getLedService() { return ledService; }
 I2cService &DependencyProvider::getI2cService() { return i2cService; }
+I2cSnifferService &DependencyProvider::getI2cSnifferService() { return i2cSnifferService; }
 UartService &DependencyProvider::getUartService() { return uartService; }
 OneWireService &DependencyProvider::getOneWireService() { return oneWireService; }
 TwoWireService &DependencyProvider::getTwoWireService() { return twoWireService; }

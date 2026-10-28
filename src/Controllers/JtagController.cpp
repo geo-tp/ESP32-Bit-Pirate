@@ -79,9 +79,19 @@ void JtagController::handleScanJtag() {
         jtagCandidates,
         tdi, tdo, tck, tms, trst,
         ids,
-        true, // detect pullup
+        false, // blueTag default: keep active-low nTRST deasserted
         nullptr // callback progression
     );
+
+    if (!found) {
+        found = jtagService.scanJtagDevice(
+            jtagCandidates,
+            tdi, tdo, tck, tms, trst,
+            ids,
+            true, // retain pin pulsing as a fallback
+            nullptr
+        );
+    }
 
     if (found) {
         terminalView.println("\n JTAG device(s) found!");

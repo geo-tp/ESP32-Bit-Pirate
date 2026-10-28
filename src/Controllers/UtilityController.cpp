@@ -723,7 +723,9 @@ void UtilityController::handleAlias() {
 Help
 */
 void UtilityController::handleHelp() {
-    helpShell.run(state.getCurrentMode());
+    // In HiZ, let the user pick a mode, in an active mode, jump straight to its help
+    bool select = state.getCurrentMode() == ModeEnum::HIZ;
+    helpShell.run(state.getCurrentMode(), select);
 }
 
 /*

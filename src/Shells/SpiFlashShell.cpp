@@ -4,6 +4,7 @@
 #include <sstream>
 
 #include "Data/FlashDatabase.h"
+#include <algorithm>
 
 SpiFlashShell::SpiFlashShell(
     ISpiService& spiService,
@@ -84,7 +85,23 @@ void SpiFlashShell::cmdProbe() {
         terminalView.println("Manufacturer: " + std::string(chip->manufacturerName));
         terminalView.println("Model: " + std::string(chip->modelName));
         terminalView.println("Capacity: " +
-            std::to_string(chip->capacityBytes / (1024UL * 1024UL)) + " MB\n");
+            std::to_string(chip->capacityBytes) + " bytes");
+        const char* reason = flashCompatibilityError(chip);
+        if (reason) {
+            terminalView.println(reason);
+        } else {
+            terminalView.println(chip->capacityBytes > flashAddressLimit
+                ? "Read supported: 0x13 with 4-byte addresses."
+                : "Read supported: 0x03 with 3-byte addresses.");
+            reason = flashCompatibilityError(chip, FlashOperation::Program);
+            terminalView.println(reason ? reason : "Page programming supported.");
+            reason = flashCompatibilityError(chip, FlashOperation::ChipErase);
+            terminalView.println(reason ? reason : "Full-chip erase supported.");
+            reason = flashCompatibilityError(chip, FlashOperation::Patch);
+            if (reason) terminalView.println(reason);
+            terminalView.println(reason ? "Automatic block erase unavailable; program without erase or erase the whole chip first."
+                : "Automatic erase for byte writes: " + std::to_string(chip->eraseBlockBytes / 1024) + " KiB blocks.");
+        }
         return;
     }
 
@@ -92,16 +109,7 @@ void SpiFlashShell::cmdProbe() {
     const char* manufacturer = findManufacturerName(id[0]);
     terminalView.println("Manufacturer: " + std::string(manufacturer));
 
-    // Estimate Capacity
-    uint32_t size = 1UL << id[2];
-    std::stringstream sizeStr;
-    if (size >= (1024 * 1024)) {
-        sizeStr << (size / (1024 * 1024)) << " MB (guessed)";
-    } else {
-        sizeStr << size << " bytes (guessed)";
-    }
-    terminalView.println("Estimated capacity: " + sizeStr.str());
-    terminalView.println("");
+    terminalView.println("Capacity unknown; command profile unverified. Probe only.");
 }
 
 /*
@@ -118,7 +126,7 @@ void SpiFlashShell::cmdAnalyze() {
     uint8_t id[3];
     spiService.readFlashIdRaw(id);
     const FlashChipInfo* chip = findFlashInfo(id[0], id[1], id[2]);
-    uint32_t flashSize = chip ? chip->capacityBytes : spiService.calculateFlashCapacity(id[2]);
+    uint32_t flashSize = chip ? chip->capacityBytes : 0;
 
     // Analyze
     BinaryAnalyzer::AnalysisResult result = binaryAnalyzer.analyze(
@@ -173,12 +181,26 @@ void SpiFlashShell::cmdStrings() {
     uint32_t currentAddr = 0;
     uint32_t stringStartAddr = 0;
     bool inString = false;
+    bool lineOpen = false;
+    // Stream long strings in 512-byte pieces instead of retaining them in heap.
+    const auto flushString = [&](bool endOfString) {
+        if (lineOpen || currentStr.length() >= minStringLen) {
+            if (!lineOpen) {
+                terminalView.print("0x" + argTransformer.toHex(stringStartAddr, 6) + ": ");
+                lineOpen = true;
+            }
+            terminalView.print(currentStr);
+            if (endOfString) terminalView.println("");
+        }
+        currentStr.clear();
+        if (endOfString) lineOpen = false;
+    };
 
     // Get flash size
     uint8_t id[3];
     spiService.readFlashIdRaw(id);
     const FlashChipInfo* chip = findFlashInfo(id[0], id[1], id[2]);
-    uint32_t flashSize = chip ? chip->capacityBytes : spiService.calculateFlashCapacity(id[2]);
+    uint32_t flashSize = chip ? chip->capacityBytes : 0;
 
     // Read flash in chuncks
     for (uint32_t addr = 0; addr < flashSize; addr += blockSize) {
@@ -195,13 +217,9 @@ void SpiFlashShell::cmdStrings() {
                     stringStartAddr = absoluteAddr;
                 }
                 currentStr += static_cast<char>(b);
+                if (currentStr.length() == blockSize) flushString(false);
             } else {
-                if (inString && currentStr.length() >= minStringLen) {
-                    terminalView.println(
-                        "0x" + argTransformer.toHex(stringStartAddr, 6) + ": " + currentStr
-                    );
-                }
-                currentStr.clear();
+                if (inString) flushString(true);
                 inString = false;
             }
 
@@ -215,11 +233,7 @@ void SpiFlashShell::cmdStrings() {
     }
 
     // if remaining string
-    if (inString && currentStr.length() >= minStringLen) {
-        terminalView.println(
-            "0x" + argTransformer.toHex(stringStartAddr, 6) + ": " + currentStr
-        );
-    }
+    if (inString) flushString(true);
 
     terminalView.println("\nSPI Flash: String extraction complete.\n");
 }
@@ -236,6 +250,10 @@ void SpiFlashShell::cmdSearch() {
     // Search pattern
     terminalView.print("Enter string search pattern: ");
     std::string pattern = userInputManager.getLine();
+    if (pattern.empty() || pattern.size() > 32) {
+        terminalView.println("Search pattern must contain 1 to 32 bytes.");
+        return;
+    }
 
     terminalView.println("\nSearching for \"" + pattern + "\" in SPI flash from 0x" + argTransformer.toHex(startAddr, 6) + "... Press [ENTER] to stop.\n");
 
@@ -247,15 +265,16 @@ void SpiFlashShell::cmdSearch() {
     uint8_t id[3];
     spiService.readFlashIdRaw(id);
     const FlashChipInfo* chip = findFlashInfo(id[0], id[1], id[2]);
-    uint32_t flashSize = chip ? chip->capacityBytes : spiService.calculateFlashCapacity(id[2]);
+    uint32_t flashSize = chip ? chip->capacityBytes : 0;
 
     // Read flash in chunks
-    for (uint32_t addr = startAddr; addr < flashSize; addr += blockSize - pattern.size()) {
-        spiService.readFlashData(addr, buffer, blockSize + pattern.size() - 1);
+    for (uint32_t addr = startAddr; addr < flashSize; addr += blockSize) {
+        const uint32_t readSize = std::min<uint32_t>(blockSize + pattern.size() - 1, flashSize - addr);
+        spiService.readFlashData(addr, buffer, readSize);
         
         // Read block
-        for (uint32_t i = 0; i <= blockSize; ++i) {
-            if (i + pattern.size() > blockSize + pattern.size() - 1) break;
+        for (uint32_t i = 0; i < blockSize; ++i) {
+            if (i + pattern.size() > readSize) break;
 
             bool match = true;
             for (size_t j = 0; j < pattern.size(); ++j) {
@@ -287,7 +306,7 @@ void SpiFlashShell::cmdSearch() {
                 context += "]";
 
                 // After the pattern
-                for (uint32_t j = i + pattern.size(); j < i + pattern.size() + contextSize && j < blockSize + pattern.size(); ++j) {
+                for (uint32_t j = i + pattern.size(); j < i + pattern.size() + contextSize && j < readSize; ++j) {
                     char c = (char)buffer[j];
                     context += (isprint(c) ? c : '.');
                 }
@@ -316,6 +335,8 @@ void SpiFlashShell::cmdRead() {
     
     auto address = userInputManager.readValidatedUint32("Start address (dec or 0x hex)", 0, true);
     uint32_t count = userInputManager.readValidatedUint32("Number of bytes to read (dec or 0x hex)", 16);
+
+    if (!checkFlashRange(address, count)) return;
 
     // Read flash in chunks
     terminalView.println("SPI Flash Read: In progress... Press [ENTER] to stop");
@@ -397,17 +418,7 @@ uint32_t SpiFlashShell::readFlashCapacity() {
     uint8_t id[3];
     spiService.readFlashIdRaw(id);
     const FlashChipInfo* chip = findFlashInfo(id[0], id[1], id[2]);
-    uint32_t flashCapacity = 0;
-    if (chip) {
-        flashCapacity = chip->capacityBytes;
-    } else {
-        flashCapacity = spiService.calculateFlashCapacity(id[2]);
-        std::stringstream capStr;
-        capStr << "Estimated capacity from ID: " << (flashCapacity >> 20) << " MB";
-        terminalView.println(capStr.str());
-    }
-
-    return flashCapacity;   
+    return chip ? chip->capacityBytes : 0;
 }
 
 /*
@@ -415,7 +426,7 @@ Flash Write
 */
 void SpiFlashShell::cmdWrite() {
     // Vérifie présence
-    if (!checkFlashPresent()) return;
+    if (!checkFlashPresent(FlashOperation::Program)) return;
 
     // Adresse
     auto addr = userInputManager.readValidatedUint32("Start address (dec or 0x hex)", 0, true);
@@ -432,6 +443,22 @@ void SpiFlashShell::cmdWrite() {
         // Liste d'octets hexadécimaux
         std::string hexStr = userInputManager.readValidatedHexString("Enter byte values (e.g., 01 A5 FF...) ", 0, true);
         data = argTransformer.parseHexList(hexStr);
+    }
+
+    if (!checkFlashRange(addr, data.size())) return;
+    uint8_t id[3];
+    spiService.readFlashIdRaw(id);
+    const auto* chip = findFlashInfo(id[0], id[1], id[2]);
+    const char* patchError = flashCompatibilityError(chip, FlashOperation::Patch);
+    bool automaticErase = !patchError;
+    if (automaticErase) {
+        automaticErase = userInputManager.readYesNo("Automatically erase affected blocks and preserve surrounding bytes? (No: program without erase)", true);
+    } else {
+        terminalView.println(patchError);
+        terminalView.println("Programming without erase.");
+    }
+    if (!automaticErase) {
+        terminalView.println("The target bytes must already be erased or allow the requested bit changes.");
     }
 
     // Confirmation
@@ -451,7 +478,12 @@ void SpiFlashShell::cmdWrite() {
                          argTransformer.toHex(addr, 6));
 
     uint32_t freq = state.getSpiFrequency();
-    spiService.writeFlashPatch(addr, data, freq);
+    const bool success = automaticErase ? spiService.writeFlashPatch(addr, data, freq)
+                                        : spiService.writeFlashPage(addr, data, freq);
+    if (!success) {
+        terminalView.println("SPI Flash Write: Failed (erase required, protection, verification error, timeout or insufficient memory). Data may be partially modified.");
+        return;
+    }
 
     terminalView.println("SPI Flash Write: Complete.\n");
 }
@@ -461,7 +493,7 @@ Flash Erase
 */
 void SpiFlashShell::cmdErase() {
     // Check chip presence
-    if (!checkFlashPresent()) return;
+    if (!checkFlashPresent(FlashOperation::ChipErase)) return;
     
     terminalView.println("");
     if (!userInputManager.readYesNo("SPI Flash Erase: Erase entire flash memory?", false)) {
@@ -470,18 +502,10 @@ void SpiFlashShell::cmdErase() {
     }
 
     uint32_t freq = state.getSpiFrequency();
-    const uint32_t sectorSize = 4096; // standard
-    uint32_t flashSize = readFlashCapacity();
-
-    // Erase sectors and display progression
-    const uint32_t totalSectors = flashSize / sectorSize;
-    terminalView.print("In progress");
-    for (uint32_t i = 0; i < totalSectors; ++i) {
-        uint32_t addr = i * sectorSize;
-        spiService.eraseFlashSector(addr, freq);
-
-        // Display a dot
-        if (i % 64 == 0) terminalView.print(".");
+    terminalView.println("Erasing the entire chip and verifying... This can take several minutes.");
+    if (!spiService.eraseFlashChip(freq)) {
+        terminalView.println("SPI Flash Erase: Failed (protection, verification error or timeout). Memory may be partially erased.");
+        return;
     }
 
     terminalView.println("\r\nSPI Flash Erase: Complete.\n");
@@ -514,7 +538,7 @@ void SpiFlashShell::cmdDump(bool raw) {
 /*
 Check Chip
 */
-bool SpiFlashShell::checkFlashPresent() {
+bool SpiFlashShell::checkFlashPresent(FlashOperation operation) {
     uint8_t id[3];
     spiService.readFlashIdRaw(id);
 
@@ -526,5 +550,20 @@ bool SpiFlashShell::checkFlashPresent() {
         return false;
     }
 
+    const char* reason = flashCompatibilityError(findFlashInfo(id[0], id[1], id[2]), operation);
+    if (reason) {
+        terminalView.println(reason);
+        return false;
+    }
+    return true;
+}
+
+bool SpiFlashShell::checkFlashRange(uint32_t address, size_t length) {
+    uint8_t id[3];
+    spiService.readFlashIdRaw(id);
+    if (!flashRangeSupported(findFlashInfo(id[0], id[1], id[2]), address, length)) {
+        terminalView.println("Invalid range: operation must fit within the verified flash capacity and supported address space.");
+        return false;
+    }
     return true;
 }

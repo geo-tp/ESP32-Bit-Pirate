@@ -48,6 +48,8 @@ struct SpiControllerFixture {
         state.setSpiMISOPin(39);
         state.setSpiCLKPin(40);
         state.setSpiCSPin(12);
+        state.setSpiWPPin(-1);
+        state.setSpiHOLDPin(-1);
         state.setSpiFrequency(20000000);
     }
 };
@@ -77,12 +79,83 @@ void test_config_updates_state_and_configures_spi_service() {
     TEST_ASSERT_EQUAL_UINT8(12, config.sclk);
     TEST_ASSERT_EQUAL_UINT8(13, config.cs);
     TEST_ASSERT_EQUAL_UINT32(8000000, config.frequency);
+    TEST_ASSERT_EQUAL_INT(-1, config.wp);
+    TEST_ASSERT_EQUAL_INT(-1, config.hold);
+    TEST_ASSERT_FALSE(fixture.view.contains("WP GPIO"));
+    TEST_ASSERT_FALSE(fixture.view.contains("HOLD GPIO"));
     TEST_ASSERT_EQUAL_UINT8(10, GlobalState::getInstance().getSpiMOSIPin());
     TEST_ASSERT_EQUAL_UINT8(11, GlobalState::getInstance().getSpiMISOPin());
     TEST_ASSERT_EQUAL_UINT8(12, GlobalState::getInstance().getSpiCLKPin());
     TEST_ASSERT_EQUAL_UINT8(13, GlobalState::getInstance().getSpiCSPin());
     TEST_ASSERT_EQUAL_UINT32(8000000, GlobalState::getInstance().getSpiFrequency());
     TEST_ASSERT_TRUE(fixture.view.contains("SPI configured."));
+}
+
+void test_optional_pins_reject_bus_conflicts_and_are_restored() {
+    SpiControllerFixture fixture;
+    queueDefaultConfiguration(fixture);
+    fixture.input.queueLine("y");
+    fixture.input.queueLine("14"); // MOSI is already taken.
+    fixture.input.queueLine("10");
+    fixture.input.queueLine("10"); // WP is already taken.
+    fixture.input.queueLine("11");
+    fixture.controller.ensureConfigured();
+    fixture.controller.ensureConfigured();
+    TEST_ASSERT_TRUE(fixture.input.blockingChars.empty());
+    TEST_ASSERT_EQUAL_UINT8(10, fixture.spiService.configurations.back().wp);
+    TEST_ASSERT_EQUAL_UINT8(11, fixture.spiService.configurations.back().hold);
+    TEST_ASSERT_TRUE(fixture.view.contains("reserved/protected"));
+    const std::string prompt = "Use WP or HOLD ?";
+    const auto position = fixture.view.output.find(prompt);
+    TEST_ASSERT_TRUE(position != std::string::npos);
+    TEST_ASSERT_TRUE(fixture.view.output.find(prompt, position + prompt.size()) == std::string::npos);
+
+    fixture.input.queueReadChar('\n');
+    fixture.controller.handleCommand(TerminalCommand("slave"));
+    TEST_ASSERT_EQUAL_UINT8(10, fixture.spiService.configurations.back().wp);
+    TEST_ASSERT_EQUAL_UINT8(11, fixture.spiService.configurations.back().hold);
+
+    queueDefaultConfiguration(fixture);
+    fixture.input.queueLine("n");
+    fixture.controller.handleCommand(TerminalCommand("config"));
+    TEST_ASSERT_TRUE(fixture.input.blockingChars.empty());
+    TEST_ASSERT_EQUAL_INT(-1, fixture.spiService.configurations.back().wp);
+    TEST_ASSERT_EQUAL_INT(-1, fixture.spiService.configurations.back().hold);
+}
+
+void test_optional_pins_can_be_enabled_independently() {
+    for (bool useWp : {false, true}) {
+        SpiControllerFixture fixture;
+        queueDefaultConfiguration(fixture);
+        fixture.input.queueLine("y");
+        fixture.input.queueLine(useWp ? "10" : "");
+        fixture.input.queueLine(useWp ? "-1" : "11");
+        fixture.controller.ensureConfigured();
+        TEST_ASSERT_TRUE(fixture.input.blockingChars.empty());
+        TEST_ASSERT_EQUAL_INT(useWp ? 10 : -1, fixture.spiService.configurations.back().wp);
+        TEST_ASSERT_EQUAL_INT(useWp ? -1 : 11, fixture.spiService.configurations.back().hold);
+    }
+}
+
+void test_empty_optional_pins_disable_saved_pins_and_reject_out_of_range_values() {
+    SpiControllerFixture fixture;
+    GlobalState::getInstance().setSpiWPPin(10);
+    GlobalState::getInstance().setSpiHOLDPin(11);
+    queueDefaultConfiguration(fixture);
+    fixture.input.queueLine("y");
+    fixture.input.queueLine("-2");
+    fixture.input.queueLine("49");
+    fixture.input.queueLine(""); // Empty always disables, even with a saved pin.
+    fixture.input.queueLine("");
+    fixture.controller.handleCommand(TerminalCommand("config"));
+    TEST_ASSERT_TRUE(fixture.input.blockingChars.empty());
+    TEST_ASSERT_TRUE(fixture.view.contains("WP GPIO [-1]"));
+    TEST_ASSERT_TRUE(fixture.view.contains("HOLD GPIO [-1]"));
+    TEST_ASSERT_EQUAL_INT(-1, fixture.spiService.configurations.back().wp);
+    TEST_ASSERT_EQUAL_INT(-1, fixture.spiService.configurations.back().hold);
+    TEST_ASSERT_EQUAL_INT(-1, GlobalState::getInstance().getSpiWPPin());
+    TEST_ASSERT_EQUAL_INT(-1, GlobalState::getInstance().getSpiHOLDPin());
+    TEST_ASSERT_FALSE(fixture.view.contains("held HIGH"));
 }
 
 void test_ensure_configured_prompts_once_then_reapplies_saved_state() {
@@ -215,15 +288,19 @@ void test_sdcard_mount_runs_shell_then_restores_spi() {
     TEST_ASSERT_TRUE(fixture.view.contains("SD Card: Mounted successfully."));
 }
 
-void test_sdcard_mount_failure_does_not_run_shell_or_reconfigure() {
+void test_sdcard_mount_failure_restores_spi_and_control_pins() {
     SpiControllerFixture fixture;
     fixture.sdService.configureResult = false;
+    GlobalState::getInstance().setSpiWPPin(10);
+    GlobalState::getInstance().setSpiHOLDPin(11);
 
     fixture.controller.handleCommand(TerminalCommand("sdcard"));
 
     TEST_ASSERT_EQUAL_UINT32(1, fixture.sdService.configureCalls);
     TEST_ASSERT_EQUAL_UINT32(0, fixture.sdCardShell.runCalls);
-    TEST_ASSERT_TRUE(fixture.spiService.configurations.empty());
+    TEST_ASSERT_EQUAL_UINT32(1, fixture.spiService.configurations.size());
+    TEST_ASSERT_EQUAL_UINT8(10, fixture.spiService.configurations.back().wp);
+    TEST_ASSERT_EQUAL_UINT8(11, fixture.spiService.configurations.back().hold);
     TEST_ASSERT_TRUE(fixture.view.contains("SD Card: Mount failed."));
 }
 
@@ -241,6 +318,9 @@ void test_unknown_command_displays_spi_help() {
 void runSpiControllerTests() {
     using namespace spi_controller_tests;
     RUN_TEST(test_config_updates_state_and_configures_spi_service);
+    RUN_TEST(test_optional_pins_reject_bus_conflicts_and_are_restored);
+    RUN_TEST(test_optional_pins_can_be_enabled_independently);
+    RUN_TEST(test_empty_optional_pins_disable_saved_pins_and_reject_out_of_range_values);
     RUN_TEST(test_ensure_configured_prompts_once_then_reapplies_saved_state);
     RUN_TEST(test_instruction_delegates_bytecodes_and_prints_non_empty_result);
     RUN_TEST(test_instruction_keeps_terminal_quiet_for_empty_result);
@@ -248,6 +328,6 @@ void runSpiControllerTests() {
     RUN_TEST(test_sniff_mosi_and_miso_use_expected_slave_pin_mapping);
     RUN_TEST(test_flash_and_eeprom_delegate_to_shells);
     RUN_TEST(test_sdcard_mount_runs_shell_then_restores_spi);
-    RUN_TEST(test_sdcard_mount_failure_does_not_run_shell_or_reconfigure);
+    RUN_TEST(test_sdcard_mount_failure_restores_spi_and_control_pins);
     RUN_TEST(test_unknown_command_displays_spi_help);
 }

@@ -27,11 +27,13 @@ public:
     void rebootOpenOcdBusPirate() override;
     void rebootInfraredToy();
     void rebootSubGhzRawCdc();
+    void rebootSdrCdc();
 
 private:
     void rebootIntoAdapter(const char* title,
                            const char* description,
                            const char* example,
+                           const char* webTool = nullptr,
                            const char* returnInstruction = "Reset or press a device button to return to normal mode.");
 
     ITerminalView& terminalView;
@@ -51,6 +53,7 @@ private:
         " USB IR Toy / LIRC",
         " SubGHz CDC CC1101",
         " Bit Bang IO/SPI/I2C",
+        " ESP-SDR Raw 2.4GHz",
         " Exit"
     };
     inline static constexpr size_t actionsCount = sizeof(actions) / sizeof(actions[0]);

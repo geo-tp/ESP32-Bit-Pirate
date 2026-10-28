@@ -1,0 +1,360 @@
+name: Firmware Resource Delta
+
+on:
+  push:
+    branches:
+      - pioarduino
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: firmware-resource-delta-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  compare:
+    name: Compare RAM and Flash usage
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install PlatformIO
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          python -m pip install --upgrade platformio
+          pio --version
+
+      - name: Determine revisions
+        id: revisions
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          AFTER_SHA="${GITHUB_SHA}"
+          EVENT_BEFORE="${{ github.event.before }}"
+
+          if [[ -n "${EVENT_BEFORE}" ]] &&
+             [[ "${EVENT_BEFORE}" != "0000000000000000000000000000000000000000" ]]; then
+            BEFORE_SHA="${EVENT_BEFORE}"
+          else
+            BEFORE_SHA="$(git rev-parse "${AFTER_SHA}^")"
+          fi
+
+          echo "BEFORE_SHA=${BEFORE_SHA}" >> "$GITHUB_ENV"
+          echo "AFTER_SHA=${AFTER_SHA}" >> "$GITHUB_ENV"
+
+          echo "Before: ${BEFORE_SHA}"
+          echo "After:  ${AFTER_SHA}"
+
+      - name: Prepare isolated source trees
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          git worktree add --detach \
+            "${RUNNER_TEMP}/before" \
+            "${BEFORE_SHA}"
+
+          git worktree add --detach \
+            "${RUNNER_TEMP}/after" \
+            "${AFTER_SHA}"
+
+      - name: Build previous revision
+        id: before_build
+        continue-on-error: true
+        working-directory: ${{ runner.temp }}/before
+        env:
+          PLATFORMIO_CORE_DIR: ${{ runner.temp }}/pio-before
+          PLATFORMIO_NO_ANSI: "true"
+        shell: bash
+        run: |
+          set -o pipefail
+          pio run -e s3-devkit 2>&1 | tee "${RUNNER_TEMP}/before.log"
+
+      - name: Build current revision
+        id: after_build
+        continue-on-error: true
+        working-directory: ${{ runner.temp }}/after
+        env:
+          PLATFORMIO_CORE_DIR: ${{ runner.temp }}/pio-after
+          PLATFORMIO_NO_ANSI: "true"
+        shell: bash
+        run: |
+          set -o pipefail
+          pio run -e s3-devkit 2>&1 | tee "${RUNNER_TEMP}/after.log"
+
+      - name: Extract ELF section sizes
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          extract_sections() {
+            NAME="$1"
+            PROJECT="$2"
+            CORE="$3"
+
+            ELF="${PROJECT}/.pio/build/s3-devkit/firmware.elf"
+
+            if [[ ! -f "${ELF}" ]]; then
+              echo "No ELF available for ${NAME}"
+              return
+            fi
+
+            SIZE_TOOL="$(find "${CORE}/packages" \
+              -type f \
+              -name 'xtensa-esp32s3-elf-size' \
+              -print -quit)"
+
+            if [[ -z "${SIZE_TOOL}" ]]; then
+              SIZE_TOOL="$(find "${CORE}/packages" \
+                -type f \
+                -name '*-elf-size' \
+                -print -quit)"
+            fi
+
+            if [[ -z "${SIZE_TOOL}" ]]; then
+              echo "Could not locate ELF size tool for ${NAME}"
+              return
+            fi
+
+            "${SIZE_TOOL}" -A "${ELF}" \
+              > "${RUNNER_TEMP}/${NAME}-sections.txt"
+          }
+
+          extract_sections \
+            before \
+            "${RUNNER_TEMP}/before" \
+            "${RUNNER_TEMP}/pio-before"
+
+          extract_sections \
+            after \
+            "${RUNNER_TEMP}/after" \
+            "${RUNNER_TEMP}/pio-after"
+
+      - name: Generate resource comparison
+        if: always()
+        env:
+          BEFORE_STATUS: ${{ steps.before_build.outcome }}
+          AFTER_STATUS: ${{ steps.after_build.outcome }}
+        shell: bash
+        run: |
+          python <<'PY'
+          import os
+          import re
+          from pathlib import Path
+
+          root = Path(os.environ["RUNNER_TEMP"])
+
+          def parse_build(name):
+              path = root / f"{name}.log"
+              if not path.exists():
+                  return {}
+
+              text = path.read_text(errors="replace")
+
+              ram = re.search(
+                  r"RAM:\s+\[[^\]]*\]\s+([\d.]+)%\s+"
+                  r"\(used\s+(\d+)\s+bytes from\s+(\d+)\s+bytes\)",
+                  text,
+              )
+
+              flash = re.search(
+                  r"Flash:\s+\[[^\]]*\]\s+([\d.]+)%\s+"
+                  r"\(used\s+(\d+)\s+bytes from\s+(\d+)\s+bytes\)",
+                  text,
+              )
+
+              return {
+                  "ram": int(ram.group(2)) if ram else None,
+                  "ram_total": int(ram.group(3)) if ram else None,
+                  "ram_pct": float(ram.group(1)) if ram else None,
+                  "flash": int(flash.group(2)) if flash else None,
+                  "flash_total": int(flash.group(3)) if flash else None,
+                  "flash_pct": float(flash.group(1)) if flash else None,
+              }
+
+          def parse_sections(name):
+              path = root / f"{name}-sections.txt"
+
+              if not path.exists():
+                  return {}
+
+              sections = {}
+
+              for line in path.read_text(errors="replace").splitlines():
+                  parts = line.split()
+
+                  if len(parts) < 2:
+                      continue
+
+                  section = parts[0]
+
+                  if not section.startswith("."):
+                      continue
+
+                  try:
+                      size = int(parts[1], 0)
+                  except ValueError:
+                      continue
+
+                  sections[section] = size
+
+              return sections
+
+          def bin_size(name):
+              path = (
+                  root
+                  / name
+                  / ".pio"
+                  / "build"
+                  / "s3-devkit"
+                  / "firmware.bin"
+              )
+
+              return path.stat().st_size if path.exists() else None
+
+          def fmt(value):
+              return f"{value:,} B" if value is not None else "n/a"
+
+          def delta(before, after):
+              if before is None or after is None:
+                  return "n/a"
+
+              value = after - before
+
+              if value > 0:
+                  return f"🔺 +{value:,} B"
+              if value < 0:
+                  return f"🟢 {value:,} B"
+
+              return "0 B"
+
+          before = parse_build("before")
+          after = parse_build("after")
+
+          before_bin = bin_size("before")
+          after_bin = bin_size("after")
+
+          lines = [
+              "# Firmware Resource Delta",
+              "",
+              "`s3-devkit`",
+              "",
+              "| Resource | Before | After | Delta |",
+              "|---|---:|---:|---:|",
+              f"| Static RAM | {fmt(before.get('ram'))} | "
+              f"{fmt(after.get('ram'))} | "
+              f"{delta(before.get('ram'), after.get('ram'))} |",
+              f"| Flash | {fmt(before.get('flash'))} | "
+              f"{fmt(after.get('flash'))} | "
+              f"{delta(before.get('flash'), after.get('flash'))} |",
+              f"| firmware.bin | {fmt(before_bin)} | "
+              f"{fmt(after_bin)} | "
+              f"{delta(before_bin, after_bin)} |",
+              "",
+          ]
+
+          before_sections = parse_sections("before")
+          after_sections = parse_sections("after")
+
+          section_names = set(before_sections) | set(after_sections)
+
+          changed = []
+
+          for section in section_names:
+              old = before_sections.get(section, 0)
+              new = after_sections.get(section, 0)
+              diff = new - old
+
+              if diff:
+                  changed.append(
+                      (abs(diff), section, old, new, diff)
+                  )
+
+          changed.sort(reverse=True)
+
+          if changed:
+              lines += [
+                  "## Changed ELF sections",
+                  "",
+                  "| Section | Before | After | Delta |",
+                  "|---|---:|---:|---:|",
+              ]
+
+              for _, section, old, new, diff in changed:
+                  lines.append(
+                      f"| `{section}` | {old:,} B | {new:,} B | "
+                      f"{'+' if diff > 0 else ''}{diff:,} B |"
+                  )
+
+              lines.append("")
+          else:
+              lines += [
+                  "## ELF sections",
+                  "",
+                  "No section size changes detected.",
+                  "",
+              ]
+
+          lines += [
+              "### Revisions",
+              "",
+              f"- Before: `{os.environ['BEFORE_SHA']}`",
+              f"- After: `{os.environ['AFTER_SHA']}`",
+              "",
+              "> RAM reported by PlatformIO is static RAM usage. "
+              "It does not represent runtime heap usage after boot.",
+              "",
+          ]
+
+          summary = "\n".join(lines)
+
+          print(summary)
+
+          with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as f:
+              f.write(summary)
+
+          (root / "resource-delta.md").write_text(summary)
+
+          PY
+
+      - name: Upload detailed report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: firmware-resource-delta
+          path: |
+            ${{ runner.temp }}/resource-delta.md
+            ${{ runner.temp }}/before.log
+            ${{ runner.temp }}/after.log
+            ${{ runner.temp }}/before-sections.txt
+            ${{ runner.temp }}/after-sections.txt
+          if-no-files-found: ignore
+          retention-days: 30
+
+      - name: Fail if a build failed
+        if: always()
+        env:
+          BEFORE_STATUS: ${{ steps.before_build.outcome }}
+          AFTER_STATUS: ${{ steps.after_build.outcome }}
+        shell: bash
+        run: |
+          if [[ "${BEFORE_STATUS}" != "success" ||
+                "${AFTER_STATUS}" != "success" ]]; then
+            echo "One of the comparison builds failed."
+            exit 1
+          fi

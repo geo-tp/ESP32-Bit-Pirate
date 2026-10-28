@@ -2,6 +2,8 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <array>
+#include <functional>
 #include <string>
 #include <vector>
 
@@ -15,6 +17,8 @@ public:
         uint8_t sclk = 0;
         uint8_t cs = 0;
         uint32_t frequency = 0;
+        int8_t wp = -1;
+        int8_t hold = -1;
     };
 
     struct SlaveCall {
@@ -35,9 +39,14 @@ public:
     uint32_t endTransactionCalls = 0;
     std::vector<uint8_t> transfers;
     bool slave = false;
+    std::array<uint8_t, 3> flashId{};
+    std::function<void(uint32_t, uint8_t*, size_t)> flashReader;
+    uint32_t pageWriteCalls = 0;
+    uint32_t patchWriteCalls = 0;
 
-    void configure(uint8_t mosi, uint8_t miso, uint8_t sclk, uint8_t cs, uint32_t frequency = 1000000) override {
-        configurations.push_back({mosi, miso, sclk, cs, frequency});
+    void configure(uint8_t mosi, uint8_t miso, uint8_t sclk, uint8_t cs, uint32_t frequency = 1000000,
+                   int8_t wp = -1, int8_t hold = -1) override {
+        configurations.push_back({mosi, miso, sclk, cs, frequency, wp, hold});
     }
 
     void end() override {
@@ -56,20 +65,17 @@ public:
     std::string readFlashID() override { return ""; }
     void readFlashIdRaw(uint8_t* buffer) override {
         if (buffer == nullptr) return;
-        buffer[0] = 0;
-        buffer[1] = 0;
-        buffer[2] = 0;
+        for (size_t i = 0; i < flashId.size(); ++i) buffer[i] = flashId[i];
     }
-    void readFlashData(uint32_t, uint8_t* buffer, size_t length) override {
+    void readFlashData(uint32_t address, uint8_t* buffer, size_t length) override {
         if (buffer == nullptr) return;
+        if (flashReader) { flashReader(address, buffer, length); return; }
         for (size_t i = 0; i < length; ++i) buffer[i] = 0;
     }
-    uint32_t calculateFlashCapacity(uint8_t) override { return 0; }
-    void eraseFlashSector(uint32_t, uint32_t) override {}
-    void enableFlashWrite(uint32_t) override {}
-    void waitForFlashWriteComplete(uint32_t) override {}
-    void writeFlashPage(uint32_t, const std::vector<uint8_t>&, uint32_t) override {}
-    void writeFlashPatch(uint32_t, const std::vector<uint8_t>&, uint32_t) override {}
+    bool eraseFlashChip(uint32_t) override { return true; }
+    bool eraseFlashSector(uint32_t, uint32_t) override { return true; }
+    bool writeFlashPage(uint32_t, const std::vector<uint8_t>&, uint32_t) override { ++pageWriteCalls; return true; }
+    bool writeFlashPatch(uint32_t, const std::vector<uint8_t>&, uint32_t) override { ++patchWriteCalls; return true; }
 
     bool initEeprom(uint8_t, uint8_t, uint8_t, uint8_t, uint16_t, uint32_t, uint16_t = 255, bool = false) override {
         return true;

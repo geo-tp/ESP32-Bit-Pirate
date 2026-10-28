@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Interfaces/ITerminalView.h"
+#include "Data/FlashDatabase.h"
 #include "Interfaces/IInput.h"
 #include "Interfaces/IShell.h"
 #include "Managers/UserInputManager.h"
@@ -57,5 +58,6 @@ private:
     void readFlashInChunks(uint32_t address, uint32_t length);
     void readFlashInChunksRaw(uint32_t address, uint32_t length);
     uint32_t readFlashCapacity();
-    bool checkFlashPresent();
+    bool checkFlashPresent(FlashOperation operation = FlashOperation::Read);
+    bool checkFlashRange(uint32_t address, size_t length);
 };

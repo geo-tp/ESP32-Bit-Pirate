@@ -94,7 +94,10 @@ void SubGhzController::handleScan(const TerminalCommand& cmd) {
     // Ask to save best frequency if above threshold
     if (!idx.empty() && best[idx[0]] > -120) {
         auto confirm = userInputManager.readYesNo(" Save tuning to best frequency (" + argTransformer.toFixed2(freqs[idx[0]]) + " MHz)?", true);
-        if (!confirm) return;
+        if (!confirm) {
+            subGhzService.tune(state.getSubGhzFrequency());
+            return;
+        }
         subGhzService.tune(freqs[idx[0]]);
         terminalView.println(" [FREQ] Saving to config: " + argTransformer.toFixed2(freqs[idx[0]]) + " MHz\n");
         state.setSubGhzFrequency(freqs[idx[0]]);
@@ -1039,28 +1042,39 @@ Config CC1101
 bool SubGhzController::handleConfig() {
     terminalView.println("\nSubGHz Configuration:");
 
-    auto forbidden = state.getProtectedPins();    
+    bool useCardputerAdvCap = false;
+    #ifdef DEVICE_CARDPUTERADV
+    useCardputerAdvCap = userInputManager.readYesNo("Use Cardputer ADV CC1101 Cap?", true);
+    #endif
 
-    // CC1101 pins
-    uint8_t sck  = userInputManager.readValidatedPinNumber("CC1101 SCK GPIO",  state.getSubGhzSckPin(),  forbidden);
+    uint8_t sck, miso, mosi, ss, gdo0;
+    if (useCardputerAdvCap) {
+        // Official Cardputer ADV Cap CC1101 pinout by default
+        sck = state.getSubGhzSckPin();
+        miso = state.getSubGhzMisoPin();
+        mosi = state.getSubGhzMosiPin();
+        ss = state.getSubGhzCsPin();
+        gdo0 = state.getSubGhzGdoPin();
+        terminalView.println("Using Cardputer ADV CC1101 Cap pins and RF switch.");
+    } else {
+        auto forbidden = state.getProtectedPins();
+
+        sck = userInputManager.readValidatedPinNumber("CC1101 SCK GPIO", state.getSubGhzSckPin(), forbidden);
+        forbidden.push_back(sck);
+        miso = userInputManager.readValidatedPinNumber("CC1101 MISO GPIO", state.getSubGhzMisoPin(), forbidden);
+        forbidden.push_back(miso);
+        mosi = userInputManager.readValidatedPinNumber("CC1101 MOSI GPIO", state.getSubGhzMosiPin(), forbidden);
+        forbidden.push_back(mosi);
+        ss = userInputManager.readValidatedPinNumber("CC1101 SS/CS GPIO", state.getSubGhzCsPin(), forbidden);
+        forbidden.push_back(ss);
+        gdo0 = userInputManager.readValidatedPinNumber("CC1101 GDO0 GPIO", state.getSubGhzGdoPin(), forbidden);
+    }
+
     state.setSubGhzSckPin(sck);
-    forbidden.push_back(sck);
-
-    uint8_t miso = userInputManager.readValidatedPinNumber("CC1101 MISO GPIO", state.getSubGhzMisoPin(), forbidden);
     state.setSubGhzMisoPin(miso);
-    forbidden.push_back(miso);
-
-    uint8_t mosi = userInputManager.readValidatedPinNumber("CC1101 MOSI GPIO", state.getSubGhzMosiPin(), forbidden);
     state.setSubGhzMosiPin(mosi);
-    forbidden.push_back(mosi);
-
-    uint8_t ss   = userInputManager.readValidatedPinNumber("CC1101 SS/CS GPIO", state.getSubGhzCsPin(), forbidden);
     state.setSubGhzCsPin(ss);
-    forbidden.push_back(ss);
-
-    uint8_t gdo0 = userInputManager.readValidatedPinNumber("CC1101 GDO0 GPIO", state.getSubGhzGdoPin(), forbidden);
     state.setSubGhzGdoPin(gdo0);
-    forbidden.push_back(gdo0);
 
     float freq = state.getSubGhzFrequency(); 
     
@@ -1068,7 +1082,7 @@ bool SubGhzController::handleConfig() {
     auto isConfigured = subGhzService.configure(
         deviceView.getSharedSpiInstance(),
         sck, miso, mosi, ss,
-        gdo0, freq
+        gdo0, freq, 10, useCardputerAdvCap
     );
 
     // CC1101 feedback
@@ -1080,9 +1094,9 @@ bool SubGhzController::handleConfig() {
 
         if (state.getTerminalMode() != TerminalTypeEnum::Standalone) {
             terminalView.println("\n [ℹ️  INFORMATION] ");
-            terminalView.println(" For SubGHz features, use **USB** connection.");
-            terminalView.println(" It offers lower latency and reliable logging.");
-            terminalView.println(" The Web UI can introduce delays and miss pulses.\n");
+            terminalView.println(" Use an antenna suited for the target frequency band.");
+            terminalView.println(" For some commands, the frequency must be set precisely.");
+            terminalView.println(" Example: use 433.92 MHz rather than 433 MHz for best results.\n");
         }
         
         // Apply settings

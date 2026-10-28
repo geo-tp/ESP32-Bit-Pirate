@@ -1,18 +1,42 @@
 #include "Services/SpiService.h"
+#include "Data/FlashDatabase.h"
 #include <ESP32SPISlave.h>
 #include "driver/spi_slave.h"
+#include "driver/gpio.h"
+#include "esp_heap_caps.h"
+#include <algorithm>
+#include <cstdlib>
+#include <memory>
 
-void SpiService::configure(uint8_t mosi, uint8_t miso, uint8_t sclk, uint8_t cs, uint32_t frequency) {
+void SpiService::configure(uint8_t mosi, uint8_t miso, uint8_t sclk, uint8_t cs, uint32_t frequency,
+                           int8_t wp, int8_t hold) {
     end();
     csPin = cs;
     spiFrequency = frequency;
     SPI.begin(sclk, miso, mosi, cs);
+    // Preload the output latch before enabling outputs (digitalWrite requires
+    // pinMode first on Arduino-ESP32 3.x). Keep CS inactive before WP/HOLD.
+    gpio_set_level(static_cast<gpio_num_t>(cs), HIGH);
     pinMode(cs, OUTPUT);
-    digitalWrite(cs, HIGH);
+    const auto validControlPin = [=](int8_t pin) {
+        return pin >= 0 && GPIO_IS_VALID_OUTPUT_GPIO(pin) &&
+               pin != mosi && pin != miso && pin != sclk && pin != cs;
+    };
+    wpPin = validControlPin(wp) ? wp : -1;
+    holdPin = validControlPin(hold) && hold != wpPin ? hold : -1;
+    for (int8_t pin : {wpPin, holdPin}) {
+        if (pin < 0) continue;
+        gpio_set_level(static_cast<gpio_num_t>(pin), HIGH);
+        pinMode(pin, OUTPUT);
+    }
 }
 
 void SpiService::end() {
     SPI.end();
+    for (int8_t pin : {wpPin, holdPin}) {
+        if (pin >= 0) pinMode(pin, INPUT);
+    }
+    wpPin = holdPin = -1;
 }
 
 void SpiService::beginTransaction() {
@@ -53,125 +77,230 @@ void SpiService::readFlashIdRaw(uint8_t* buffer) {
     endTransaction();
 }
 
-uint32_t SpiService::calculateFlashCapacity(uint8_t code) {
-    // code 0x11 = 2^17 = 128 KB, etc.
-    if (code >= 0x11 && code <= 0x20) {
-        return 1UL << code;  // 2^code
-    }
-    return 0; // Non standard
-}
-
 void SpiService::readFlashData(uint32_t address, uint8_t* buffer, size_t length) {
-    beginTransaction();
-    SPI.transfer(0x03);  // Read Data command
+    uint8_t id[3];
+    readFlashIdRaw(id);
+    flashReadAt(findFlashInfo(id[0], id[1], id[2]), spiFrequency, address, buffer, length);
+}
+
+bool SpiService::eraseFlashSector(uint32_t address, uint32_t freq) {
+    uint8_t id[3];
+    readFlashIdRaw(id);
+    return flashEraseBlockAt(findFlashInfo(id[0], id[1], id[2]), freq, address);
+}
+
+bool SpiService::eraseFlashChip(uint32_t freq) {
+    uint8_t id[3];
+    readFlashIdRaw(id);
+    return flashEraseChipAt(findFlashInfo(id[0], id[1], id[2]), freq);
+}
+
+bool SpiService::writeFlashPage(uint32_t address, const std::vector<uint8_t>& data, uint32_t freq) {
+    uint8_t id[3];
+    readFlashIdRaw(id);
+    return flashProgramAt(findFlashInfo(id[0], id[1], id[2]), freq, address, data.data(), data.size());
+}
+
+bool SpiService::writeFlashPatch(uint32_t address, const std::vector<uint8_t>& data, uint32_t freq) {
+    uint8_t id[3];
+    readFlashIdRaw(id);
+    const uint32_t caps = MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT;
+    const size_t available = flashPatchAvailableMemory(heap_caps_get_free_size(caps),
+                                                       heap_caps_get_largest_free_block(caps));
+    return flashPatchAt(findFlashInfo(id[0], id[1], id[2]), freq, address, data.data(), data.size(), available);
+}
+
+// #### SPI FLASH PROTOCOL ######
+// Dedicated transaction at the caller's frequency; independent of the configured bus speed.
+void SpiService::flashBeginTransaction(uint32_t frequency) {
+    SPI.beginTransaction(SPISettings(frequency, MSBFIRST, SPI_MODE0));
+    digitalWrite(csPin, LOW);
+}
+
+void SpiService::flashEndTransaction() {
+    digitalWrite(csPin, HIGH);
+    SPI.endTransaction();
+}
+
+void SpiService::flashSendAddress(uint32_t address, bool fourByte) {
+    if (fourByte) SPI.transfer((address >> 24) & 0xFF);
     SPI.transfer((address >> 16) & 0xFF);
     SPI.transfer((address >> 8) & 0xFF);
     SPI.transfer(address & 0xFF);
+}
 
-    for (size_t i = 0; i < length; ++i) {
-        buffer[i] = SPI.transfer(0x00);
+// Dedicated 0x13 addresses the entire large chip without changing its address mode.
+bool SpiService::flashReadAt(const FlashChipInfo* chip, uint32_t frequency, uint32_t address,
+                             uint8_t* buffer, size_t length) {
+    if (!buffer || !flashRangeSupported(chip, address, length)) return false;
+    const bool fourByte = chip->capacityBytes > flashAddressLimit;
+    flashBeginTransaction(frequency);
+    SPI.transfer(fourByte ? 0x13 : 0x03);
+    flashSendAddress(address, fourByte);
+    for (size_t i = 0; i < length; ++i) buffer[i] = SPI.transfer(0x00);
+    flashEndTransaction();
+    return true;
+}
+
+void SpiService::flashCooperate(uint32_t& lastYield) {
+    const uint32_t now = millis();
+    if (static_cast<uint32_t>(now - lastYield) >= 20) {
+        delay(1); // Allow idle/watchdog tasks during long scans and fast writes.
+        lastYield = millis();
     }
-    endTransaction();
 }
 
-void SpiService::eraseFlashSector(uint32_t address, uint32_t freq) {
-    enableFlashWrite(freq);  // 0x06
-
-    SPI.beginTransaction(SPISettings(freq, MSBFIRST, SPI_MODE0));
-    digitalWrite(csPin, LOW);
-
-    SPI.transfer(0x20); // Sector erase
-    SPI.transfer((address >> 16) & 0xFF);
-    SPI.transfer((address >> 8) & 0xFF);
-    SPI.transfer(address & 0xFF);
-
-    digitalWrite(csPin, HIGH);
-    SPI.endTransaction();
-
-    waitForFlashWriteComplete(freq);
+void SpiService::flashCommand(uint32_t frequency, uint8_t opcode) {
+    flashBeginTransaction(frequency);
+    SPI.transfer(opcode);
+    flashEndTransaction();
 }
 
-void SpiService::enableFlashWrite(uint32_t freq) {
-
-    SPI.beginTransaction(SPISettings(freq, MSBFIRST, SPI_MODE0));
-    digitalWrite(csPin, LOW);
-
-    SPI.transfer(0x06); // Write Enable
-
-    digitalWrite(csPin, HIGH);
-    SPI.endTransaction();
+uint8_t SpiService::flashReadStatus(uint32_t frequency) {
+    flashBeginTransaction(frequency);
+    SPI.transfer(0x05);
+    const uint8_t value = SPI.transfer(0);
+    flashEndTransaction();
+    return value;
 }
 
-void SpiService::waitForFlashWriteComplete(uint32_t freq) {
-    SPI.beginTransaction(SPISettings(freq, MSBFIRST, SPI_MODE0));
-    digitalWrite(csPin, LOW);
-
-    SPI.transfer(0x05); // Read Status Register
-    while (true) {
-        uint8_t status = SPI.transfer(0x00); // Dummy byte to receive status
-        if ((status & 0x01) == 0) break;     // Wait until WIP bit is cleared
+bool SpiService::flashWaitReady(uint32_t frequency, uint32_t timeout) {
+    const uint32_t start = millis();
+    while (flashReadStatus(frequency) & 1) {
+        if (static_cast<uint32_t>(millis() - start) >= timeout) return false;
         delay(1);
     }
-
-    digitalWrite(csPin, HIGH);
-    SPI.endTransaction();
+    return true;
 }
 
-void SpiService::writeFlashPage(uint32_t address, const std::vector<uint8_t>& data, uint32_t freq) {
-    const size_t maxPerPage = 256; // Page size (standard)
+bool SpiService::flashWriteEnable(uint32_t frequency) {
+    if (!flashWaitReady(frequency, flashProgramTimeoutMs)) return false;
+    flashCommand(frequency, 0x06);
+    return (flashReadStatus(frequency) & 3) == 2; // WEL set, WIP clear.
+}
 
+bool SpiService::flashReadBuffer(const FlashChipInfo* chip, uint32_t frequency, uint32_t addr,
+                                 uint8_t* buffer, size_t length) {
+    uint32_t lastYield = millis();
+    for (size_t offset = 0; offset < length;) {
+        const size_t count = std::min<size_t>(256, length - offset);
+        if (!flashReadAt(chip, frequency, addr + offset, buffer + offset, count)) return false;
+        offset += count;
+        flashCooperate(lastYield);
+    }
+    return true;
+}
+
+bool SpiService::flashVerify(const FlashChipInfo* chip, uint32_t frequency, uint32_t addr,
+                             const uint8_t* expected, size_t length) {
+    uint8_t buffer[256];
     size_t offset = 0;
-    while (offset < data.size()) {
-        size_t chunkSize = std::min(maxPerPage, data.size() - offset);
-
-        enableFlashWrite(freq);
-
-        SPI.beginTransaction(SPISettings(freq, MSBFIRST, SPI_MODE0));
-        digitalWrite(csPin, LOW);
-
-        SPI.transfer(0x02); // Page Program
-        SPI.transfer((address >> 16) & 0xFF);
-        SPI.transfer((address >> 8) & 0xFF);
-        SPI.transfer(address & 0xFF);
-
-        for (size_t i = 0; i < chunkSize; ++i) {
-            SPI.transfer(data[offset + i]);
-        }
-
-        digitalWrite(csPin, HIGH);
-        SPI.endTransaction();
-
-        waitForFlashWriteComplete(freq);
-
-        address += chunkSize;
-        offset += chunkSize;
+    uint32_t lastYield = millis();
+    while (offset < length) {
+        const size_t count = std::min<size_t>(sizeof(buffer), length - offset);
+        if (!flashReadAt(chip, frequency, addr + offset, buffer, count)) return false;
+        for (size_t i = 0; i < count; ++i)
+            if (buffer[i] != (expected ? expected[offset + i] : 0xFF)) return false;
+        offset += count;
+        flashCooperate(lastYield);
     }
+    return true;
 }
 
-void SpiService::writeFlashPatch(uint32_t address, const std::vector<uint8_t>& data, uint32_t freq) {
-    const uint32_t sectorSize = 4096;
-    uint32_t sectorStart = address & ~(sectorSize - 1);
-    uint32_t offsetInSector = address - sectorStart;
-
-    // Read the concerned sector
-    std::vector<uint8_t> sectorData(sectorSize, 0xFF);
-    readFlashData(sectorStart, sectorData.data(), sectorSize);
-
-    // Modify data
-    for (size_t i = 0; i < data.size(); ++i) {
-        if ((offsetInSector + i) < sectorSize) {
-            sectorData[offsetInSector + i] = data[i];
-        }
+// Program without erase. Preflight the entire request before WREN so an impossible
+// 0-to-1 transition never starts a partially programmed request.
+bool SpiService::flashProgramAt(const FlashChipInfo* chip, uint32_t frequency, uint32_t addr,
+                                const uint8_t* data, size_t length) {
+    if (!data || flashCompatibilityError(chip, FlashOperation::Program) ||
+        !flashRangeSupported(chip, addr, length)) return false;
+    if (!flashWaitReady(frequency, flashProgramTimeoutMs)) return false;
+    uint8_t old[256];
+    uint32_t lastYield = millis();
+    for (size_t offset = 0; offset < length;) {
+        const size_t count = std::min<size_t>(sizeof(old), length - offset);
+        if (!flashReadAt(chip, frequency, addr + offset, old, count)) return false;
+        for (size_t i = 0; i < count; ++i)
+            if ((old[i] & data[offset + i]) != data[offset + i]) return false;
+        offset += count;
+        flashCooperate(lastYield);
     }
-
-    // Erase the sector
-    eraseFlashSector(sectorStart, freq);
-
-    // Write modified data
-    for (uint32_t i = 0; i < sectorSize; i += 256) {
-        std::vector<uint8_t> page(sectorData.begin() + i, sectorData.begin() + i + 256);
-        writeFlashPage(sectorStart + i, page, freq);
+    const bool fourByte = chip->capacityBytes > flashAddressLimit;
+    for (size_t offset = 0; offset < length;) {
+        const uint32_t current = addr + offset;
+        const size_t count = std::min<size_t>(256 - current % 256, length - offset);
+        if (!flashWriteEnable(frequency)) return false;
+        flashBeginTransaction(frequency);
+        SPI.transfer(fourByte ? 0x12 : 0x02);
+        flashSendAddress(current, fourByte);
+        for (size_t i = 0; i < count; ++i) SPI.transfer(data[offset + i]);
+        flashEndTransaction();
+        if (!flashWaitReady(frequency, flashProgramTimeoutMs) ||
+            !flashVerify(chip, frequency, current, data + offset, count)) return false;
+        offset += count;
+        flashCooperate(lastYield);
     }
+    return true;
+}
+
+bool SpiService::flashSetEraseMode(uint32_t frequency, FlashEraseMode mode, bool enter) {
+    if (!flashWaitReady(frequency, flashProgramTimeoutMs)) return false;
+    if (mode == FlashEraseMode::EnterWriteEnable && !flashWriteEnable(frequency)) return false;
+    flashCommand(frequency, enter ? 0xB7 : 0xE9);
+    // Some parts retain WEL after a mode command. Leave no armed write latch.
+    flashCommand(frequency, 0x04);
+    return true;
+}
+
+bool SpiService::flashEraseBlockAt(const FlashChipInfo* chip, uint32_t frequency, uint32_t addr) {
+    if (flashCompatibilityError(chip, FlashOperation::BlockErase) ||
+        addr % chip->eraseBlockBytes || !flashRangeSupported(chip, addr, chip->eraseBlockBytes)) return false;
+    if (!flashWaitReady(frequency, flashBlockEraseTimeoutMs)) return false;
+    const bool modeChange = chip->eraseMode != FlashEraseMode::None;
+    if (modeChange && !flashSetEraseMode(frequency, chip->eraseMode, true)) return false;
+    bool success = flashWriteEnable(frequency);
+    if (success) {
+        flashBeginTransaction(frequency);
+        SPI.transfer(chip->eraseOpcode);
+        flashSendAddress(addr, chip->capacityBytes > flashAddressLimit);
+        flashEndTransaction();
+        success = flashWaitReady(frequency, flashBlockEraseTimeoutMs);
+    }
+    // Try to leave 4-byte mode even on a write-enable failure or timeout.
+    if (modeChange && !flashSetEraseMode(frequency, chip->eraseMode, false)) success = false;
+    return success && flashVerify(chip, frequency, addr, nullptr, chip->eraseBlockBytes);
+}
+
+bool SpiService::flashEraseChipAt(const FlashChipInfo* chip, uint32_t frequency) {
+    if (flashCompatibilityError(chip, FlashOperation::ChipErase)) return false;
+    if (!flashWaitReady(frequency, flashChipEraseTimeoutMs) || !flashWriteEnable(frequency)) return false;
+    flashCommand(frequency, 0xC7); // No address; independent of 3/4-byte addressing mode.
+    return flashWaitReady(frequency, flashChipEraseTimeoutMs) &&
+           flashVerify(chip, frequency, 0, nullptr, chip->capacityBytes);
+}
+
+// Buffer one verified erase unit (at most 64 KiB), preserving every other byte.
+// Validate and allocate before any erase; requests may cross pages, blocks and banks.
+bool SpiService::flashPatchAt(const FlashChipInfo* chip, uint32_t frequency, uint32_t addr,
+                              const uint8_t* data, size_t length, size_t availableMemory) {
+    if (!data || flashCompatibilityError(chip, FlashOperation::Patch) ||
+        !flashRangeSupported(chip, addr, length)) return false;
+    const uint32_t blockSize = chip->eraseBlockBytes;
+    if (blockSize > availableMemory) return false;
+    std::unique_ptr<uint8_t[], void (*)(void*)> buffer(static_cast<uint8_t*>(malloc(blockSize)), free);
+    if (!buffer || !flashWaitReady(frequency, flashProgramTimeoutMs)) return false;
+    size_t offset = 0;
+    while (offset < length) {
+        const uint32_t current = addr + offset;
+        const uint32_t block = current - current % blockSize;
+        const size_t within = current - block;
+        const size_t count = std::min<size_t>(blockSize - within, length - offset);
+        if (!flashReadBuffer(chip, frequency, block, buffer.get(), blockSize)) return false;
+        std::copy(data + offset, data + offset + count, buffer.get() + within);
+        if (!flashEraseBlockAt(chip, frequency, block) ||
+            !flashProgramAt(chip, frequency, block, buffer.get(), blockSize)) return false;
+        offset += count;
+    }
+    return true;
 }
 
 std::string SpiService::executeByteCode(const std::vector<ByteCode>& bytecodes) {

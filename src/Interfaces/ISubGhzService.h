@@ -23,7 +23,8 @@ public:
                            uint8_t ss,
                            uint8_t gdo0,
                            float mhz = 433.92f,
-                           int paDbm = 10) = 0;
+                           int paDbm = 10,
+                           bool useCardputerAdvCap = false) = 0;
 
     virtual void tune(float mhz) = 0;
     virtual int measurePeakRssi(uint32_t holdMs) = 0;

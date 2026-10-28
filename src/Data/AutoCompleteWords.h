@@ -14,7 +14,7 @@ static const char* const autoCompleteWords[] = {
     "trigger", "raw",
 
     // --- I2C ---
-    "discovery","identify","slave","dump","flood","health","monitor",
+    "discovery","identify","slave","dump","flood","health","monitor","freq",
     "recover","jam", "regs",
 
     // --- SPI ---

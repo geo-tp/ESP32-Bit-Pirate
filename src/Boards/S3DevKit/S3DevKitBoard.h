@@ -2,7 +2,7 @@
 
 #ifdef DEVICE_S3DEVKIT
 
-#include "Boards/Common/Views/NoScreenDeviceView.h"
+#include "Boards/Common/Views/RgbLedView.h"
 #include "Boards/Common/Inputs/DefaultInput.h"
 #include "Boards/Common/Serial/BoardHostSerial.h"
 
@@ -15,7 +15,7 @@ public:
 
 private:
     BoardHostSerial hostSerial;
-    NoScreenDeviceView deviceView;
+    RgbLedView deviceView{LED_PIN};
     DefaultInput deviceInput;
 };
 

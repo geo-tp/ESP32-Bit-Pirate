@@ -37,6 +37,13 @@
 #include "driver/gpio.h"
 #include "esp_timer.h"
 
+#define JTAG_DELAY_US 1
+#define JTAG_SCAN_SETTLE_US 5
+
+// Set to 1 in build_flags (-DJTAG_SCAN_DEBUG=1) to trace rejected permutations.
+#ifndef JTAG_SCAN_DEBUG
+#define JTAG_SCAN_DEBUG 0
+#endif
 #define SWD_DELAY_US 5
 #define LINE_RESET_CLK_CYCLES 52
 #define JTAG_TO_SWD_CMD 0xE79E
@@ -57,16 +64,28 @@ void JtagService::configureJtag(uint8_t tck, uint8_t tms, uint8_t tdi, uint8_t t
     _pinTDO = tdo;
     _pinTRST = trst;
 
-    gpio_set_direction((gpio_num_t)_pinTCK, GPIO_MODE_OUTPUT);
+    // Preload output latches BEFORE enabling the drivers: changing pin roles
+    // must not introduce an unintended rising edge on the real target TCK.
     gpio_set_level((gpio_num_t)_pinTCK, 0);
+    gpio_set_level((gpio_num_t)_pinTMS, 1);
+    gpio_set_level((gpio_num_t)_pinTDI, 0);
+    if (trst >= 0) gpio_set_level((gpio_num_t)_pinTRST, 1);
+
+    // Scan initialization may have enabled pull resistors on these pins.
+    gpio_set_pull_mode((gpio_num_t)_pinTCK, GPIO_FLOATING);
+    gpio_set_pull_mode((gpio_num_t)_pinTMS, GPIO_FLOATING);
+    gpio_set_pull_mode((gpio_num_t)_pinTDI, GPIO_FLOATING);
+    gpio_set_pull_mode((gpio_num_t)_pinTDO, GPIO_FLOATING);
+
+    gpio_set_direction((gpio_num_t)_pinTDO, GPIO_MODE_INPUT);
     gpio_set_direction((gpio_num_t)_pinTMS, GPIO_MODE_OUTPUT);
     gpio_set_direction((gpio_num_t)_pinTDI, GPIO_MODE_OUTPUT);
-    gpio_set_direction((gpio_num_t)_pinTDO, GPIO_MODE_INPUT);
+    gpio_set_direction((gpio_num_t)_pinTCK, GPIO_MODE_OUTPUT); // Enable TCK last.
 
     if (trst >= 0) {
         gpio_set_direction((gpio_num_t)_pinTRST, GPIO_MODE_OUTPUT);
-        gpio_set_level((gpio_num_t)_pinTRST, 1);  // deassert
     }
+    esp_rom_delay_us(JTAG_SCAN_SETTLE_US);
 }
 
 void JtagService::tckPulse() {
@@ -82,7 +101,10 @@ void JtagService::tmsWrite(bool val) {
 }
 
 bool JtagService::tdoRead() {
+    // Bound TCK low/setup and high times even in the tight BYPASS clock loops.
+    esp_rom_delay_us(JTAG_DELAY_US);
     gpio_set_level((gpio_num_t)_pinTCK, 1);
+    esp_rom_delay_us(JTAG_DELAY_US);
     bool val = gpio_get_level((gpio_num_t)_pinTDO);
     gpio_set_level((gpio_num_t)_pinTCK, 0);
     return val;
@@ -90,7 +112,7 @@ bool JtagService::tdoRead() {
 
 void JtagService::restoreIdle() {
     tmsWrite(true);
-    for (int i = 0; i < 5; ++i) tckPulse();
+    for (int i = 0; i < 8; ++i) tckPulse();
     tmsWrite(false);
     tckPulse(); // Enter Run-Test/Idle
 }
@@ -204,18 +226,19 @@ uint32_t JtagService::bypassTest(int count, uint32_t pattern) {
 }
 
 bool JtagService::isValidDeviceID(uint32_t id) {
-    int idcode = (id & 0x7F) >> 1;
+    int idcode = (id & 0xFE) >> 1; // JEP106 identity is bits[7:1], not [6:0]
     int bank   = (id >> 8) & 0xF;
     return idcode > 1 && idcode <= 126 && bank <= 8;
 }
 
 void JtagService::jtagInitChannels(const std::vector<uint8_t>& pins, bool pulsePins) {
+    // Pico's pull helpers disable the opposite pull; ESP-IDF's *_en helpers don't.
     for (auto pin : pins) {
         gpio_set_direction((gpio_num_t)pin, GPIO_MODE_INPUT);
         if (pulsePins) {
-            gpio_pulldown_en((gpio_num_t)pin);
+            gpio_set_pull_mode((gpio_num_t)pin, GPIO_PULLDOWN_ONLY);
         } else {
-            gpio_pullup_en((gpio_num_t)pin);
+            gpio_set_pull_mode((gpio_num_t)pin, GPIO_PULLUP_ONLY);
         }
     }
 }
@@ -225,9 +248,9 @@ void JtagService::jtagResetChannels(const std::vector<uint8_t>& pins, int trstPi
         if (trstPin >= 0 && pin == trstPin) {
             gpio_set_direction((gpio_num_t)pin, GPIO_MODE_INPUT);
             if (pulsePins) {
-                gpio_pulldown_en((gpio_num_t)pin);
+                gpio_set_pull_mode((gpio_num_t)pin, GPIO_PULLDOWN_ONLY);
             } else {
-                gpio_pullup_en((gpio_num_t)pin);
+                gpio_set_pull_mode((gpio_num_t)pin, GPIO_PULLUP_ONLY);
             }
         } else {
             gpio_set_direction((gpio_num_t)pin, GPIO_MODE_INPUT);
@@ -248,6 +271,7 @@ bool JtagService::scanJtagDevice(
     uint32_t tempDeviceId;
     bool volatile foundPinout = false;
     outDeviceIDs.clear();
+    outTRST = -1;
     size_t progressCount = 0;
     size_t maxPermutations = channelCount * (channelCount - 1) * (channelCount - 2) * (channelCount - 3);
 
@@ -265,7 +289,8 @@ bool JtagService::scanJtagDevice(
                     if (pulsePins) {
                         for (auto ch : pins) {
                             gpio_set_direction((gpio_num_t)ch, GPIO_MODE_INPUT);
-                            gpio_pullup_en((gpio_num_t)ch);
+                            gpio_set_pull_mode((gpio_num_t)ch, GPIO_PULLUP_ONLY);
+                            gpio_set_pull_mode((gpio_num_t)ch, GPIO_PULLDOWN_ONLY);
                         }
                     }
 
@@ -273,11 +298,24 @@ bool JtagService::scanJtagDevice(
                     int deviceCount = detectDevices();
 
                     if (deviceCount <= 0) {
+#if JTAG_SCAN_DEBUG
+                        Serial.printf("[JTAG scan] TDI=%u TDO=%u TCK=%u TMS=%u: device count=%d\n",
+                                      tdi, tdo, tck, tms, deviceCount);
+#endif
                         continue;
                     }
+#if JTAG_SCAN_DEBUG
+                    Serial.printf("[JTAG scan] TDI=%u TDO=%u TCK=%u TMS=%u: device count=%d\n",
+                                  tdi, tdo, tck, tms, deviceCount);
+#endif
 
                     uint32_t dataIn = esp_random();
                     uint32_t dataOut = bypassTest(deviceCount, dataIn);
+#if JTAG_SCAN_DEBUG
+                    Serial.printf("[JTAG scan] BYPASS in=0x%08lx out=0x%08lx %s\n",
+                                  (unsigned long)dataIn, (unsigned long)dataOut,
+                                  dataIn == dataOut ? "PASS" : "FAIL");
+#endif
 
                     if (dataIn == dataOut) {
                         std::vector<uint32_t> ids;
@@ -289,6 +327,11 @@ bool JtagService::scanJtagDevice(
                             continue;
                         }
 
+#if JTAG_SCAN_DEBUG
+                        Serial.printf("[JTAG scan] IDCODE raw=0x%08lx %s\n",
+                                      (unsigned long)tempDeviceId,
+                                      isValidDeviceID(tempDeviceId) ? "PASS" : "FAIL");
+#endif
                         if (!isValidDeviceID(tempDeviceId)) {
                             continue;
                         }
@@ -308,9 +351,9 @@ bool JtagService::scanJtagDevice(
 
                             gpio_set_direction((gpio_num_t)trst, GPIO_MODE_INPUT);
                             if (pulsePins) {
-                                gpio_pullup_en((gpio_num_t)trst);
+                                gpio_set_pull_mode((gpio_num_t)trst, GPIO_PULLUP_ONLY);
                             } else {
-                                gpio_pulldown_en((gpio_num_t)trst);
+                                gpio_set_pull_mode((gpio_num_t)trst, GPIO_PULLDOWN_ONLY);
                             }
 
                             usleep(10);
@@ -333,6 +376,8 @@ bool JtagService::scanJtagDevice(
             }
         }
     }
+
+    jtagResetChannels(pins, outTRST, pulsePins);
 
     if (!foundPinout && onProgress) {
         onProgress(maxPermutations, maxPermutations);
@@ -428,15 +473,21 @@ bool JtagService::swdTrySWDJ(uint32_t& idcodeOut) {
     swdSetReadMode();
     swdClockPulse(); // Turnaround
 
-    if (!swdReadAck()) return false;
-
+    bool ack = swdReadAck();
     uint32_t idcode = 0;
-    for (int i = 0; i < 32; ++i) {
-        idcode |= (swdReadBit() << i);
+    if (ack) {
+        for (int i = 0; i < 32; ++i) {
+            idcode |= (swdReadBit() << i);
+        }
+        swdReadBit(); // skip parity
     }
-    swdReadBit(); // skip parity
-    swdSetWriteMode();
+
+    // End of transaction, on ack success or failure, mirrors blueTag: turnaround back to write, then 8 idle low bits
     swdClockPulse();
+    swdSetWriteMode();
+    swdWriteBits(0x00, 8);
+
+    if (!ack) return false;
 
     idcodeOut = idcode;
     return true;
@@ -459,12 +510,13 @@ bool JtagService::scanSwdDevice(const std::vector<uint8_t>& pins, uint8_t& swdio
                 swdio = io;
                 swclk = clk;
                 swdToJTAG();
-                return true;
             }
 
-            // Reset
+            // Reset, mirrors blueTag: pins go back to input even after a successful find
             gpio_set_direction((gpio_num_t)_pinSWDIO, GPIO_MODE_INPUT);
             gpio_set_direction((gpio_num_t)_pinSWCLK, GPIO_MODE_INPUT);
+
+            if (found) return true;
         }
     }
     return false;

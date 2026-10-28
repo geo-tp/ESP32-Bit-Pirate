@@ -14,6 +14,8 @@ struct FlashromSerprogConfig {
     uint8_t misoPin;
     uint8_t mosiPin;
     uint32_t frequency;
+    int8_t wpPin = -1;
+    int8_t holdPin = -1;
 };
 
 class FlashromSerprogAdapter {

@@ -30,7 +30,8 @@ public:
     // Configure CC1101
     bool configure(SPIClass& spi, uint8_t sck, uint8_t miso, uint8_t mosi, uint8_t ss, uint8_t gdo0,
                    float mhz = 433.92f, // default 433.92mhz
-                   int paDbm = 10); // TX power, max 12
+                   int paDbm = 10, // TX power, max 12
+                   bool useCardputerAdvCap = false);
     
     // Base
     void tune(float mhz);
@@ -84,11 +85,12 @@ private:
     float   mhz_ = 433.92f;
     int     paDbm_ = 10;
     bool    ccMode_ = false;
+    bool    useCardputerAdvCap_ = false;
     SubGhzScanBand scanBand_ = SubGhzScanBand::Band387_464;
     RingbufHandle_t rb_ = nullptr;
     uint8_t rfSw0_ = TEMBED_CC1101_SW0;
     uint8_t rfSw1_ = TEMBED_CC1101_SW1;
-    uint8_t rfSel_ = 2; //  uses 0/1/2 as selections
+    uint8_t rfSel_ = 0xFF; // no RF path selected yet
 
     rmt_channel_handle_t rx_chan_ = nullptr;
     std::vector<rmt_symbol_word_t> rx_buf_;
@@ -108,9 +110,9 @@ private:
     static constexpr size_t kRxChunkSymbols = 256;
     static constexpr uint32_t kRxTaskStackWords = 3072;
 
-    // Tembed S3 CC1101 specific
+    // RF switch selection for T-Embed and Cardputer ADV Cap CC1101
     void initTembed();
-    void selectRfPathFor(float mhz);
+    void selectRfPathFor(float mhz, bool force = false);
 
     // Presets
     static bool IRAM_ATTR on_rx_done(rmt_channel_handle_t,

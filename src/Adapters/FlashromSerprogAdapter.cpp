@@ -1,5 +1,8 @@
 #include "FlashromSerprogAdapter.h"
 #include <USBCDC.h>
+#include "driver/gpio.h"
+#include "States/GlobalState.h"
+#include <algorithm>
 
 namespace {
     constexpr uint8_t ACK = 0x06;
@@ -40,6 +43,16 @@ void FlashromSerprogAdapter::run(const FlashromSerprogConfig& adapterConfig, IIn
     transactionActive = false;
     cdcConnected = false;
     csMode = 0;
+
+    const auto& protectedPins = GlobalState::getInstance().getProtectedPins();
+    const auto validControlPin = [&](int8_t pin) {
+        return pin >= 0 && GPIO_IS_VALID_OUTPUT_GPIO(pin) &&
+               pin != config.csPin && pin != config.sckPin &&
+               pin != config.mosiPin && pin != config.misoPin &&
+               std::find(protectedPins.begin(), protectedPins.end(), pin) == protectedPins.end();
+    };
+    config.wpPin = validControlPin(config.wpPin) ? config.wpPin : -1;
+    config.holdPin = validControlPin(config.holdPin) && config.holdPin != config.wpPin ? config.holdPin : -1;
 
     if (config.frequency == 0) {
         config.frequency = DEFAULT_SPI_FREQUENCY;
@@ -87,9 +100,15 @@ void FlashromSerprogAdapter::run(const FlashromSerprogConfig& adapterConfig, IIn
 
 void FlashromSerprogAdapter::initializeSpi() {
     transactionActive = false;
+    // Preload HIGH before enabling outputs, keeping CS and optional WP/HOLD inactive.
+    gpio_set_level(static_cast<gpio_num_t>(config.csPin), HIGH);
     pinMode(config.csPin, OUTPUT);
-    digitalWrite(config.csPin, HIGH);
     spi.begin(config.sckPin, config.misoPin, config.mosiPin, config.csPin);
+    for (int8_t pin : {config.wpPin, config.holdPin}) {
+        if (pin < 0) continue;
+        gpio_set_level(static_cast<gpio_num_t>(pin), HIGH);
+        pinMode(pin, OUTPUT);
+    }
 }
 
 void FlashromSerprogAdapter::setPinDrivers(bool enabled) {
@@ -107,6 +126,9 @@ void FlashromSerprogAdapter::setPinDrivers(bool enabled) {
     pinMode(config.sckPin, INPUT);
     pinMode(config.mosiPin, INPUT);
     pinMode(config.misoPin, INPUT);
+    for (int8_t pin : {config.wpPin, config.holdPin}) {
+        if (pin >= 0) pinMode(pin, INPUT);
+    }
 }
 
 void FlashromSerprogAdapter::setChipSelectAsserted(bool asserted) {
@@ -381,6 +403,7 @@ bool FlashromSerprogAdapter::readByte(IInput& input, uint8_t& value, uint32_t ti
         }
 
         if (inputRequestedReset(input)) {
+            setPinDrivers(false);
             ESP.restart();
         }
 

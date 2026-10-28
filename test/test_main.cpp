@@ -1,6 +1,6 @@
 #include <unity.h>
 
-#include "Vendors/FakeI2cSniffer.h"
+#include "Services/FakeI2cSnifferService.h"
 #include "States/TestGlobalState.h"
 
 // Production units exercised by the native test runner.
@@ -18,6 +18,7 @@
 #include "../src/Transformers/WebRequestTransformer.cpp"
 #include "../src/Analyzers/BinaryAnalyzer.cpp"
 #include "../src/Analyzers/PinAnalyzer.cpp"
+#include "../src/Analyzers/I2cFrequencyAnalyzer.cpp"
 #include "../src/Analyzers/SubGhzAnalyzer.cpp"
 #include "../src/Managers/AliasManager.cpp"
 #include "../src/Managers/CommandHistoryManager.cpp"
@@ -26,6 +27,7 @@
 #include "../src/Services/UartSnifferService.cpp"
 #include "../src/Selectors/HorizontalSelector.cpp"
 #include "../src/Shells/HelpShell.cpp"
+#include "../src/Shells/SpiFlashShell.cpp"
 #include "../src/Shells/MouseShell.cpp"
 #include "../src/Abstracts/ANetworkController.cpp"
 #include "../src/Controllers/CanController.cpp"
@@ -76,6 +78,7 @@
 #include "Enums/test_InfraredProtocolEnum.cpp"
 #include "Analyzers/test_BinaryAnalyzer.cpp"
 #include "Analyzers/test_PinAnalyzer.cpp"
+#include "Analyzers/test_I2cFrequencyAnalyzer.cpp"
 #include "Analyzers/test_SubGhzAnalyzer.cpp"
 #include "Selectors/test_HorizontalSelector.cpp"
 #include "Managers/test_AliasManager.cpp"
@@ -95,6 +98,7 @@
 #include "Controllers/test_HdUartController.cpp"
 #include "Controllers/test_ExpanderController.cpp"
 #include "Controllers/test_SpiController.cpp"
+#include "Shells/test_SpiFlashShell.cpp"
 #include "Controllers/test_I2cController.cpp"
 #include "Controllers/test_OneWireController.cpp"
 #include "Controllers/test_TwoWireController.cpp"
@@ -139,6 +143,7 @@ int main(int, char**) {
     runInfraredProtocolEnumTests();
     runBinaryAnalyzerTests();
     runPinAnalyzerTests();
+    runI2cFrequencyAnalyzerTests();
     runSubGhzAnalyzerTests();
     runHorizontalSelectorTests();
     runAliasManagerTests();
@@ -158,6 +163,7 @@ int main(int, char**) {
     runHdUartControllerTests();
     runExpanderControllerTests();
     runSpiControllerTests();
+    runSpiFlashShellTests();
     runI2cControllerTests();
     runOneWireControllerTests();
     runTwoWireControllerTests();

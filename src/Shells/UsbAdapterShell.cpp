@@ -54,6 +54,10 @@ void UsbAdapterShell::run() {
         rebootBpio2();
         return;
     }
+    if (choice == 8) {
+        rebootSdrCdc();
+        return;
+    }
     
     terminalView.println("Exiting USB adapters...\n");
 }
@@ -61,10 +65,14 @@ void UsbAdapterShell::run() {
 void UsbAdapterShell::rebootIntoAdapter(const char* title,
                                         const char* description,
                                         const char* example,
+                                        const char* webTool,
                                         const char* returnInstruction) {
     terminalView.println(std::string("Rebooting into ") + title + " mode.");
     terminalView.println(description);
     terminalView.println(example);
+    if (webTool) {
+        terminalView.println(std::string("Or use the web tool:\n\rhttps://geo-tp.github.io/ESP32-Bit-Pirate/web-tools/") + webTool + "/");
+    }
     terminalView.println(returnInstruction);
     terminalView.println("The terminal will now close...");
     utilityService.sleepMs(1000);
@@ -92,6 +100,7 @@ void UsbAdapterShell::rebootUsbUartBridge() {
         "USB-UART adapter",
         "The device will expose one CDC serial port as the UART bridge.",
         "Example: picocom -b 115200 /dev/ttyACM0",
+        "web-serial-terminal",
         "Reset the device to return to normal mode."
     );
 }
@@ -137,7 +146,8 @@ void UsbAdapterShell::rebootSumpLogicAnalyzer() {
     rebootIntoAdapter(
         "SUMP logic analyzer",
         "The device will expose one CDC serial port for PulseView/sigrok.",
-        "Open PulseView, Select Driver Logic Sniffer & SUMP, and Serial Port"
+        "Open PulseView, Select Driver Logic Sniffer & SUMP, and Serial Port",
+        "logic-analyzer"
     );
 }
 
@@ -205,7 +215,8 @@ void UsbAdapterShell::rebootAvrDudeBusPirate() {
     rebootIntoAdapter(
         "AVRDUDE Bus Pirate SPI adapter",
         "Use avrdude on the new CDC serial port.",
-        "Example: avrdude -c buspirate -P /dev/ttyACM0 -p m328p -v -x spifreq=1"
+        "Example: avrdude -c buspirate -P /dev/ttyACM0 -p m328p -v -x spifreq=1",
+        "avr-programmer"
     );
 }
 
@@ -286,7 +297,8 @@ void UsbAdapterShell::rebootBpio2() {
     rebootIntoAdapter(
         "BPIO2 adapter",
         "The device will expose GPIO, hardware SPI and hardware I2C.",
-        "Use the Bus Pirate BPIO2 Python client on the serial port."
+        "Use the Bus Pirate BPIO2 Python client on the serial port.",
+        "bpio2"
     );
 }
 
@@ -296,7 +308,7 @@ void UsbAdapterShell::rebootFlashromSerprog() {
     terminalView.println("\nFlashrom SPI adapter GPIOs:");
     terminalView.println("This mode exposes a flashrom serprog SPI programmer.");
     terminalView.println("Use 3.3V flash chips only, or add proper level shifting.");
-    terminalView.println("Connect WP# and HOLD# high if the flash chip needs it.\n");
+    terminalView.println("Configured WP# and HOLD# GPIOs are held HIGH while the adapter drives the bus.\n");
 
     uint8_t csPin = userInputManager.readValidatedPinNumber("Flash CS GPIO (connect chip CS#)", state.getSpiCSPin(), forbidden);
     forbidden.push_back(csPin);
@@ -308,16 +320,37 @@ void UsbAdapterShell::rebootFlashromSerprog() {
     forbidden.push_back(misoPin);
 
     uint8_t mosiPin = userInputManager.readValidatedPinNumber("Flash MOSI GPIO (connect chip DI/IO0)", state.getSpiMOSIPin(), forbidden);
+    forbidden.push_back(mosiPin);
+
+    const auto selectControlPin = [&](const std::string& name) -> int8_t {
+        while (true) {
+            const int pin = userInputManager.readValidatedInt(name + " GPIO", -1, -1, 48);
+            if (pin == -1) return -1;
+            if (std::find(forbidden.begin(), forbidden.end(), pin) != forbidden.end()) {
+                terminalView.println("This GPIO is reserved/protected and cannot be used.");
+                continue;
+            }
+            forbidden.push_back(static_cast<uint8_t>(pin));
+            return static_cast<int8_t>(pin);
+        }
+    };
+    int8_t wpPin = -1;
+    int8_t holdPin = -1;
+    if (userInputManager.readYesNo("Use WP or HOLD ?", false)) {
+        wpPin = selectControlPin("WP");
+        holdPin = selectControlPin("HOLD");
+    }
 
     nvsService.open();
-    nvsService.saveOneShotFlashromSerprogConfig(csPin, sckPin, misoPin, mosiPin, state.getSpiFrequency());
+    nvsService.saveOneShotFlashromSerprogConfig(csPin, sckPin, misoPin, mosiPin, state.getSpiFrequency(), wpPin, holdPin);
     nvsService.saveOneShotBootMode(OneShotBootMode::FlashromSerprog);
     nvsService.close();
 
     rebootIntoAdapter(
         "Flashrom SPI adapter",
         "Use flashrom with serprog on the new CDC serial port.",
-        "Example: flashrom -p serprog:dev=/dev/ttyACM0:921600,spispeed=4M"
+        "Example: flashrom -p serprog:dev=/dev/ttyACM0:921600,spispeed=4M",
+        "spi-flash-programmer"
     );
 }
 
@@ -342,6 +375,19 @@ void UsbAdapterShell::rebootInfraredToy() {
         "USB IR Toy / LIRC adapter",
         "The device will expose one CDC serial port for LIRC's irtoy driver.",
         "Example: mode2 --driver=irtoy --device=/dev/ttyACM0"
+    );
+}
+
+void UsbAdapterShell::rebootSdrCdc() {
+    nvsService.open();
+    nvsService.saveOneShotBootMode(OneShotBootMode::SdrCdc);
+    nvsService.close();
+    rebootIntoAdapter(
+        "SDR Raw RF CDC",
+        "Experimental 2.2-2.8 GHz SDR",
+        "Use raw CDC at baud 115200 for scripting.",
+        "esp-sdr",
+        "Reset or press a device button to return to normal mode."
     );
 }
 

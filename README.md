@@ -5,15 +5,14 @@
 
 **ESP32 Bit Pirate** is open-source firmware that turns your device into a multi-protocol development and analysis tool, inspired by the legendary Bus Pirate.
 
-It supports sniffing, sending, scripting, and interacting with various digital protocols (I2C, UART, 1-Wire, SPI, etc.) via a serial terminal or web-based CLI. It also communicates with radio protocols like Bluetooth, Wi-Fi, Sub-GHz and RFID.
+It supports sniffing, sending, scripting, and interacting with various digital protocols (I2C, UART, 1-Wire, SPI, etc.) via a serial terminal or web-based CLI. It also communicates with radio protocols like Bluetooth, Wi-Fi, Sub-GHz, LoRa and RFID.
 
 The official project website centralizes everything: [ESP32 Bit Pirate Website](https://geo-tp.github.io/ESP32-Bit-Pirate/).
 
 From there you can [install the firmware](https://geo-tp.github.io/ESP32-Bit-Pirate/webflasher/), open the [web tools](https://geo-tp.github.io/ESP32-Bit-Pirate/web-tools/), follow [hardware guides](https://geo-tp.github.io/ESP32-Bit-Pirate/hardware/), explore [recipes](https://geo-tp.github.io/ESP32-Bit-Pirate/recipes/), and access the [documentation](https://github.com/geo-tp/ESP32-Bit-Pirate/wiki).
 
 ![Demo showing the different mode of the ESP32 Bit Pirate firmware](images/bit_pirate_uart.gif)
-![Demo showing the LittleFS file system of the ESP32 Bit Pirate firmware](images/pirate_assistant.gif)
-
+[![The ESP32 Bit Pirate Web Serial Tools](images/web-tools.jpg)](https://geo-tp.github.io/ESP32-Bit-Pirate/web-tools/) 
 ## Features
 
 - Interactive command-line interface (CLI) via **USB Serial or WiFi Web**.
@@ -46,25 +45,24 @@ From there you can [install the firmware](https://geo-tp.github.io/ESP32-Bit-Pir
 - Registers manipulation, **EEPROM dump tools**, identify devices for I2C.
 - Read all sort of **EEPROM, Flash** and various others tools for SPI.
 - Scripting using **Bus Pirate-style bytecode** instructions or **Python**.
-- Device-B-Gone command with more than **80 supported INFRARED protocols**.
+- Infrared support with more than **80 protocols**.
 - Direct I/O management, **PWM, servo, GPIOs state**.
 - Analyze radio signals and frequencies **on every bands**.
 - Near than **50 addressable LEDs protocols** supported.
-- **Ethernet and WiFi** are supported to access networks.
-- Import and export data with the **LittleFS over HTTP.**
 - **Pirate assistant** to help you with the firmware.
-- **USB-Uart dongle, SPI programmer, logic analyzer** and more.
+- **USB-Uart dongle, SPI programmer, logic analyzer, ESP-SDR** and more.
 - [**Web Serial tools**](https://geo-tp.github.io/ESP32-Bit-Pirate/web-tools/) to use USB Serial over a web browser.
 
 ## Supported Devices
-
+All boards listed below offer the exact same Bit Pirate features, with no differences in functionality or development status. Some features may require additional hardware.
 
 | Device               |                                     | Description                       |
 |-----------------------|------------------------------------------|---------------------------------------------------|
-| **ESP32 S3 Dev Kit**  | ![Photo of the ESP32 S3 Dev Kit](/images/s3-devkit_s.jpg)     | More than 20 available GPIO, 1 button |
+| **ESP32 S3 Dev Kit (N8, N8R2, N8R8, N16R8...)**  | ![Photo of the ESP32 S3 Dev Kit](/images/s3-devkit_s.jpg)     | More than 20 available GPIO, 1 button |
+| **ESP32 S3 Zero / Super Mini**  | ![Photo of the ESP32 S3 SUPERMINI](/images/esp32-s3-supermini_s.jpg)     | 15 GPIO (exposed pins), 1 button |
 | [**M5 AtomS3 Lite**](https://shop.m5stack.com/products/atoms3-lite-esp32s3-dev-kit?ref=pvosfmid)    | [![Photo of the M5 Atom S3 Lite](/images/atom_s.jpg)](https://shop.m5stack.com/products/atoms3-lite-esp32s3-dev-kit?ref=pvosfmid)            | 8 GPIO (Grove, Header), IR TX, 1 buttton                  |
 | **M5 Cardputer**      | ![Photo of the M5 Cardputer](/images/cardputer_s.png)            | 2 GPIO (Grove), screen, keyboard, mic, speaker, IR TX, SD card, battery, [standalone mode](#standalone-mode-for-the-cardputer)            |
-| [**M5 Cardputer ADV**](https://shop.m5stack.com/products/m5stack-cardputer-adv-version-esp32-s3?ref=pvosfmid)  | [![Photo of the M5 Cardputer ADV](/images/cardputer-adv_s.jpg)](https://shop.m5stack.com/products/m5stack-cardputer-adv-version-esp32-s3?ref=pvosfmid)    | 12 GPIO (Grove, Header), screen, keyboard, mic, speaker, IR TX, SD card, IMU, battery, [standalone mode](#standalone-mode-for-the-cardputer)                  |
+| [**M5 Cardputer ADV**](https://shop.m5stack.com/products/m5stack-cardputer-adv-version-esp32-s3?ref=pvosfmid)  | [![Photo of the M5 Cardputer ADV](/images/cardputer-adv_s.jpg)](https://shop.m5stack.com/products/m5stack-cardputer-adv-version-esp32-s3?ref=pvosfmid)    | 12 GPIO (Grove, Header), screen, keyboard, mic, speaker, IR TX, SD card, IMU, battery, [Lora](https://shop.m5stack.com/products/cap-lora-1262-for-cardputer-adv-sx1262-atgm336h?ref=pvosfmid), [CC1101](https://shop.m5stack.com/products/cap-cc1101-nfc-for-cardputer?ref=pvosfmid), [standalone mode](#standalone-mode-for-the-cardputer)                  |
 | [**M5 StampS3**](https://shop.m5stack.com/products/m5stamps3a-with-2-54-header-pin?ref=pvosfmid)        | [![Photo of the M5 StampS3](/images/stamps3_s.jpg)](https://shop.m5stack.com/products/m5stamps3a-with-2-54-header-pin?ref=pvosfmid)             | 9 GPIO (exposed pins), 1 button                       |
 | [**M5 Stick S3**](https://shop.m5stack.com/products/m5sticks3-esp32s3-mini-iot-dev-kit?ref=pvosfmid) | [![Photo of the M5 Stick S3](/images/m5sticks3_s.jpg)](https://shop.m5stack.com/products/m5sticks3-esp32s3-mini-iot-dev-kit?ref=pvosfmid)      | 13 GPIO (Grove, Header), screen, mic, speaker, IR TX, IR RX, IMU, 3 buttons, battery                 |
 | **LILYGO T-Display** | ![Photo of the T-Display-S3](/images/t_displays3_s.jpg) | 13 GPIO (1 Qwicc), screen, 2 buttons |
@@ -75,12 +73,13 @@ From there you can [install the firmware](https://geo-tp.github.io/ESP32-Bit-Pir
 | **Heltec Vision Master T190** | ![Photo of the Heltec Vision Master T190](/images/heltec-t190_s.png) | 15 GPIO (Header, Qwiiic), screen, 2 buttons, SX1262 LoRa |
 | **Seeed Studio Xiao S3** | ![Photo of the Seeed Studio Xiao ESP32-S3](/images/xiaos3_s.jpg)        | 9 GPIO (exposed pins), 1 button |
 | **Waveshare ESP32-S3-GEEK** | ![Photo of the Waveshare ESP32-S3-GEEK](/images/waveshare-s3-geek_s.jpg) | 7 GPIO (Dupont header), screen, 1 button, SD card |
+| **Unexpected Maker ProS3**| [![Photo of the Unexpected Maker ProS3](/images/pros3_s.jpg)](https://www.adafruit.com/product/5401) | More than 20 available GPIO (Header, STEMMA QT), 1 button|
 
 - **Other ESP32-S3-based Boards**
 
-  - All boards based on the **ESP32-S3 can be supported**, provided they have at least **8 MB of flash.**
+  - All boards based on the **ESP32-S3 can be supported**, provided they have at least **4 MB of flash.**
 
-  - You can **flash the s3 dev-kit firmware onto any ESP32-S3 board.**
+  - You can **flash the s3 dev-kit (8MB flash) or supermini (4MB flash) firmware onto any ESP32-S3 board.**
 
   - Keep in mind that the **default pin mapping in the firmware may not match** your specific board.
 
@@ -133,10 +132,9 @@ You can write and test scripts directly in the browser with the [ESP32 Bit Pirat
 
 
 🔌 **[Expand the capabilities of the ESP32 Bit Pirate](https://github.com/geo-tp/ESP32-Bus-Expander)** with additional hardware modules.
-The Expander adds support for the **WiFi 5 GhZ** or other radio protocols.
+The Expander adds support for the **WiFi 5 GhZ, Zigbee** or other radio protocols.
 
-![A Cardputer connected to an expander C5](images/cardputer_with_c5.jpg)
-
+[![A Cardputer connected to an expander C5](images/cardputer_with_c5.jpg)](https://github.com/geo-tp/ESP32-Bus-Expander)
 
 ## Dock
 [![Banner of the ESP32 Bit Pirate Dock page](images/bus_pirate_dock.png)](https://github.com/AndreiVladescu/ESP32-Bit-Pirate-Dock)
@@ -171,14 +169,9 @@ All interfaces share the same command structure and can be used interchangeably 
 ## Standalone Mode for the Cardputer
 ![A Cardputer running the ESP32 Bit Pirate in standalone mode](images/standalonemode_s.png)
 
-## Browser-Based Web Serial Tools
-
-The [ESP32 Bit Pirate Web Serial Tools](https://geo-tp.github.io/ESP32-Bit-Pirate/web-tools/) provides direct access to the Serial CLI from a compatible browser, without installing PuTTY, minicom, or another terminal application.
-
-![A demo Using the ESP32 Bit Pirate with Web Serial Tools](images/web_tools_demo.gif)
 
 ## Contribute
-See [How To Contribute](https://github.com/geo-tp/ESP32-Bit-Pirate/wiki/99-Contribute) section, which outlines a **simple way to add a new command** to any mode.
+See [How To Contribute](https://github.com/geo-tp/ESP32-Bit-Pirate/wiki/99-Contribute) section, which outlines a **simple way to add a new board or a new command**.
 
 ## Visuals Assets
 

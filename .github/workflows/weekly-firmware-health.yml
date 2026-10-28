@@ -1,0 +1,2003 @@
+name: Weekly Firmware Health Report
+
+on:
+  schedule:
+    # Every Sunday at 08:00 UTC
+    - cron: "0 8 * * 0"
+
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: weekly-firmware-health-report
+  cancel-in-progress: true
+
+env:
+  TEST_ENV: s3-devkit
+  REPORT_BRANCH: weekly-report
+  PLATFORMIO_NO_ANSI: "true"
+
+jobs:
+  health-report:
+    name: Build weekly firmware health report
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+
+    steps:
+      # ============================================================
+      # Source
+      # ============================================================
+
+      - name: Check out pioarduino
+        uses: actions/checkout@v6
+        with:
+          ref: pioarduino
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Prepare report workspace
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          REPORT_DIR="${RUNNER_TEMP}/weekly-report"
+          DATA_DIR="${RUNNER_TEMP}/weekly-health-data"
+          LOG_DIR="${RUNNER_TEMP}/weekly-health-logs"
+
+          rm -rf "${REPORT_DIR}" "${DATA_DIR}" "${LOG_DIR}"
+
+          mkdir -p \
+            "${REPORT_DIR}" \
+            "${DATA_DIR}" \
+            "${LOG_DIR}"
+
+          echo "REPORT_DIR=${REPORT_DIR}" >> "${GITHUB_ENV}"
+          echo "DATA_DIR=${DATA_DIR}" >> "${GITHUB_ENV}"
+          echo "LOG_DIR=${LOG_DIR}" >> "${GITHUB_ENV}"
+
+          SOURCE_SHA="$(git rev-parse HEAD)"
+          SHORT_SHA="$(git rev-parse --short=7 HEAD)"
+          BUILD_DATE="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+          REPORT_DATE="$(date -u +'%Y-%m-%d')"
+
+          echo "SOURCE_SHA=${SOURCE_SHA}" >> "${GITHUB_ENV}"
+          echo "SHORT_SHA=${SHORT_SHA}" >> "${GITHUB_ENV}"
+          echo "BUILD_DATE=${BUILD_DATE}" >> "${GITHUB_ENV}"
+          echo "REPORT_DATE=${REPORT_DATE}" >> "${GITHUB_ENV}"
+
+          # Recover the previous resource history from ${REPORT_BRANCH}.
+          git fetch \
+            origin \
+            "${REPORT_BRANCH}:refs/remotes/origin/${REPORT_BRANCH}" \
+            2>/dev/null || true
+
+          git show \
+            "origin/${REPORT_BRANCH}:resource-history.csv" \
+            > "${DATA_DIR}/previous-resource-history.csv" \
+            2>/dev/null || true
+
+          # Recent development activity.
+          git log \
+            --since="7 days ago" \
+            --pretty=format:'- [`%h`](https://github.com/'"${GITHUB_REPOSITORY}"'/commit/%H) %s — %an' \
+            > "${DATA_DIR}/recent-commits.md"
+
+      # ============================================================
+      # Tools
+      # ============================================================
+
+      - name: Install PlatformIO
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          python -m pip install --upgrade pip setuptools
+          python -m pip install --upgrade platformio
+
+          pio --version | tee "${DATA_DIR}/platformio-version.txt"
+
+      # ============================================================
+      # Match the upstream firmware configuration
+      # ============================================================
+
+      - name: Enable upstream firmware build options
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          # Same FastLED configuration used by Upstream Firmware Delivery.
+          sed -i -E \
+            's/^([[:space:]]*);[[:space:]]*(-D ENABLE_FASTLED_PROTOCOL_SWITCHES.*)$/\1\2/' \
+            platformio.ini
+
+          if ! grep -q \
+            '^[[:space:]]*-D ENABLE_FASTLED_PROTOCOL_SWITCHES' \
+            platformio.ini
+          then
+            echo "Failed to enable ENABLE_FASTLED_PROTOCOL_SWITCHES."
+            exit 1
+          fi
+
+          echo "Full FastLED protocol set enabled."
+
+      # ============================================================
+      # Native tests
+      # ============================================================
+
+      - name: Run native tests
+        shell: bash
+        env:
+          PLATFORMIO_CORE_DIR: ${{ runner.temp }}/pio-health
+        run: |
+          set +e
+
+          pio test -e native-tests \
+            2>&1 | tee "${LOG_DIR}/native-tests.log"
+
+          STATUS="${PIPESTATUS[0]}"
+
+          set -e
+
+          if [[ "${STATUS}" -eq 0 ]]; then
+            echo "success" > "${DATA_DIR}/native-tests.status"
+          else
+            echo "failure" > "${DATA_DIR}/native-tests.status"
+          fi
+
+          # Never stop here: publish the report first.
+          exit 0
+
+      # ============================================================
+      # Current firmware: build every environment
+      # ============================================================
+
+      - name: Build all current firmware environments
+        shell: bash
+        env:
+          PLATFORMIO_CORE_DIR: ${{ runner.temp }}/pio-health
+        run: |
+          set -euo pipefail
+
+          mapfile -t ENVIRONMENTS < <(
+            awk -F'[][]' '
+              /^\[env:[^]]+\]$/ {
+                environment = $2
+                sub(/^env:/, "", environment)
+
+                if (environment != "native-tests") {
+                  print environment
+                }
+              }
+            ' platformio.ini
+          )
+
+          if [[ "${#ENVIRONMENTS[@]}" -eq 0 ]]; then
+            echo "No firmware environments found."
+            exit 1
+          fi
+
+          echo "environment,status,ram,ram_total,ram_pct,flash,flash_total,flash_pct" \
+            > "${DATA_DIR}/board-builds.csv"
+
+          for ENVIRONMENT in "${ENVIRONMENTS[@]}"; do
+            echo "::group::Build ${ENVIRONMENT}"
+
+            LOG_FILE="${LOG_DIR}/build-${ENVIRONMENT}.log"
+
+            set +e
+            pio run -e "${ENVIRONMENT}" \
+              2>&1 | tee "${LOG_FILE}"
+            STATUS="${PIPESTATUS[0]}"
+            set -e
+
+            ENVIRONMENT="${ENVIRONMENT}" \
+            STATUS="${STATUS}" \
+            LOG_FILE="${LOG_FILE}" \
+            OUTPUT_FILE="${DATA_DIR}/board-builds.csv" \
+            python <<'PY'
+          import csv
+          import os
+          import re
+
+          log = open(
+              os.environ["LOG_FILE"],
+              errors="replace"
+          ).read()
+
+          ram = re.search(
+              r"RAM:\s+\[[^\]]*\]\s+([\d.]+)%\s+"
+              r"\(used\s+(\d+)\s+bytes from\s+(\d+)\s+bytes\)",
+              log,
+          )
+
+          flash = re.search(
+              r"Flash:\s+\[[^\]]*\]\s+([\d.]+)%\s+"
+              r"\(used\s+(\d+)\s+bytes from\s+(\d+)\s+bytes\)",
+              log,
+          )
+
+          row = [
+              os.environ["ENVIRONMENT"],
+              "success" if os.environ["STATUS"] == "0" else "failure",
+              int(ram.group(2)) if ram else "",
+              int(ram.group(3)) if ram else "",
+              float(ram.group(1)) if ram else "",
+              int(flash.group(2)) if flash else "",
+              int(flash.group(3)) if flash else "",
+              float(flash.group(1)) if flash else "",
+          ]
+
+          with open(
+              os.environ["OUTPUT_FILE"],
+              "a",
+              newline=""
+          ) as output:
+              csv.writer(output).writerow(row)
+          PY
+
+            echo "::endgroup::"
+          done
+
+      # ============================================================
+      # Current package/toolchain information
+      # ============================================================
+
+      - name: Collect current package information
+        shell: bash
+        env:
+          PLATFORMIO_CORE_DIR: ${{ runner.temp }}/pio-health
+        run: |
+          set +e
+
+          pio pkg list -e "${TEST_ENV}" \
+            > "${DATA_DIR}/packages-current.txt" 2>&1
+
+          pio pkg outdated \
+            > "${DATA_DIR}/packages-outdated.txt" 2>&1
+
+          set -e
+
+      # ============================================================
+      # Parse direct dependencies declared by Bit Pirate
+      # ============================================================
+
+      - name: Discover direct dependencies
+        shell: bash
+        run: |
+          python <<'PY'
+          import json
+          import re
+          import os
+          from pathlib import Path
+
+          path = Path("platformio.ini")
+          lines = path.read_text().splitlines()
+
+          registry = {}
+          git_sources = []
+
+          section = None
+          in_lib_deps = False
+
+          registry_pattern = re.compile(
+              r"^(?:(?P<alias>[^=]+)=)?"
+              r"(?P<owner>[A-Za-z0-9_.-]+)/"
+              r"(?P<name>.+?)"
+              r"(?:\s*@\s*(?P<constraint>\S+))?$"
+          )
+
+          for raw in lines:
+              stripped = raw.strip()
+
+              if (
+                  stripped.startswith("[")
+                  and stripped.endswith("]")
+              ):
+                  section = stripped[1:-1]
+                  in_lib_deps = False
+                  continue
+
+              if re.match(
+                  r"^lib_deps\s*=",
+                  stripped
+              ):
+                  in_lib_deps = True
+                  continue
+
+              if not in_lib_deps:
+                  continue
+
+              # A new top-level setting terminates lib_deps.
+              if (
+                  stripped
+                  and not raw.startswith((" ", "\t"))
+                  and not stripped.startswith(";")
+              ):
+                  in_lib_deps = False
+                  continue
+
+              if (
+                  not stripped
+                  or stripped.startswith(";")
+                  or stripped.startswith("${")
+              ):
+                  continue
+
+              value = stripped.split(";", 1)[0].strip()
+
+              if not value:
+                  continue
+
+              env = (
+                  "s3-devkit"
+                  if section == "env"
+                  else (
+                      section[4:]
+                      if section and section.startswith("env:")
+                      else None
+                  )
+              )
+
+              if not env:
+                  continue
+
+              if "https://github.com/" in value:
+                  alias = None
+                  source = value
+
+                  if "=" in value:
+                      alias, source = value.split("=", 1)
+                      alias = alias.strip()
+                      source = source.strip()
+
+                  git_sources.append({
+                      "alias": alias,
+                      "source": source,
+                      "environment": env,
+                      "section": section,
+                      "pinned": "#" in source,
+                  })
+
+                  continue
+
+              match = registry_pattern.match(value)
+
+              if not match:
+                  continue
+
+              owner = match.group("owner")
+              name = match.group("name").strip()
+              constraint = match.group("constraint") or "*"
+
+              key = f"{owner}/{name}"
+              normalized = key.lower()
+
+              candidate = {
+                  "package": key,
+                  "owner": owner,
+                  "name": name,
+                  "constraint": constraint,
+                  "environment": env,
+                  "section": section,
+              }
+
+              existing = registry.get(normalized)
+
+              # Prefer s3-devkit when a dependency is declared
+              # in several environments.
+              if (
+                  existing is None
+                  or env == "s3-devkit"
+              ):
+                  registry[normalized] = candidate
+
+          output = {
+              "registry": sorted(
+                  registry.values(),
+                  key=lambda item: item["package"].lower()
+              ),
+              "git": git_sources,
+          }
+
+          target = (
+              Path(os.environ["DATA_DIR"])
+              / "direct-dependencies.json"
+          )
+
+          target.write_text(
+              json.dumps(output, indent=2)
+          )
+          PY
+
+      # ============================================================
+      # Resolve current/latest library versions
+      # ============================================================
+
+      - name: Resolve dependency versions
+        shell: bash
+        env:
+          PLATFORMIO_CORE_DIR: ${{ runner.temp }}/pio-health
+        run: |
+          python <<'PY'
+          import json
+          import os
+          import re
+          import subprocess
+          from pathlib import Path
+
+          data_dir = Path(os.environ["DATA_DIR"])
+
+          dependencies = json.loads(
+              (data_dir / "direct-dependencies.json").read_text()
+          )
+
+          def normalize(value):
+              return re.sub(
+                  r"[^a-z0-9]",
+                  "",
+                  value.lower()
+              )
+
+          def installed_version(dep):
+              wanted = normalize(dep["name"])
+              env = dep["environment"]
+
+              roots = [
+                  Path(".pio/libdeps") / env
+              ]
+
+              # Fallback search if the selected environment failed.
+              roots.extend(
+                  p
+                  for p in Path(".pio/libdeps").glob("*")
+                  if p.is_dir()
+              )
+
+              seen = set()
+
+              for root in roots:
+                  if root in seen or not root.exists():
+                      continue
+
+                  seen.add(root)
+
+                  for folder in root.iterdir():
+                      if not folder.is_dir():
+                          continue
+
+                      manifest = folder / "library.json"
+
+                      if manifest.exists():
+                          try:
+                              info = json.loads(
+                                  manifest.read_text(
+                                      errors="replace"
+                                  )
+                              )
+
+                              name = info.get("name", folder.name)
+                              version = info.get("version")
+
+                              if (
+                                  normalize(str(name)) == wanted
+                                  and version
+                              ):
+                                  return str(version)
+
+                          except Exception:
+                              pass
+
+                      properties = folder / "library.properties"
+
+                      if properties.exists():
+                          props = {}
+
+                          for line in properties.read_text(
+                              errors="replace"
+                          ).splitlines():
+                              if "=" in line:
+                                  key, value = line.split("=", 1)
+                                  props[key.strip()] = value.strip()
+
+                          if (
+                              normalize(
+                                  props.get("name", folder.name)
+                              ) == wanted
+                              and props.get("version")
+                          ):
+                              return props["version"]
+
+                  # Directory-name fallback.
+                  for folder in root.iterdir():
+                      if (
+                          folder.is_dir()
+                          and normalize(folder.name) == wanted
+                      ):
+                          manifest = folder / "library.json"
+
+                          if manifest.exists():
+                              try:
+                                  info = json.loads(
+                                      manifest.read_text()
+                                  )
+
+                                  if info.get("version"):
+                                      return str(
+                                          info["version"]
+                                      )
+                              except Exception:
+                                  pass
+
+              return None
+
+          def latest_version(dep):
+              command = [
+                  "pio",
+                  "pkg",
+                  "show",
+                  dep["package"],
+                  "--type",
+                  "library",
+              ]
+
+              result = subprocess.run(
+                  command,
+                  text=True,
+                  capture_output=True,
+              )
+
+              text = (
+                  result.stdout
+                  + "\n"
+                  + result.stderr
+              )
+
+              match = re.search(
+                  r"Library\s+•\s+([^\s•]+)",
+                  text,
+              )
+
+              if match:
+                  return match.group(1)
+
+              return None
+
+          for dep in dependencies["registry"]:
+              dep["resolved"] = installed_version(dep)
+              dep["latest"] = latest_version(dep)
+
+              current = (
+                  dep["resolved"].lstrip("v")
+                  if dep["resolved"]
+                  else None
+              )
+
+              latest = (
+                  dep["latest"].lstrip("v")
+                  if dep["latest"]
+                  else None
+              )
+
+              dep["update_available"] = (
+                  bool(current and latest)
+                  and current != latest
+              )
+
+          target = data_dir / "dependencies-resolved.json"
+
+          target.write_text(
+              json.dumps(
+                  dependencies,
+                  indent=2
+              )
+          )
+          PY
+
+      # ============================================================
+      # Test new direct library versions one by one
+      # ============================================================
+
+      - name: Test dependency updates
+        shell: bash
+        env:
+          PLATFORMIO_CORE_DIR: ${{ runner.temp }}/pio-health
+        run: |
+          set -euo pipefail
+
+          echo \
+            "package,current,latest,environment,status,ram,flash,ram_delta,flash_delta,log" \
+            > "${DATA_DIR}/dependency-results.csv"
+
+          python <<'PY' > "${DATA_DIR}/dependency-updates.tsv"
+          import hashlib
+          import json
+          import os
+          import re
+          from pathlib import Path
+
+          data = json.loads(
+              (
+                  Path(os.environ["DATA_DIR"])
+                  / "dependencies-resolved.json"
+              ).read_text()
+          )
+
+          for dep in data["registry"]:
+              if not dep.get("update_available"):
+                  continue
+
+              slug = re.sub(
+                  r"[^a-zA-Z0-9]+",
+                  "-",
+                  dep["name"]
+              ).strip("-").lower()
+
+              digest = hashlib.sha1(
+                  dep["package"].encode()
+              ).hexdigest()[:8]
+
+              slug = f"{slug}-{digest}"
+
+              print(
+                  dep["package"],
+                  dep["resolved"],
+                  dep["latest"],
+                  dep["environment"],
+                  slug,
+                  sep="\t",
+              )
+          PY
+
+          while IFS=$'\t' read -r \
+            PACKAGE CURRENT LATEST ENVIRONMENT SLUG
+          do
+            [[ -z "${PACKAGE}" ]] && continue
+
+            echo "::group::Dependency ${PACKAGE} ${CURRENT} -> ${LATEST}"
+
+            TEST_DIR="${RUNNER_TEMP}/dependency-test-${SLUG}"
+            LOG_FILE="${LOG_DIR}/dependency-${SLUG}.log"
+
+            rm -rf "${TEST_DIR}"
+            mkdir -p "${TEST_DIR}"
+
+            git archive HEAD | tar -x -C "${TEST_DIR}"
+
+            # Match upstream firmware build configuration.
+            sed -i -E \
+              's/^([[:space:]]*);[[:space:]]*(-D ENABLE_FASTLED_PROTOCOL_SWITCHES.*)$/\1\2/' \
+              "${TEST_DIR}/platformio.ini"
+
+            PACKAGE="${PACKAGE}" \
+            LATEST="${LATEST}" \
+            FILE="${TEST_DIR}/platformio.ini" \
+            python <<'PY'
+          import os
+          import re
+          from pathlib import Path
+
+          package = os.environ["PACKAGE"]
+          latest = os.environ["LATEST"]
+
+          path = Path(os.environ["FILE"])
+          lines = path.read_text().splitlines()
+
+          pattern = re.compile(
+              rf"^(\s*(?:[^=]+=\s*)?"
+              rf"{re.escape(package)}"
+              rf"\s*@\s*)"
+              rf"\S+(.*)$",
+              re.IGNORECASE,
+          )
+
+          replacements = 0
+
+          for index, line in enumerate(lines):
+              match = pattern.match(line)
+
+              if not match:
+                  continue
+
+              lines[index] = (
+                  match.group(1)
+                  + latest
+                  + match.group(2)
+              )
+
+              replacements += 1
+
+          if replacements == 0:
+              raise SystemExit(
+                  f"Unable to override dependency {package}"
+              )
+
+          path.write_text(
+              "\n".join(lines) + "\n"
+          )
+          PY
+
+            set +e
+
+            (
+              cd "${TEST_DIR}"
+
+              pio run -e "${ENVIRONMENT}"
+            ) 2>&1 | tee "${LOG_FILE}"
+
+            STATUS="${PIPESTATUS[0]}"
+
+            set -e
+
+            PACKAGE="${PACKAGE}" \
+            CURRENT="${CURRENT}" \
+            LATEST="${LATEST}" \
+            ENVIRONMENT="${ENVIRONMENT}" \
+            STATUS="${STATUS}" \
+            LOG_FILE="${LOG_FILE}" \
+            RESULTS="${DATA_DIR}/dependency-results.csv" \
+            BASELINE="${DATA_DIR}/board-builds.csv" \
+            python <<'PY'
+          import csv
+          import os
+          import re
+
+          log = open(
+              os.environ["LOG_FILE"],
+              errors="replace"
+          ).read()
+
+          ram = re.search(
+              r"RAM:\s+\[[^\]]*\]\s+([\d.]+)%\s+"
+              r"\(used\s+(\d+)\s+bytes from\s+(\d+)\s+bytes\)",
+              log,
+          )
+
+          flash = re.search(
+              r"Flash:\s+\[[^\]]*\]\s+([\d.]+)%\s+"
+              r"\(used\s+(\d+)\s+bytes from\s+(\d+)\s+bytes\)",
+              log,
+          )
+
+          new_ram = int(ram.group(2)) if ram else None
+          new_flash = int(flash.group(2)) if flash else None
+
+          baseline_ram = None
+          baseline_flash = None
+
+          with open(os.environ["BASELINE"]) as source:
+              for row in csv.DictReader(source):
+                  if (
+                      row["environment"]
+                      == os.environ["ENVIRONMENT"]
+                  ):
+                      baseline_ram = (
+                          int(row["ram"])
+                          if row["ram"]
+                          else None
+                      )
+
+                      baseline_flash = (
+                          int(row["flash"])
+                          if row["flash"]
+                          else None
+                      )
+
+                      break
+
+          ram_delta = (
+              new_ram - baseline_ram
+              if new_ram is not None
+              and baseline_ram is not None
+              else None
+          )
+
+          flash_delta = (
+              new_flash - baseline_flash
+              if new_flash is not None
+              and baseline_flash is not None
+              else None
+          )
+
+          with open(
+              os.environ["RESULTS"],
+              "a",
+              newline=""
+          ) as output:
+              csv.writer(output).writerow([
+                  os.environ["PACKAGE"],
+                  os.environ["CURRENT"],
+                  os.environ["LATEST"],
+                  os.environ["ENVIRONMENT"],
+                  (
+                      "success"
+                      if os.environ["STATUS"] == "0"
+                      else "failure"
+                  ),
+                  new_ram if new_ram is not None else "",
+                  new_flash if new_flash is not None else "",
+                  ram_delta if ram_delta is not None else "",
+                  flash_delta if flash_delta is not None else "",
+                  os.environ["LOG_FILE"],
+              ])
+          PY
+
+            echo "::endgroup::"
+
+          done < "${DATA_DIR}/dependency-updates.tsv"
+
+      # ============================================================
+      # Latest pioarduino stable
+      # ============================================================
+
+      - name: Prepare latest pioarduino build
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          LATEST_DIR="${RUNNER_TEMP}/latest-pioarduino"
+
+          rm -rf "${LATEST_DIR}"
+          mkdir -p "${LATEST_DIR}"
+
+          git archive HEAD | tar -x -C "${LATEST_DIR}"
+
+          sed -i -E \
+            's/^([[:space:]]*);[[:space:]]*(-D ENABLE_FASTLED_PROTOCOL_SWITCHES.*)$/\1\2/' \
+            "${LATEST_DIR}/platformio.ini"
+
+          FILE="${LATEST_DIR}/platformio.ini" \
+          python <<'PY'
+          import os
+          from pathlib import Path
+
+          stable = (
+              "https://github.com/pioarduino/"
+              "platform-espressif32/releases/download/"
+              "stable/platform-espressif32.zip"
+          )
+
+          path = Path(os.environ["FILE"])
+          lines = path.read_text().splitlines()
+
+          section = None
+          replaced = False
+
+          for index, line in enumerate(lines):
+              stripped = line.strip()
+
+              if (
+                  stripped.startswith("[")
+                  and stripped.endswith("]")
+              ):
+                  section = stripped
+                  continue
+
+              if (
+                  section == "[env]"
+                  and stripped.startswith("platform")
+                  and "=" in stripped
+              ):
+                  lines[index] = (
+                      f"platform = {stable}"
+                  )
+
+                  replaced = True
+                  break
+
+          if not replaced:
+              raise SystemExit(
+                  "Unable to replace global platform."
+              )
+
+          path.write_text(
+              "\n".join(lines) + "\n"
+          )
+          PY
+
+      - name: Build latest pioarduino stable
+        shell: bash
+        env:
+          PLATFORMIO_CORE_DIR: ${{ runner.temp }}/pio-health-latest
+        run: |
+          set +e
+
+          (
+            cd "${RUNNER_TEMP}/latest-pioarduino"
+
+            pio run -e "${TEST_ENV}"
+          ) 2>&1 | tee "${LOG_DIR}/latest-framework.log"
+
+          STATUS="${PIPESTATUS[0]}"
+
+          set -e
+
+          if [[ "${STATUS}" -eq 0 ]]; then
+            echo "success" \
+              > "${DATA_DIR}/latest-framework.status"
+          else
+            echo "failure" \
+              > "${DATA_DIR}/latest-framework.status"
+          fi
+
+          (
+            cd "${RUNNER_TEMP}/latest-pioarduino"
+
+            pio pkg list -e "${TEST_ENV}"
+          ) > "${DATA_DIR}/packages-latest-framework.txt" \
+            2>&1 || true
+
+          exit 0
+
+      # ============================================================
+      # Generate README + JSON + resource history
+      # ============================================================
+
+      - name: Generate weekly report
+        shell: bash
+        run: |
+          python <<'PY'
+          import csv
+          import json
+          import os
+          import re
+          from pathlib import Path
+
+          data_dir = Path(os.environ["DATA_DIR"])
+          log_dir = Path(os.environ["LOG_DIR"])
+          report_dir = Path(os.environ["REPORT_DIR"])
+
+          repo = os.environ["GITHUB_REPOSITORY"]
+          run_id = os.environ["GITHUB_RUN_ID"]
+
+          run_url = (
+              f"https://github.com/{repo}/actions/runs/{run_id}"
+          )
+
+          report_branch = os.environ["REPORT_BRANCH"]
+
+          report_url = (
+              f"https://github.com/{repo}/tree/{report_branch}"
+          )
+
+          source_sha = os.environ["SOURCE_SHA"]
+          short_sha = os.environ["SHORT_SHA"]
+          build_date = os.environ["BUILD_DATE"]
+          report_date = os.environ["REPORT_DATE"]
+
+          # --------------------------------------------------------
+          # Helpers
+          # --------------------------------------------------------
+
+          def parse_build_log(path):
+              if not path.exists():
+                  return {}
+
+              text = path.read_text(errors="replace")
+
+              ram = re.search(
+                  r"RAM:\s+\[[^\]]*\]\s+([\d.]+)%\s+"
+                  r"\(used\s+(\d+)\s+bytes from\s+(\d+)\s+bytes\)",
+                  text,
+              )
+
+              flash = re.search(
+                  r"Flash:\s+\[[^\]]*\]\s+([\d.]+)%\s+"
+                  r"\(used\s+(\d+)\s+bytes from\s+(\d+)\s+bytes\)",
+                  text,
+              )
+
+              platform = re.search(
+                  r"^PLATFORM:\s*(.+)$",
+                  text,
+                  re.MULTILINE,
+              )
+
+              framework = re.search(
+                  r"framework-arduinoespressif32\s+@\s+([^\s]+)",
+                  text,
+              )
+
+              return {
+                  "ram": int(ram.group(2)) if ram else None,
+                  "ram_total": int(ram.group(3)) if ram else None,
+                  "ram_pct": float(ram.group(1)) if ram else None,
+                  "flash": int(flash.group(2)) if flash else None,
+                  "flash_total": int(flash.group(3)) if flash else None,
+                  "flash_pct": float(flash.group(1)) if flash else None,
+                  "platform": (
+                      platform.group(1).strip()
+                      if platform
+                      else "unknown"
+                  ),
+                  "framework": (
+                      framework.group(1).strip()
+                      if framework
+                      else "unknown"
+                  ),
+              }
+
+          def error_excerpt(path, limit=8):
+              if not path.exists():
+                  return "Build log unavailable."
+
+              lines = path.read_text(
+                  errors="replace"
+              ).splitlines()
+
+              errors = []
+
+              for line in lines:
+                  lower = line.lower()
+
+                  if (
+                      "fatal error:" in lower
+                      or "error:" in lower
+                      or "undefined reference" in lower
+                      or "*** [" in line
+                  ):
+                      errors.append(line.strip())
+
+              if not errors:
+                  errors = lines[-limit:]
+
+              return "\n".join(errors[-limit:])
+
+          def fmt_bytes(value):
+              if value is None or value == "":
+                  return "n/a"
+
+              return f"{int(value):,} B"
+
+          def fmt_delta(value):
+              if value is None or value == "":
+                  return "—"
+
+              value = int(value)
+
+              return f"{value:+,} B"
+
+          # --------------------------------------------------------
+          # Baseline board builds
+          # --------------------------------------------------------
+
+          with open(data_dir / "board-builds.csv") as source:
+              boards = list(csv.DictReader(source))
+
+          board_total = len(boards)
+
+          board_ok = sum(
+              row["status"] == "success"
+              for row in boards
+          )
+
+          failed_boards = [
+              row["environment"]
+              for row in boards
+              if row["status"] != "success"
+          ]
+
+          test_status = (
+              data_dir
+              .joinpath("native-tests.status")
+              .read_text()
+              .strip()
+          )
+
+          tests_ok = test_status == "success"
+
+          baseline_healthy = (
+              tests_ok
+              and board_ok == board_total
+          )
+
+          baseline_row = next(
+              (
+                  row
+                  for row in boards
+                  if row["environment"] == "s3-devkit"
+              ),
+              None,
+          )
+
+          baseline_log = parse_build_log(
+              log_dir / "build-s3-devkit.log"
+          )
+
+          # --------------------------------------------------------
+          # Latest framework
+          # --------------------------------------------------------
+
+          latest_framework_status = (
+              data_dir
+              .joinpath("latest-framework.status")
+              .read_text()
+              .strip()
+          )
+
+          latest_framework_ok = (
+              latest_framework_status == "success"
+          )
+
+          latest_framework = parse_build_log(
+              log_dir / "latest-framework.log"
+          )
+
+          framework_ram_delta = None
+          framework_flash_delta = None
+
+          if (
+              baseline_log.get("ram") is not None
+              and latest_framework.get("ram") is not None
+          ):
+              framework_ram_delta = (
+                  latest_framework["ram"]
+                  - baseline_log["ram"]
+              )
+
+          if (
+              baseline_log.get("flash") is not None
+              and latest_framework.get("flash") is not None
+          ):
+              framework_flash_delta = (
+                  latest_framework["flash"]
+                  - baseline_log["flash"]
+              )
+
+          # --------------------------------------------------------
+          # Dependencies
+          # --------------------------------------------------------
+
+          dependencies = json.loads(
+              (
+                  data_dir
+                  / "dependencies-resolved.json"
+              ).read_text()
+          )
+
+          dependency_results = {}
+
+          results_path = (
+              data_dir / "dependency-results.csv"
+          )
+
+          if results_path.exists():
+              with open(results_path) as source:
+                  for row in csv.DictReader(source):
+                      dependency_results[
+                          row["package"].lower()
+                      ] = row
+
+          updates = [
+              dep
+              for dep in dependencies["registry"]
+              if dep.get("update_available")
+          ]
+
+          broken_updates = []
+
+          for dep in updates:
+              result = dependency_results.get(
+                  dep["package"].lower()
+              )
+
+              if (
+                  result
+                  and result["status"] == "failure"
+              ):
+                  broken_updates.append(dep["package"])
+
+          # --------------------------------------------------------
+          # Resource history
+          # --------------------------------------------------------
+
+          history = []
+
+          previous = (
+              data_dir
+              / "previous-resource-history.csv"
+          )
+
+          if previous.exists():
+              with open(previous) as source:
+                  history = list(
+                      csv.DictReader(source)
+                  )
+
+          history.append({
+              "date": report_date,
+              "commit": short_sha,
+              "ram": (
+                  baseline_row["ram"]
+                  if baseline_row
+                  else ""
+              ),
+              "flash": (
+                  baseline_row["flash"]
+                  if baseline_row
+                  else ""
+              ),
+              "boards_ok": board_ok,
+              "boards_total": board_total,
+              "tests": (
+                  "success"
+                  if tests_ok
+                  else "failure"
+              ),
+              "framework": baseline_log.get(
+                  "framework",
+                  "unknown"
+              ),
+          })
+
+          # Keep one year of weekly reports.
+          history = history[-52:]
+
+          history_path = (
+              report_dir
+              / "resource-history.csv"
+          )
+
+          with open(
+              history_path,
+              "w",
+              newline=""
+          ) as output:
+              fieldnames = [
+                  "date",
+                  "commit",
+                  "ram",
+                  "flash",
+                  "boards_ok",
+                  "boards_total",
+                  "tests",
+                  "framework",
+              ]
+
+              writer = csv.DictWriter(
+                  output,
+                  fieldnames=fieldnames
+              )
+
+              writer.writeheader()
+              writer.writerows(history)
+
+          # --------------------------------------------------------
+          # README
+          # --------------------------------------------------------
+
+          lines = [
+              "# ESP32 Bit Pirate — Weekly Firmware Health",
+              "",
+              f"Last update: `{build_date}`",
+              "",
+              f"Source: [`{short_sha}`]"
+              f"(https://github.com/{repo}/commit/{source_sha})",
+              "",
+              (
+                  f"Full workflow logs and artifacts: "
+                  f"[GitHub Actions run]({run_url})"
+              ),
+              "",
+              "## Overall status",
+              "",
+          ]
+
+          if baseline_healthy:
+              lines.append(
+                  "✅ **Current Bit Pirate firmware is healthy.**"
+              )
+          else:
+              lines.append(
+                  "🚨 **Current Bit Pirate baseline has failures.**"
+              )
+
+          lines.extend([
+              "",
+              f"- Boards: **{board_ok}/{board_total}** build successfully",
+              (
+                  "- Native tests: **✅ passed**"
+                  if tests_ok
+                  else "- Native tests: **❌ failed**"
+              ),
+              (
+                  "- Latest pioarduino: **✅ compatible**"
+                  if latest_framework_ok
+                  else "- Latest pioarduino: **⚠️ build incompatible**"
+              ),
+              (
+                  f"- Direct library updates available: "
+                  f"**{len(updates)}**"
+              ),
+              (
+                  f"- Library update build regressions: "
+                  f"**{len(broken_updates)}**"
+              ),
+              "",
+              "## Current reference build",
+              "",
+              "| Item | Value |",
+              "|---|---:|",
+              (
+                  f"| Environment | `s3-devkit` |"
+              ),
+              (
+                  f"| Arduino framework | "
+                  f"`{baseline_log.get('framework', 'unknown')}` |"
+              ),
+              (
+                  f"| Platform | "
+                  f"`{baseline_log.get('platform', 'unknown')}` |"
+              ),
+              (
+                  f"| Static RAM | "
+                  f"{fmt_bytes(baseline_log.get('ram'))} |"
+              ),
+              (
+                  f"| Flash | "
+                  f"{fmt_bytes(baseline_log.get('flash'))} |"
+              ),
+              "",
+              "## Supported environment builds",
+              "",
+              "| Environment | Status | Static RAM | Flash |",
+              "|---|---|---:|---:|",
+          ])
+
+          for row in boards:
+              status = (
+                  "✅"
+                  if row["status"] == "success"
+                  else "❌"
+              )
+
+              lines.append(
+                  f"| `{row['environment']}` "
+                  f"| {status} "
+                  f"| {fmt_bytes(row['ram'])} "
+                  f"| {fmt_bytes(row['flash'])} |"
+              )
+
+          # --------------------------------------------------------
+          # Framework
+          # --------------------------------------------------------
+
+          lines.extend([
+              "",
+              "## Pioarduino framework compatibility",
+              "",
+              "| Build | Arduino | Platform | RAM | Flash |",
+              "|---|---|---|---:|---:|",
+              (
+                  f"| Current pinned "
+                  f"| `{baseline_log.get('framework', 'unknown')}` "
+                  f"| `{baseline_log.get('platform', 'unknown')}` "
+                  f"| {fmt_bytes(baseline_log.get('ram'))} "
+                  f"| {fmt_bytes(baseline_log.get('flash'))} |"
+              ),
+              (
+                  f"| Latest stable "
+                  f"| `{latest_framework.get('framework', 'unknown')}` "
+                  f"| `{latest_framework.get('platform', 'unknown')}` "
+                  f"| {fmt_bytes(latest_framework.get('ram'))} "
+                  f"| {fmt_bytes(latest_framework.get('flash'))} |"
+              ),
+              "",
+          ])
+
+          if latest_framework_ok:
+              lines.extend([
+                  "✅ Latest stable pioarduino compiles successfully.",
+                  "",
+                  (
+                      f"- RAM delta: "
+                      f"**{fmt_delta(framework_ram_delta)}**"
+                  ),
+                  (
+                      f"- Flash delta: "
+                      f"**{fmt_delta(framework_flash_delta)}**"
+                  ),
+              ])
+          else:
+              lines.extend([
+                  (
+                      "⚠️ The currently pinned framework builds, "
+                      "but latest stable pioarduino does not."
+                  ),
+                  "",
+                  "<details>",
+                  "<summary>Latest framework build errors</summary>",
+                  "",
+                  "```text",
+                  error_excerpt(
+                      log_dir / "latest-framework.log"
+                  ),
+                  "```",
+                  "",
+                  "</details>",
+              ])
+
+          # --------------------------------------------------------
+          # Dependencies
+          # --------------------------------------------------------
+
+          lines.extend([
+              "",
+              "## Direct dependency health",
+              "",
+              (
+                  "Latest versions are tested individually against "
+                  "the currently pinned framework."
+              ),
+              "",
+              (
+                  "| Library | Declared | Resolved | Latest | "
+                  "Test environment | Compatibility | RAM Δ | Flash Δ |"
+              ),
+              "|---|---:|---:|---:|---|---|---:|---:|",
+          ])
+
+          for dep in dependencies["registry"]:
+              result = dependency_results.get(
+                  dep["package"].lower()
+              )
+
+              if not dep.get("resolved"):
+                  compatibility = "⚠️ unresolved"
+                  ram_delta = "—"
+                  flash_delta = "—"
+
+              elif not dep.get("latest"):
+                  compatibility = "❓ latest unknown"
+                  ram_delta = "—"
+                  flash_delta = "—"
+
+              elif not dep.get("update_available"):
+                  compatibility = "✅ up to date"
+                  ram_delta = "—"
+                  flash_delta = "—"
+
+              elif result is None:
+                  compatibility = "❓ update not tested"
+                  ram_delta = "—"
+                  flash_delta = "—"
+
+              elif result["status"] == "success":
+                  compatibility = "✅ update builds"
+                  ram_delta = fmt_delta(
+                      result["ram_delta"]
+                  )
+                  flash_delta = fmt_delta(
+                      result["flash_delta"]
+                  )
+
+              else:
+                  compatibility = "⚠️ update fails to build"
+                  ram_delta = "—"
+                  flash_delta = "—"
+
+              lines.append(
+                  f"| `{dep['package']}` "
+                  f"| `{dep['constraint']}` "
+                  f"| `{dep.get('resolved') or 'unknown'}` "
+                  f"| `{dep.get('latest') or 'unknown'}` "
+                  f"| `{dep['environment']}` "
+                  f"| {compatibility} "
+                  f"| {ram_delta} "
+                  f"| {flash_delta} |"
+              )
+
+          if broken_updates:
+              lines.extend([
+                  "",
+                  "### Dependency compatibility regressions",
+                  "",
+              ])
+
+              for package in broken_updates:
+                  result = dependency_results[
+                      package.lower()
+                  ]
+
+                  log_file = Path(
+                      result["log"]
+                  )
+
+                  lines.extend([
+                      f"#### `{package}`",
+                      "",
+                      (
+                          f"`{result['current']}` → "
+                          f"`{result['latest']}`"
+                      ),
+                      "",
+                      "<details>",
+                      "<summary>Build errors</summary>",
+                      "",
+                      "```text",
+                      error_excerpt(log_file),
+                      "```",
+                      "",
+                      "</details>",
+                      "",
+                  ])
+
+          # --------------------------------------------------------
+          # Git-based dependencies
+          # --------------------------------------------------------
+
+          lines.extend([
+              "",
+              "## Git-based dependencies",
+              "",
+          ])
+
+          if dependencies["git"]:
+              lines.extend([
+                  "| Source | Environment | Pinning |",
+                  "|---|---|---|",
+              ])
+
+              for dep in dependencies["git"]:
+                  pinning = (
+                      "✅ pinned ref"
+                      if dep["pinned"]
+                      else "⚠️ unpinned HEAD"
+                  )
+
+                  lines.append(
+                      f"| `{dep['source']}` "
+                      f"| `{dep['environment']}` "
+                      f"| {pinning} |"
+                  )
+          else:
+              lines.append(
+                  "No direct Git dependencies detected."
+              )
+
+          # --------------------------------------------------------
+          # PlatformIO outdated output
+          # --------------------------------------------------------
+
+          outdated_path = (
+              data_dir
+              / "packages-outdated.txt"
+          )
+
+          if outdated_path.exists():
+              outdated_text = outdated_path.read_text(
+                  errors="replace"
+              )
+
+              lines.extend([
+                  "",
+                  "## PlatformIO package update report",
+                  "",
+                  "<details>",
+                  "<summary>Current / Wanted / Latest</summary>",
+                  "",
+                  "```text",
+                  outdated_text.strip(),
+                  "```",
+                  "",
+                  "</details>",
+              ])
+
+          # --------------------------------------------------------
+          # Tests
+          # --------------------------------------------------------
+
+          lines.extend([
+              "",
+              "## Native tests",
+              "",
+              (
+                  "✅ Native test suite passed."
+                  if tests_ok
+                  else "❌ Native test suite failed."
+              ),
+          ])
+
+          # --------------------------------------------------------
+          # Recent activity
+          # --------------------------------------------------------
+
+          recent_path = (
+              data_dir
+              / "recent-commits.md"
+          )
+
+          recent = (
+              recent_path.read_text(
+                  errors="replace"
+              ).strip()
+              if recent_path.exists()
+              else ""
+          )
+
+          lines.extend([
+              "",
+              "## Development activity — last 7 days",
+              "",
+              (
+                  recent
+                  if recent
+                  else "No commits during the last 7 days."
+              ),
+          ])
+
+          # --------------------------------------------------------
+          # Resource history
+          # --------------------------------------------------------
+
+          lines.extend([
+              "",
+              "## Recent resource history",
+              "",
+              "| Date | Commit | RAM | Flash | Boards | Tests |",
+              "|---|---|---:|---:|---:|---|",
+          ])
+
+          for row in history[-8:]:
+              lines.append(
+                  f"| {row['date']} "
+                  f"| `{row['commit']}` "
+                  f"| {fmt_bytes(row['ram'])} "
+                  f"| {fmt_bytes(row['flash'])} "
+                  f"| {row['boards_ok']}/{row['boards_total']} "
+                  f"| {'✅' if row['tests'] == 'success' else '❌'} |"
+              )
+
+          lines.extend([
+              "",
+              "---",
+              "",
+              (
+                  "This branch is generated automatically. "
+                  "Do not edit it manually."
+              ),
+              "",
+              (
+                  "Static RAM is PlatformIO's compile-time "
+                  "`.data + .bss` measurement; it is not "
+                  "runtime heap consumption after boot."
+              ),
+              "",
+          ])
+
+          readme = "\n".join(lines)
+
+          (
+              report_dir
+              / "README.md"
+          ).write_text(readme)
+
+          # --------------------------------------------------------
+          # JSON machine-readable report
+          # --------------------------------------------------------
+
+          report_json = {
+              "date": build_date,
+              "source_commit": source_sha,
+              "baseline": {
+                  "healthy": baseline_healthy,
+                  "tests": tests_ok,
+                  "boards_ok": board_ok,
+                  "boards_total": board_total,
+                  "failed_boards": failed_boards,
+                  "reference_environment": "s3-devkit",
+                  "framework": baseline_log,
+              },
+              "latest_framework": {
+                  "build": latest_framework_ok,
+                  "details": latest_framework,
+                  "ram_delta": framework_ram_delta,
+                  "flash_delta": framework_flash_delta,
+              },
+              "dependencies": dependencies,
+              "dependency_update_results": list(
+                  dependency_results.values()
+              ),
+              "run_url": run_url,
+          }
+
+          (
+              report_dir
+              / "report.json"
+          ).write_text(
+              json.dumps(
+                  report_json,
+                  indent=2
+              )
+          )
+
+          # Keep useful tabular raw data on the report branch.
+          (
+              report_dir
+              / "board-builds.csv"
+          ).write_text(
+              (
+                  data_dir
+                  / "board-builds.csv"
+              ).read_text()
+          )
+
+          (
+              report_dir
+              / "dependency-results.csv"
+          ).write_text(
+              (
+                  data_dir
+                  / "dependency-results.csv"
+              ).read_text()
+          )
+
+          # --------------------------------------------------------
+          # Discord summary
+          # --------------------------------------------------------
+
+          discord = [
+              "ESP32 Bit Pirate — Weekly Firmware Health",
+              "",
+              (
+                  "✅ Baseline healthy"
+                  if baseline_healthy
+                  else "🚨 Baseline has failures"
+              ),
+              f"Boards: {board_ok}/{board_total}",
+              (
+                  "Native tests: ✅"
+                  if tests_ok
+                  else "Native tests: ❌"
+              ),
+              (
+                  f"RAM: {fmt_bytes(baseline_log.get('ram'))}"
+              ),
+              (
+                  f"Flash: {fmt_bytes(baseline_log.get('flash'))}"
+              ),
+              "",
+              "Framework:",
+              (
+                  "✅ Latest pioarduino builds"
+                  if latest_framework_ok
+                  else "⚠️ Latest pioarduino does not build"
+              ),
+          ]
+
+          if latest_framework_ok:
+              discord.extend([
+                  f"RAM Δ: {fmt_delta(framework_ram_delta)}",
+                  f"Flash Δ: {fmt_delta(framework_flash_delta)}",
+              ])
+
+          discord.extend([
+              "",
+              "Dependencies:",
+              f"{len(updates)} update(s) available",
+              (
+                  f"{len(broken_updates)} compatibility "
+                  f"regression(s)"
+              ),
+          ])
+
+          for package in broken_updates[:5]:
+              result = dependency_results[
+                  package.lower()
+              ]
+
+              discord.append(
+                  f"⚠️ {package}: "
+                  f"{result['current']} → "
+                  f"{result['latest']} fails to build"
+              )
+
+          discord.extend([
+              "",
+              f"Report: {report_url}",
+              f"Run: {run_url}",
+          ])
+
+          (
+              data_dir
+              / "discord.txt"
+          ).write_text(
+              "\n".join(discord)
+          )
+          PY
+
+      # ============================================================
+      # GitHub Actions Summary
+      # ============================================================
+
+      - name: Add report to Actions summary
+        if: always()
+        shell: bash
+        run: |
+          if [[ -f "${REPORT_DIR}/README.md" ]]; then
+            cat "${REPORT_DIR}/README.md" \
+              >> "${GITHUB_STEP_SUMMARY}"
+          fi
+
+      # ============================================================
+      # Logs as GitHub artifact
+      # ============================================================
+
+      - name: Upload detailed health artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: weekly-firmware-health-${{ env.REPORT_DATE }}
+          path: |
+            ${{ runner.temp }}/weekly-report/README.md
+            ${{ runner.temp }}/weekly-report/report.json
+            ${{ runner.temp }}/weekly-report/board-builds.csv
+            ${{ runner.temp }}/weekly-report/dependency-results.csv
+            ${{ runner.temp }}/weekly-report/resource-history.csv
+            ${{ runner.temp }}/weekly-health-data/
+            ${{ runner.temp }}/weekly-health-logs/
+          if-no-files-found: ignore
+          retention-days: 30
+
+      # ============================================================
+      # Force-replace the report branch
+      # ============================================================
+
+      - name: Replace report branch
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          git config user.name "github-actions[bot]"
+          git config user.email \
+            "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git checkout --orphan "${REPORT_BRANCH}-publish"
+
+          git rm -rf .
+          git clean -fdx
+
+          cp -a "${REPORT_DIR}/." .
+
+          git add --all
+
+          git commit \
+            -m "health: weekly report ${REPORT_DATE}"
+
+          git push \
+            origin \
+            "HEAD:refs/heads/${REPORT_BRANCH}" \
+            --force
+
+      # ============================================================
+      # Discord
+      # ============================================================
+
+      - name: Send Discord weekly report
+        if: always()
+        shell: bash
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        run: |
+          set -euo pipefail
+
+          if [[ -z "${DISCORD_WEBHOOK_URL}" ]]; then
+            echo "DISCORD_WEBHOOK_URL is not configured."
+            exit 0
+          fi
+
+          if [[ ! -f "${DATA_DIR}/discord.txt" ]]; then
+            echo "Discord summary was not generated."
+            exit 0
+          fi
+
+          python <<'PY'
+          import json
+          import os
+          import urllib.request
+          from pathlib import Path
+
+          message = (
+              Path(os.environ["DATA_DIR"])
+              / "discord.txt"
+          ).read_text()
+
+          # Discord webhook content limit.
+          message = message[:1900]
+
+          payload = json.dumps({
+              "content": message
+          }).encode()
+
+          request = urllib.request.Request(
+              os.environ["DISCORD_WEBHOOK_URL"],
+              data=payload,
+              headers={
+                  "Content-Type": "application/json",
+                  "User-Agent": "ESP32-Bit-Pirate-Health-Report",
+              },
+              method="POST",
+          )
+
+          with urllib.request.urlopen(
+              request,
+              timeout=30
+          ) as response:
+              print(
+                  "Discord webhook:",
+                  response.status
+              )
+          PY
+
+      # ============================================================
+      # Final status
+      #
+      # Only CURRENT Bit Pirate failures make the workflow red.
+      # Future framework/library incompatibilities are warnings.
+      # ============================================================
+
+      - name: Evaluate current project health
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          CURRENT_FAILURE=0
+
+          if [[ ! -f "${DATA_DIR}/native-tests.status" ]] || \
+             [[ "$(cat "${DATA_DIR}/native-tests.status")" != "success" ]]
+          then
+            echo "::error::Native tests failed."
+            CURRENT_FAILURE=1
+          fi
+
+          if [[ -f "${DATA_DIR}/board-builds.csv" ]]; then
+            FAILED_BOARDS="$(
+              awk -F',' '
+                NR > 1 && $2 != "success" {
+                  print $1
+                }
+              ' "${DATA_DIR}/board-builds.csv"
+            )"
+
+            if [[ -n "${FAILED_BOARDS}" ]]; then
+              echo "::error::Current firmware build failures:"
+              echo "${FAILED_BOARDS}"
+              CURRENT_FAILURE=1
+            fi
+          else
+            echo "::error::Board build report is missing."
+            CURRENT_FAILURE=1
+          fi
+
+          if [[ -f "${DATA_DIR}/latest-framework.status" ]] && \
+             [[ "$(cat "${DATA_DIR}/latest-framework.status")" != "success" ]]
+          then
+            echo "::warning::Latest stable pioarduino is not currently compatible."
+          fi
+
+          if [[ -f "${DATA_DIR}/dependency-results.csv" ]]; then
+            FAILED_UPDATES="$(
+              awk -F',' '
+                NR > 1 && $5 == "failure" {
+                  print $1 " " $2 " -> " $3
+                }
+              ' "${DATA_DIR}/dependency-results.csv"
+            )"
+
+            if [[ -n "${FAILED_UPDATES}" ]]; then
+              echo "::warning::Dependency updates with compatibility regressions:"
+              echo "${FAILED_UPDATES}"
+            fi
+          fi
+
+          if [[ "${CURRENT_FAILURE}" -ne 0 ]]; then
+            exit 1
+          fi
+
+          echo "Current Bit Pirate baseline is healthy."

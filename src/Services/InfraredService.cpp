@@ -131,7 +131,7 @@ void InfraredService::sendInfraredCommand(InfraredCommand command) {
     }
 
     // Fallback MakeHex for all other protcols
-    int frequency = 38;
+    int frequency = IR_DEFAULT_FREQUENCY_KHZ;
     std::vector<float> seq = encodeRemoteCommand(command, protoStr.c_str(), frequency);
     if (seq.empty()) return;
 
@@ -233,7 +233,7 @@ bool InfraredService::receiveRaw(std::vector<uint16_t>& timings, uint32_t& khz) 
 
     if (!_results.rawbuf || _results.rawlen <= 1) return false;
 
-    khz = 38;
+    khz = IR_DEFAULT_FREQUENCY_KHZ;
     timings.clear();
     timings.reserve(_results.rawlen - 1);
 
@@ -325,19 +325,163 @@ Arduino-IRemote
 ====================
 */
 
-#include <IRremote.hpp> 
+#include <IRremote.hpp>
+#if defined(INFRARED_RMT)
+#include <limits>
+#if defined(DEVICE_STICKS3)
+#include <M5Unified.h>
+#endif
+#include "Transformers/SubGhzTransformer.h"
+#endif
+
+#if defined(INFRARED_RMT)
+bool InfraredService::armReceiver() {
+    rxSymbolCount = rxSymbols.size();
+    if (rmtReadAsync(rxPin, rxSymbols.data(), &rxSymbolCount))
+        return true;
+    log_e("Infrared: cannot arm RMT receiver on GPIO %u", rxPin);
+    stopReceiver();
+    return false;
+}
+
+InfraredCommand InfraredService::receiveRmtCommand() {
+
+    std::vector<uint16_t> timings;
+    uint32_t khz;
+
+    if (!receiveRmtRaw(timings, khz) || timings.size() >= RAW_BUFFER_LENGTH)
+        return InfraredCommand{};
+    
+    // Inject RMT timings into IrReceiver raw params and then call InfraredService::receiveInfraredCommand
+    // to trigger command decoding
+    if (!IrReceiver.decodedIRData.rawDataPtr) return InfraredCommand{};
+    auto &irparams = *IrReceiver.decodedIRData.rawDataPtr;
+    irparams.rawlen = timings.size() + 1;
+    irparams.rawbuf[0] = 0;
+
+    for (size_t i = 0; i < timings.size(); ++i)
+    {
+        const uint32_t ticks = (timings[i] + MICROS_PER_TICK / 2) / MICROS_PER_TICK;
+        if (ticks > std::numeric_limits<IRRawbufType>::max())
+            return InfraredCommand{};
+
+        irparams.rawbuf[i + 1] = ticks;
+    }
+
+    irparams.OverflowFlag = false;
+    irparams.initialGapTicks = initialGapTicks;
+    irparams.StateForISR = IR_REC_STATE_STOP;
+    IrReceiver.decodedIRData.rawlen = irparams.rawlen;
+    IrReceiver.decodedIRData.initialGapTicks = initialGapTicks;
+    return decodeIrCommand(true);
+}
+
+bool InfraredService::receiveRmtRaw(std::vector<uint16_t> &timings, uint32_t &khz) {
+    if (!receiving || !rmtReceiveCompleted(rxPin))
+        return false;
+
+    // A full buffer may be truncated; never expose it as a complete frame.
+    timings.clear();
+    if (rxSymbolCount > 0 && rxSymbolCount < rxSymbols.size()) {
+        std::vector<rmt_symbol_word_t> symbols;
+        symbols.reserve(rxSymbolCount);
+        for (size_t i = 0; i < rxSymbolCount; ++i) {
+            const auto &raw = rxSymbols[i];
+            if (!raw.duration0) break;
+            rmt_symbol_word_t symbol{};
+            symbol.duration0 = raw.duration0;
+            symbol.level0 = raw.level0;
+            symbol.duration1 = raw.duration1;
+            symbol.level1 = raw.level1;
+            symbols.push_back(symbol);
+            if (!raw.duration1) break;
+        }
+        // RX runs at 1 MHz. IR marks are active-low; discard leading idle.
+        for (int32_t timing : SubGhzTransformer().symbolsToSignedTimings(symbols, 1)) {
+            const bool space = timing > 0;
+            const uint32_t us = space ? timing : -timing;
+            if (timings.empty() && space) continue;
+            if (!timings.empty() && space == ((timings.size() - 1) % 2 != 0)) {
+                const uint32_t merged = timings.back() + us;
+                if (merged > UINT16_MAX) { timings.clear(); break; }
+                timings.back() = merged;
+            } else {
+                timings.push_back(us);
+            }
+        }
+        if (!timings.empty() && timings.size() % 2 == 0) timings.pop_back();
+    }
+    const bool valid = !timings.empty();
+
+    if (valid) {
+        uint32_t frameUs = 0;
+        for (uint16_t us : timings)
+            frameUs += us;
+        const uint32_t endUs = micros() - 20000; // RMT's trailing idle timeout.
+        const uint32_t elapsed = endUs - lastFrameEndUs;
+        const uint32_t gapUs = elapsed > frameUs ? elapsed - frameUs : 0;
+        initialGapTicks = std::min<uint32_t>(gapUs / MICROS_PER_TICK, UINT16_MAX);
+        lastFrameEndUs = endUs;
+        khz = InfraredService::IR_DEFAULT_FREQUENCY_KHZ; // Demodulated RX provides envelope timings, not carrier frequency.
+    }
+    armReceiver();
+    return valid;
+}
+#endif
+
+void InfraredService::configureTransmitter(uint8_t tx) {
+    IrSender.begin(tx);
+    // begin() only records the pin; initialize PWM at zero duty for TX idle.
+    IrSender.enableIROut(IR_DEFAULT_FREQUENCY_KHZ);
+    IrSender.IRLedOff();
+}
 
 void InfraredService::configure(uint8_t tx, uint8_t rx) {
-    IrSender.begin(tx);
+#if defined(INFRARED_RMT)
+    stopReceiver();
+    rxPin = rx;
+    configureTransmitter(tx);
+#else
+    configureTransmitter(tx);
     IrReceiver.begin(rx, ENABLE_LED_FEEDBACK);
+#endif
 }
 
 void InfraredService::startReceiver() {
+#if defined(INFRARED_RMT)
+    if (receiving || rxPin == 0xFF) return;
+#if defined(DEVICE_STICKS3)
+    restoreSpeaker = M5.Speaker.isRunning();
+    M5.Speaker.end();
+#endif
+    IrSender.IRLedOff();
+    receiving = rmtInit(rxPin, RMT_RX_MODE, RMT_MEM_NUM_BLOCKS_3, 1000000);
+    if (!receiving || !rmtSetRxMinThreshold(rxPin, 1) || !rmtSetRxMaxThreshold(rxPin, 20000)) {
+        log_e("Infrared: cannot configure RMT receiver on GPIO %u", rxPin);
+        stopReceiver();
+        return;
+    }
+    lastFrameEndUs = micros();
+    auto *raw = IrReceiver.decodedIRData.rawDataPtr;
+    IrReceiver.decodedIRData = {};
+    IrReceiver.decodedIRData.rawDataPtr = raw;
+    armReceiver();
+#else
     IrReceiver.start();
+#endif
 }
 
 void InfraredService::stopReceiver() {
+#if defined(INFRARED_RMT)
+    if (receiving) rmtDeinit(rxPin);
+    receiving = false;
+#if defined(DEVICE_STICKS3)
+    if (restoreSpeaker) M5.Speaker.begin();
+    restoreSpeaker = false;
+#endif
+#else
     IrReceiver.stop();
+#endif
 }
 
 void InfraredService::sendInfraredCommand(InfraredCommand command) {
@@ -379,7 +523,7 @@ void InfraredService::sendInfraredCommand(InfraredCommand command) {
         
         // Handle by MakeHex
         default: {
-            int frequency = 38; // Default frequency, passed by reference to encodeRemoteCommand
+            int frequency = IR_DEFAULT_FREQUENCY_KHZ; // Default frequency, passed by reference to encodeRemoteCommand
             std::vector<float> sequence = encodeRemoteCommand(command, protocolString.c_str(), frequency);
 
             // Convert for sendRaw
@@ -415,6 +559,15 @@ void InfraredService::sendInfraredFileCommand(InfraredFileRemoteCommand command)
 }
 
 InfraredCommand InfraredService::receiveInfraredCommand() {
+#if defined(INFRARED_RMT)
+    return receiveRmtCommand();
+#else
+    return decodeIrCommand(false);
+#endif
+}
+
+InfraredCommand InfraredService::decodeIrCommand(bool injected) {
+    (void)injected;
     InfraredCommand command;
 
     if (!IrReceiver.decode()) {
@@ -530,6 +683,9 @@ InfraredCommand InfraredService::receiveInfraredCommand() {
 }
 
 bool InfraredService::receiveRaw(std::vector<uint16_t>& timings, uint32_t& khz) {
+#if defined(INFRARED_RMT)
+    return receiveRmtRaw(timings, khz);
+#else
     if (!IrReceiver.decode()) {
         return false;
     }
@@ -546,7 +702,7 @@ bool InfraredService::receiveRaw(std::vector<uint16_t>& timings, uint32_t& khz) 
         return false;
     }
 
-    khz = 38; // TODO: default frequency, handle that ?
+    khz = IR_DEFAULT_FREQUENCY_KHZ; // TODO: default frequency, handle that ?
 
     timings.clear();
     timings.reserve(raw->rawlen - 1);
@@ -558,6 +714,7 @@ bool InfraredService::receiveRaw(std::vector<uint16_t>& timings, uint32_t& khz) 
     }
 
     return true;
+#endif
 }
 
 void InfraredService::sendRaw(const std::vector<uint16_t>& timings, uint32_t khz) {

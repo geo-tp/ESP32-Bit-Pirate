@@ -28,7 +28,7 @@ void test_to_profile_text_exports_representative_state_values() {
     const std::string profile = ProfileTransformer::toProfileText();
 
     TEST_ASSERT_TRUE(containsText(profile, "# ESP32 Bit Pirate profile"));
-    TEST_ASSERT_TRUE(containsText(profile, "version=1.7"));
+    TEST_ASSERT_TRUE(containsText(profile, "version=1.8"));
     TEST_ASSERT_TRUE(containsText(profile, "spi.cs=9"));
     TEST_ASSERT_TRUE(containsText(profile, "i2c.freq=400000"));
     TEST_ASSERT_TRUE(containsText(profile, "uart.baud=115200"));

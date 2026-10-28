@@ -20,6 +20,7 @@ public:
         uint8_t gdo0 = 0;
         float mhz = 0.0f;
         int paDbm = 0;
+        bool useCardputerAdvCap = false;
     };
 
     struct SendRawFrameCall {
@@ -88,8 +89,9 @@ public:
                    uint8_t ss,
                    uint8_t gdo0,
                    float mhz = 433.92f,
-                   int paDbm = 10) override {
-        configureCalls.push_back({sck, miso, mosi, ss, gdo0, mhz, paDbm});
+                   int paDbm = 10,
+                   bool useCardputerAdvCap = false) override {
+        configureCalls.push_back({sck, miso, mosi, ss, gdo0, mhz, paDbm, useCardputerAdvCap});
         return configureResult;
     }
 

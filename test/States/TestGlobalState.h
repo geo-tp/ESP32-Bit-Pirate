@@ -19,6 +19,8 @@ inline void resetGlobalState() {
     state.setSpiCLKPin(40);
     state.setSpiMISOPin(39);
     state.setSpiMOSIPin(14);
+    state.setSpiWPPin(-1);
+    state.setSpiHOLDPin(-1);
     state.setSpiFrequency(20000000);
 
     state.setOneWirePin(1);

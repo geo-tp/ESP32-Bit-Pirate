@@ -516,17 +516,18 @@ uint8_t OpenOcdBusPirateAdapter::swdReadBit() {
 }
 
 uint8_t OpenOcdBusPirateAdapter::swdReadBitClocked() {
+    // Genuine Bus Pirate raw-wire semantics: clock first, then sample.
+    // OpenOCD's buspirate.c counts turnaround clocks assuming the bit is
+    // sampled AFTER the rising edge (the target shifts out on that edge).
+    // Sampling before the edge, plus the auto-turnaround heuristic, leaves
+    // one extra released clock after every read (a stray start bit that
+    // trips a protocol error) and one extra clock before write data
+    // (write data shifted by one bit).
     swdReleaseData();
-
-    if (swdNeedsTurnaround) {
-        swdClockPulse();
-        swdNeedsTurnaround = false;
-    }
-
-    uint8_t bit = swdReadBit();
+    swdNeedsTurnaround = false;
     swdClockPulse();
 
-    return bit;
+    return swdReadBit();
 }
 
 uint8_t OpenOcdBusPirateAdapter::swdReadByte() {

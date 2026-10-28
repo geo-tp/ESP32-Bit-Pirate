@@ -1,5 +1,7 @@
 #include "Configurators/BootModeConfigurator.h"
 #include "States/GlobalState.h"
+#include "Adapters/SdrCdcAdapter.h"
+#include "Managers/BootMemoryManager.h"
 #include <algorithm>
 #include <vector>
 
@@ -123,7 +125,9 @@ bool BootModeConfigurator::configure() {
             flashromSerprogConfig.sckPin,
             flashromSerprogConfig.misoPin,
             flashromSerprogConfig.mosiPin,
-            flashromSerprogConfig.frequency
+            flashromSerprogConfig.frequency,
+            flashromSerprogConfig.wpPin,
+            flashromSerprogConfig.holdPin
         );
         nvsService.clearOneShotFlashromSerprogConfig();
     }
@@ -210,7 +214,15 @@ bool BootModeConfigurator::configure() {
     }
     nvsService.close();
 
+    // The consumed mode must agree with the heap ownership chosen before board initialization.
+    ESP_ERROR_CHECK(BootMemoryManager::validateBootMode(mode));
+
     switch (mode) {
+        case OneShotBootMode::SdrCdc:
+            deviceView.adapterMode("ESP32-S3 SDR", "USB CDC baud 115200",
+                                   {"2.2 to 2.8 GHz", "exp 100MHz-6GHz", "2.4 GHz radio", "raw I/Q"});
+            SdrCdcAdapter::run(deviceInput, hostSerial);
+            return true;
         case OneShotBootMode::UsbUartBridge:
             showOneShotBootMode(mode, usbUartBridgeConfig, flashromSerprogConfig, busPirateAvrdudeConfig, bpio2Config, sumpLogicAnalyzerConfig, openOcdBusPirateConfig, infraredToyConfig, subGhzRawCdcConfig);
             UsbUartBridgeAdapter::run(usbUartBridgeConfig, deviceInput, hostSerial);
@@ -278,18 +290,20 @@ void BootModeConfigurator::showOneShotBootMode(OneShotBootMode mode,
             );
             break;
 
-        case OneShotBootMode::FlashromSerprog:
-            deviceView.adapterMode(
-                "Flashrom SPI",
-                "serprog SPI programmer",
-                {
-                    "CS GPIO " + std::to_string(flashromSerprogConfig.csPin),
-                    "SCK GPIO " + std::to_string(flashromSerprogConfig.sckPin),
-                    "MISO GPIO " + std::to_string(flashromSerprogConfig.misoPin),
-                    "MOSI GPIO " + std::to_string(flashromSerprogConfig.mosiPin)
-                }
-            );
+        case OneShotBootMode::FlashromSerprog: {
+            std::vector<std::string> details = {
+                "CS GPIO " + std::to_string(flashromSerprogConfig.csPin),
+                "SCK GPIO " + std::to_string(flashromSerprogConfig.sckPin),
+                "MISO GPIO " + std::to_string(flashromSerprogConfig.misoPin),
+                "MOSI GPIO " + std::to_string(flashromSerprogConfig.mosiPin)
+            };
+            if (flashromSerprogConfig.wpPin >= 0)
+                details.push_back("WP GPIO " + std::to_string(flashromSerprogConfig.wpPin));
+            if (flashromSerprogConfig.holdPin >= 0)
+                details.push_back("HOLD GPIO " + std::to_string(flashromSerprogConfig.holdPin));
+            deviceView.adapterMode("Flashrom SPI", "serprog SPI programmer", details);
             break;
+        }
 
         case OneShotBootMode::AvrDudeBusPirate:
             deviceView.adapterMode(

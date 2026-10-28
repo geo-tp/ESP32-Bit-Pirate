@@ -20,7 +20,9 @@ public:
     int trst = -1;
     bool swdFound = false;
     bool jtagFound = false;
+    bool jtagFoundWithPulsing = false;
     bool lastPulsePins = false;
+    std::vector<bool> pulseModes;
     uint32_t configureCalls = 0;
     uint32_t swdScanCalls = 0;
     uint32_t jtagScanCalls = 0;
@@ -39,13 +41,14 @@ public:
         ++jtagScanCalls;
         lastCandidates = pins;
         lastPulsePins = pulsePins;
+        pulseModes.push_back(pulsePins);
         outTDI = tdi;
         outTDO = tdo;
         outTCK = tck;
         outTMS = tms;
         outTRST = trst;
         outDeviceIDs = jtagIds;
-        return jtagFound;
+        return jtagFound || (pulsePins && jtagFoundWithPulsing);
     }
 
     bool scanSwdDevice(const std::vector<uint8_t>& pins,

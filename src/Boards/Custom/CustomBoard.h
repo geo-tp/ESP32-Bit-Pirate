@@ -7,21 +7,24 @@
 #include "Boards/Common/Serial/BoardHostSerial.h"
 
 #if defined(CUSTOM_DISPLAY_DRIVER_ST7789_SPI)
-  #include "Boards/Common/Views/St7789SpiDeviceView.h"
+#include "Boards/Common/Views/St7789SpiDeviceView.h"
 #elif defined(CUSTOM_DISPLAY_DRIVER_ST7789_PARALLEL)
-  #include "Boards/Common/Views/St7789ParallelDeviceView.h"
+#include "Boards/Common/Views/St7789ParallelDeviceView.h"
+#elif defined(CUSTOM_DISPLAY_DRIVER_ILI9341_SPI)
+#include "Boards/Common/Views/Ili9341SpiDeviceView.h"
 #else
-  #include "Boards/Common/Views/NoScreenDeviceView.h"
+#include "Boards/Common/Views/NoScreenDeviceView.h"
 #endif
 
-class CustomBoard final {
+class CustomBoard final
+{
 public:
     CustomBoard();
 
     void initialize();
-    IDeviceView& getDeviceView();
-    IInput& getDeviceInput();
-    IHostSerial& getHostSerial();
+    IDeviceView &getDeviceView();
+    IInput &getDeviceInput();
+    IHostSerial &getHostSerial();
 
 private:
 #if defined(CUSTOM_DISPLAY_DRIVER_ST7789_SPI)
@@ -32,6 +35,10 @@ private:
     static St7789ParallelConfig createDisplayConfig();
     St7789ParallelConfig displayConfig;
     St7789ParallelDeviceView deviceView;
+#elif defined(CUSTOM_DISPLAY_DRIVER_ILI9341_SPI)
+    static Ili9341SpiConfig createDisplayConfig();
+    Ili9341SpiConfig displayConfig;
+    Ili9341SpiDeviceView deviceView;
 #else
     NoScreenDeviceView deviceView;
 #endif

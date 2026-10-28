@@ -82,7 +82,7 @@ void test_jtag_scan_displays_pin_mapping_trst_and_device_ids() {
     fixture.controller.handleCommand(TerminalCommand("scan", "jtag"));
 
     TEST_ASSERT_EQUAL_UINT32(1, fixture.jtagService.jtagScanCalls);
-    TEST_ASSERT_TRUE(fixture.jtagService.lastPulsePins);
+    TEST_ASSERT_FALSE(fixture.jtagService.lastPulsePins);
     TEST_ASSERT_TRUE(fixture.view.contains("TDI   : GPIO 1"));
     TEST_ASSERT_TRUE(fixture.view.contains("TRST  : GPIO 9"));
     TEST_ASSERT_TRUE(fixture.view.contains("IDCODE[0] : 0x12345678"));
@@ -104,8 +104,24 @@ void test_jtag_scan_reports_no_jtag_device() {
 
     fixture.controller.handleCommand(TerminalCommand("scan", "jtag"));
 
-    TEST_ASSERT_EQUAL_UINT32(1, fixture.jtagService.jtagScanCalls);
+    TEST_ASSERT_EQUAL_UINT32(2, fixture.jtagService.jtagScanCalls);
     TEST_ASSERT_TRUE(fixture.view.contains("No device found"));
+}
+
+void test_jtag_scan_retries_with_pulsing_when_normal_scan_fails() {
+    JtagControllerFixture fixture;
+    fixture.jtagService.jtagFoundWithPulsing = true;
+    fixture.jtagService.jtagIds = {0x13722093};
+
+    fixture.controller.handleCommand(TerminalCommand("scan", "jtag"));
+
+    TEST_ASSERT_EQUAL_UINT32(2, fixture.jtagService.jtagScanCalls);
+    TEST_ASSERT_EQUAL_UINT32(2, fixture.jtagService.pulseModes.size());
+    TEST_ASSERT_FALSE(fixture.jtagService.pulseModes[0]);
+    TEST_ASSERT_TRUE(fixture.jtagService.pulseModes[1]);
+    TEST_ASSERT_TRUE(fixture.view.contains("JTAG device(s) found"));
+    TEST_ASSERT_TRUE(fixture.view.contains("0x13722093"));
+    TEST_ASSERT_FALSE(fixture.view.contains("No device found"));
 }
 
 void test_jtag_config_saves_selected_scan_pins() {
@@ -172,6 +188,7 @@ void runJtagControllerTests() {
     RUN_TEST(test_jtag_scan_displays_pin_mapping_trst_and_device_ids);
     RUN_TEST(test_jtag_scan_omits_trst_when_service_does_not_find_it);
     RUN_TEST(test_jtag_scan_reports_no_jtag_device);
+    RUN_TEST(test_jtag_scan_retries_with_pulsing_when_normal_scan_fails);
     RUN_TEST(test_jtag_config_saves_selected_scan_pins);
     RUN_TEST(test_jtag_ensure_configured_prompts_only_once);
     RUN_TEST(test_jtag_openocd_can_be_cancelled);
