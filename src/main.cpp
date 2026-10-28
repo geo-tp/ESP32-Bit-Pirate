@@ -25,6 +25,7 @@
 #include <Servers/WebSocketServer.h>
 #include <Servers/DnsServer.h>
 #include <Services/NvsService.h>
+#include <Services/WifiService.h>
 #include <Services/UtilityService.h>
 #include <Selectors/HorizontalSelector.h>
 #include <Configurators/TerminalTypeConfigurator.h>
@@ -166,14 +167,16 @@ void setup() {
     UtilityService utilityService;
     GlobalState& state = GlobalState::getInstance();
 
-    //Initializing hostname from NVS
+    // Apply the saved hostname before board Wi-Fi setup or provider construction.
     NvsService hostnameNvsService;
     hostnameNvsService.open();
     std::string hostname = hostnameNvsService.getString(state.getNvsHostnameField(),"");
     hostnameNvsService.close();
 
     if (!hostname.empty()) {
-        WiFi.setHostname(hostname.c_str());
+        if (!WifiService::setStartupHostname(hostname)) {
+            log_e("Saved WiFi hostname could not be applied; using the default hostname");
+        }
     }
 
     // Select the terminal type

@@ -374,10 +374,57 @@ void test_reset_delegates_to_service() {
     TEST_ASSERT_TRUE(fixture.view.contains("Interface reset"));
 }
 
+void test_hostname_save_preserves_live_web_connection_and_credentials() {
+    WifiFixture fixture;
+    GlobalState::getInstance().setTerminalMode(TerminalTypeEnum::WiFiClient);
+    fixture.wifi.connected = true;
+    fixture.nvs.values["ssid"] = "Lab";
+    fixture.nvs.values["pass"] = "secret";
+    fixture.controller.handleCommand(TerminalCommand("config", "hostname", "My-Pirate"));
+    TEST_ASSERT_EQUAL_STRING("My-Pirate", fixture.nvs.values["hostname"].c_str());
+    TEST_ASSERT_EQUAL_STRING("Lab", fixture.nvs.values["ssid"].c_str());
+    TEST_ASSERT_EQUAL_STRING("secret", fixture.nvs.values["pass"].c_str());
+    TEST_ASSERT_EQUAL_STRING("buspirate", fixture.wifi.hostname.c_str());
+    TEST_ASSERT_TRUE(fixture.wifi.connected);
+    TEST_ASSERT_EQUAL_UINT32(0, fixture.wifi.disconnectCalls);
+    TEST_ASSERT_TRUE(fixture.wifi.connectCalls.empty());
+    TEST_ASSERT_TRUE(fixture.view.contains("Restart your device"));
+    GlobalState::getInstance().setTerminalMode(TerminalTypeEnum::SerialPort);
+}
+
+void test_hostname_invalid_input_does_not_overwrite_saved_value() {
+    WifiFixture fixture;
+    fixture.nvs.values["hostname"] = "old-name";
+    fixture.controller.handleCommand(TerminalCommand("config", "hostname", "two names"));
+    TEST_ASSERT_TRUE(fixture.nvs.savedStrings.empty());
+    TEST_ASSERT_EQUAL_STRING("old-name", fixture.nvs.values["hostname"].c_str());
+}
+
+void test_hostname_status_distinguishes_saved_and_active_values() {
+    WifiFixture fixture;
+    fixture.nvs.values["hostname"] = "next-name";
+    fixture.controller.handleCommand(TerminalCommand("config", "hostname"));
+    TEST_ASSERT_TRUE(fixture.view.contains("Saved hostname: next-name"));
+    TEST_ASSERT_TRUE(fixture.view.contains("Active hostname: buspirate"));
+    TEST_ASSERT_TRUE(fixture.nvs.savedStrings.empty());
+}
+
+void test_hostname_storage_failure_is_reported() {
+    WifiFixture fixture;
+    fixture.nvs.failWrites = true;
+    fixture.controller.handleCommand(TerminalCommand("config", "hostname", "new-name"));
+    TEST_ASSERT_TRUE(fixture.view.contains("Failed to save hostname"));
+    TEST_ASSERT_FALSE(fixture.view.contains("Hostname saved"));
+}
+
 }  // namespace wifi_controller_tests
 
 void runWifiControllerTests() {
     using namespace wifi_controller_tests;
+    RUN_TEST(test_hostname_save_preserves_live_web_connection_and_credentials);
+    RUN_TEST(test_hostname_invalid_input_does_not_overwrite_saved_value);
+    RUN_TEST(test_hostname_status_distinguishes_saved_and_active_values);
+    RUN_TEST(test_hostname_storage_failure_is_reported);
     RUN_TEST(test_build_wifi_lines_reports_disconnected_mode);
     RUN_TEST(test_build_wifi_lines_reports_connected_ip_and_truncated_ssid);
     RUN_TEST(test_connect_with_inline_credentials_saves_nvs_on_success);
