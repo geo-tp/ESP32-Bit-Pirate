@@ -1,0 +1,5 @@
+package,current,latest,environment,status,ram,flash,ram_delta,flash_delta,log
+fastled/FastLED,3.10.3,3.10.9,s3-devkit,failure,,,,,/home/runner/work/_temp/weekly-health-logs/dependency-fastled-3c7b9e29.log
+hideakitai/ESP32SPISlave,0.6.9,0.8.0,s3-devkit,success,88540,3805059,0,0,/home/runner/work/_temp/weekly-health-logs/dependency-esp32spislave-f6db100b.log
+m5stack/M5Unified,0.2.29,0.3.0,m5stack-stamps3,success,91636,3981455,8,1480,/home/runner/work/_temp/weekly-health-logs/dependency-m5unified-965b7aab.log
+mathertel/RotaryEncoder,1.5.3,1.6.0,t-embed-s3,success,89100,3966695,0,52,/home/runner/work/_temp/weekly-health-logs/dependency-rotaryencoder-8b8e7148.log
