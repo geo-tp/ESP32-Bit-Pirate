@@ -81,7 +81,7 @@ private:
     void handleWaterfall();
 
     // Ask config for Wi-Fi
-    void handleConfig();
+    void handleConfig(const TerminalCommand& cmd);
 
     // Show help for Wi-Fi commands
     void handleHelp();

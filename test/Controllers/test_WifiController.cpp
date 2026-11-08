@@ -1,6 +1,7 @@
 #include <unity.h>
 
 #include "Controllers/WifiController.h"
+#include "Transformers/TerminalCommandTransformer.h"
 #include "../Inputs/FakeInput.h"
 #include "../Services/FakeEthernetService.h"
 #include "../Services/FakeHttpService.h"
@@ -380,7 +381,7 @@ void test_hostname_save_preserves_live_web_connection_and_credentials() {
     fixture.wifi.connected = true;
     fixture.nvs.values["ssid"] = "Lab";
     fixture.nvs.values["pass"] = "secret";
-    fixture.controller.handleCommand(TerminalCommand("config", "hostname", "My-Pirate"));
+    fixture.controller.handleCommand(TerminalCommandTransformer().transform("config hostname My-Pirate"));
     TEST_ASSERT_EQUAL_STRING("My-Pirate", fixture.nvs.values["hostname"].c_str());
     TEST_ASSERT_EQUAL_STRING("Lab", fixture.nvs.values["ssid"].c_str());
     TEST_ASSERT_EQUAL_STRING("secret", fixture.nvs.values["pass"].c_str());
@@ -395,7 +396,7 @@ void test_hostname_save_preserves_live_web_connection_and_credentials() {
 void test_hostname_invalid_input_does_not_overwrite_saved_value() {
     WifiFixture fixture;
     fixture.nvs.values["hostname"] = "old-name";
-    fixture.controller.handleCommand(TerminalCommand("config", "hostname", "two names"));
+    fixture.controller.handleCommand(TerminalCommandTransformer().transform("config hostname two names"));
     TEST_ASSERT_TRUE(fixture.nvs.savedStrings.empty());
     TEST_ASSERT_EQUAL_STRING("old-name", fixture.nvs.values["hostname"].c_str());
 }
@@ -403,7 +404,7 @@ void test_hostname_invalid_input_does_not_overwrite_saved_value() {
 void test_hostname_status_distinguishes_saved_and_active_values() {
     WifiFixture fixture;
     fixture.nvs.values["hostname"] = "next-name";
-    fixture.controller.handleCommand(TerminalCommand("config", "hostname"));
+    fixture.controller.handleCommand(TerminalCommandTransformer().transform("config hostname"));
     TEST_ASSERT_TRUE(fixture.view.contains("Saved hostname: next-name"));
     TEST_ASSERT_TRUE(fixture.view.contains("Active hostname: buspirate"));
     TEST_ASSERT_TRUE(fixture.nvs.savedStrings.empty());
@@ -417,6 +418,34 @@ void test_hostname_storage_failure_is_reported() {
     TEST_ASSERT_FALSE(fixture.view.contains("Hostname saved"));
 }
 
+void test_config_without_subcommand_shows_guidance_without_saving() {
+    WifiFixture fixture;
+    fixture.controller.handleCommand(TerminalCommandTransformer().transform("config"));
+    TEST_ASSERT_TRUE(fixture.view.contains("config hostname [name]"));
+    TEST_ASSERT_EQUAL_UINT32(0, fixture.nvs.openCalls);
+    TEST_ASSERT_TRUE(fixture.nvs.savedStrings.empty());
+}
+
+void test_config_unknown_subcommand_does_not_change_hostname() {
+    WifiFixture fixture;
+    fixture.nvs.values["hostname"] = "old-name";
+    fixture.controller.handleCommand(TerminalCommandTransformer().transform("config hostnmae new-name"));
+    TEST_ASSERT_TRUE(fixture.view.contains("Unknown WiFi config subcommand: hostnmae"));
+    TEST_ASSERT_TRUE(fixture.view.contains("Usage: config hostname [name]"));
+    TEST_ASSERT_EQUAL_STRING("old-name", fixture.nvs.values["hostname"].c_str());
+    TEST_ASSERT_EQUAL_UINT32(0, fixture.nvs.openCalls);
+}
+
+void test_mode_entry_shows_configuration_guidance_once() {
+    WifiFixture fixture;
+    fixture.controller.ensureConfigured();
+    TEST_ASSERT_TRUE(fixture.view.contains("config hostname [name]"));
+    const auto calls = fixture.view.printlnCalls.size();
+    fixture.controller.ensureConfigured();
+    TEST_ASSERT_EQUAL_UINT32(calls, fixture.view.printlnCalls.size());
+    TEST_ASSERT_EQUAL_UINT32(0, fixture.nvs.openCalls);
+}
+
 }  // namespace wifi_controller_tests
 
 void runWifiControllerTests() {
@@ -425,6 +454,9 @@ void runWifiControllerTests() {
     RUN_TEST(test_hostname_invalid_input_does_not_overwrite_saved_value);
     RUN_TEST(test_hostname_status_distinguishes_saved_and_active_values);
     RUN_TEST(test_hostname_storage_failure_is_reported);
+    RUN_TEST(test_config_without_subcommand_shows_guidance_without_saving);
+    RUN_TEST(test_config_unknown_subcommand_does_not_change_hostname);
+    RUN_TEST(test_mode_entry_shows_configuration_guidance_once);
     RUN_TEST(test_build_wifi_lines_reports_disconnected_mode);
     RUN_TEST(test_build_wifi_lines_reports_connected_ip_and_truncated_ssid);
     RUN_TEST(test_connect_with_inline_credentials_saves_nvs_on_success);

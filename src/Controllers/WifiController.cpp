@@ -11,8 +11,7 @@ void WifiController::handleCommand(const TerminalCommand &cmd)
     if (root == "connect") handleConnect(cmd);
     else if (root == "disconnect") handleDisconnect(cmd);
     else if (root == "status") handleStatus(cmd);
-    else if (root == "config" && cmd.getSubcommand() == "hostname") handleHostname(cmd);
-    else if (root == "config") handleConfig();
+    else if (root == "config") handleConfig(cmd);
     else if (root == "ap") handleAp(cmd);
     else if (root == "spam") handleApSpam();
     else if (root == "spoof") handleSpoof(cmd);
@@ -886,8 +885,19 @@ void WifiController::handleWebUi(const TerminalCommand &)
 /*
 Config
 */
-void WifiController::handleConfig()
+void WifiController::handleConfig(const TerminalCommand &cmd)
 {
+    const auto &subcommand = cmd.getSubcommand();
+    if (subcommand == "hostname") {
+        handleHostname(cmd);
+        return;
+    }
+    if (!subcommand.empty()) {
+        terminalView.println("Unknown WiFi config subcommand: " + subcommand);
+        terminalView.println("Usage: config hostname [name]");
+        return;
+    }
+
     terminalView.println("config hostname [name] - Show or save hostname for the next reboot.");
     if (state.getTerminalMode() == TerminalTypeEnum::WiFiClient) {
         terminalView.println(" [⚠️  WARNING] ");
@@ -921,7 +931,7 @@ void WifiController::ensureConfigured()
 {
     if (!configured)
     {
-        handleConfig();
+        handleConfig(TerminalCommand("config"));
         configured = true;
     }
 }
