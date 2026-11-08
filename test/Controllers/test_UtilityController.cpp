@@ -294,7 +294,7 @@ void test_unknown_command_displays_current_mode_help() {
     fixture.controller.handleCommand(TerminalCommand("wat"));
 
     TEST_ASSERT_TRUE(fixture.view.contains("General"));
-    TEST_ASSERT_TRUE(fixture.view.contains("help                 - Show this help"));
+    TEST_ASSERT_TRUE(fixture.view.contains("help                   - Show this help"));
 }
 
 }  // namespace utility_controller_tests
