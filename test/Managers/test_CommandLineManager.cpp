@@ -194,11 +194,11 @@ void test_command_length_is_limited_to_512_characters() {
     TEST_ASSERT_EQUAL_UINT32(512, fixture.view.printCalls.size());
 }
 
-void test_tab_completes_wifi_hostname_configuration_from_dictionary() {
+void test_tab_completes_wifi_configuration_root_from_dictionary() {
     CommandLineFixture fixture;
-    fixture.terminalInput.queue(std::string("config ho\t My-Pirate\n"));
+    fixture.terminalInput.queue(std::string("conf\t\n"));
     TEST_ASSERT_EQUAL_STRING(
-        "config hostname My-Pirate",
+        "config",
         fixture.manager.readCommand("WIFI").c_str()
     );
 }
@@ -293,7 +293,7 @@ void runCommandLineManagerTests() {
     RUN_TEST(test_left_and_right_arrows_obey_cursor_boundaries);
     RUN_TEST(test_history_up_and_down_restore_and_clear_commands);
     RUN_TEST(test_tab_autocompletes_from_history_then_dictionary);
-    RUN_TEST(test_tab_completes_wifi_hostname_configuration_from_dictionary);
+    RUN_TEST(test_tab_completes_wifi_configuration_root_from_dictionary);
     RUN_TEST(test_command_length_is_limited_to_512_characters);
     RUN_TEST(test_complete_ansi_sequences_handle_all_four_arrows);
     RUN_TEST(test_cardputer_sequences_keep_standalone_behavior);

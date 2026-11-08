@@ -381,7 +381,8 @@ void test_hostname_save_preserves_live_web_connection_and_credentials() {
     fixture.wifi.connected = true;
     fixture.nvs.values["ssid"] = "Lab";
     fixture.nvs.values["pass"] = "secret";
-    fixture.controller.handleCommand(TerminalCommandTransformer().transform("config hostname My-Pirate"));
+    fixture.terminalInput.queueLine("My-Pirate");
+    fixture.controller.ensureConfigured();
     TEST_ASSERT_EQUAL_STRING("My-Pirate", fixture.nvs.values["hostname"].c_str());
     TEST_ASSERT_EQUAL_STRING("Lab", fixture.nvs.values["ssid"].c_str());
     TEST_ASSERT_EQUAL_STRING("secret", fixture.nvs.values["pass"].c_str());
@@ -396,7 +397,10 @@ void test_hostname_save_preserves_live_web_connection_and_credentials() {
 void test_hostname_invalid_input_does_not_overwrite_saved_value() {
     WifiFixture fixture;
     fixture.nvs.values["hostname"] = "old-name";
-    fixture.controller.handleCommand(TerminalCommandTransformer().transform("config hostname two names"));
+    fixture.terminalInput.queueLine("two names");
+    fixture.terminalInput.queueLine("");
+    fixture.controller.handleCommand(TerminalCommand("config"));
+    TEST_ASSERT_TRUE(fixture.view.contains("Invalid hostname"));
     TEST_ASSERT_TRUE(fixture.nvs.savedStrings.empty());
     TEST_ASSERT_EQUAL_STRING("old-name", fixture.nvs.values["hostname"].c_str());
 }
@@ -404,7 +408,8 @@ void test_hostname_invalid_input_does_not_overwrite_saved_value() {
 void test_hostname_status_distinguishes_saved_and_active_values() {
     WifiFixture fixture;
     fixture.nvs.values["hostname"] = "next-name";
-    fixture.controller.handleCommand(TerminalCommandTransformer().transform("config hostname"));
+    fixture.terminalInput.queueLine("");
+    fixture.controller.handleCommand(TerminalCommand("config"));
     TEST_ASSERT_TRUE(fixture.view.contains("Saved hostname: next-name"));
     TEST_ASSERT_TRUE(fixture.view.contains("Active hostname: buspirate"));
     TEST_ASSERT_TRUE(fixture.nvs.savedStrings.empty());
@@ -413,14 +418,18 @@ void test_hostname_status_distinguishes_saved_and_active_values() {
 void test_hostname_storage_failure_is_reported() {
     WifiFixture fixture;
     fixture.nvs.failWrites = true;
-    fixture.controller.handleCommand(TerminalCommand("config", "hostname", "new-name"));
+    fixture.nvs.values["hostname"] = "old-name";
+    fixture.terminalInput.queueLine("new-name");
+    fixture.controller.handleCommand(TerminalCommand("config"));
     TEST_ASSERT_TRUE(fixture.view.contains("Failed to save hostname"));
     TEST_ASSERT_FALSE(fixture.view.contains("Hostname saved"));
+    TEST_ASSERT_EQUAL_STRING("old-name", fixture.nvs.values["hostname"].c_str());
 }
 
 void test_hostname_status_without_saved_value_uses_framework_default() {
     WifiFixture fixture;
-    fixture.controller.handleCommand(TerminalCommandTransformer().transform("config hostname"));
+    fixture.terminalInput.queueLine("");
+    fixture.controller.ensureConfigured();
     TEST_ASSERT_TRUE(fixture.view.contains("Saved hostname: default"));
     TEST_ASSERT_TRUE(fixture.view.contains("Active hostname: buspirate"));
     TEST_ASSERT_TRUE(fixture.nvs.values.empty());
@@ -429,7 +438,8 @@ void test_hostname_status_without_saved_value_uses_framework_default() {
 
 void test_changing_wifi_credentials_preserves_pending_hostname() {
     WifiFixture fixture;
-    fixture.controller.handleCommand(TerminalCommandTransformer().transform("config hostname Next-Pirate"));
+    fixture.terminalInput.queueLine("Next-Pirate");
+    fixture.controller.ensureConfigured();
     fixture.nvs.values["ssid"] = "OldNetwork";
     fixture.nvs.values["pass"] = "old-secret";
     fixture.controller.handleCommand(TerminalCommandTransformer().transform("connect NewNetwork new-secret"));
@@ -438,37 +448,89 @@ void test_changing_wifi_credentials_preserves_pending_hostname() {
     TEST_ASSERT_EQUAL_STRING("new-secret", fixture.nvs.values["pass"].c_str());
     TEST_ASSERT_EQUAL_STRING("buspirate", fixture.wifi.hostname.c_str());
     fixture.view.output.clear();
-    fixture.controller.handleCommand(TerminalCommandTransformer().transform("config hostname"));
+    fixture.terminalInput.queueLine("");
+    fixture.controller.handleCommand(TerminalCommand("config"));
     TEST_ASSERT_TRUE(fixture.view.contains("Saved hostname: Next-Pirate"));
     TEST_ASSERT_TRUE(fixture.view.contains("Active hostname: buspirate"));
 }
 
-void test_config_without_subcommand_shows_guidance_without_saving() {
+void test_config_enter_keeps_saved_hostname_and_credentials() {
     WifiFixture fixture;
+    fixture.nvs.values["hostname"] = "keep-name";
+    fixture.nvs.values["ssid"] = "Lab";
+    fixture.nvs.values["pass"] = "secret";
+    fixture.terminalInput.queueLine("");
     fixture.controller.handleCommand(TerminalCommandTransformer().transform("config"));
-    TEST_ASSERT_TRUE(fixture.view.contains("config hostname [name]"));
-    TEST_ASSERT_EQUAL_UINT32(0, fixture.nvs.openCalls);
+    TEST_ASSERT_TRUE(fixture.view.contains("Hostname (ENTER to keep) [keep-name]: "));
+    TEST_ASSERT_TRUE(fixture.view.contains("Hostname unchanged"));
+    TEST_ASSERT_EQUAL_STRING("keep-name", fixture.nvs.values["hostname"].c_str());
+    TEST_ASSERT_EQUAL_STRING("Lab", fixture.nvs.values["ssid"].c_str());
+    TEST_ASSERT_EQUAL_STRING("secret", fixture.nvs.values["pass"].c_str());
+    TEST_ASSERT_EQUAL_UINT32(1, fixture.nvs.openCalls);
     TEST_ASSERT_TRUE(fixture.nvs.savedStrings.empty());
 }
 
-void test_config_unknown_subcommand_does_not_change_hostname() {
+void test_config_reopens_hostname_prompt_after_mode_entry() {
     WifiFixture fixture;
-    fixture.nvs.values["hostname"] = "old-name";
-    fixture.controller.handleCommand(TerminalCommandTransformer().transform("config hostnmae new-name"));
-    TEST_ASSERT_TRUE(fixture.view.contains("Unknown WiFi config subcommand: hostnmae"));
-    TEST_ASSERT_TRUE(fixture.view.contains("Usage: config hostname [name]"));
-    TEST_ASSERT_EQUAL_STRING("old-name", fixture.nvs.values["hostname"].c_str());
-    TEST_ASSERT_EQUAL_UINT32(0, fixture.nvs.openCalls);
+    fixture.terminalInput.queueLine("");
+    fixture.controller.ensureConfigured();
+    fixture.view.output.clear();
+    fixture.terminalInput.queueLine("Later-Pirate");
+    fixture.controller.handleCommand(TerminalCommandTransformer().transform("config"));
+    TEST_ASSERT_TRUE(fixture.view.contains("WiFi Configuration:"));
+    TEST_ASSERT_EQUAL_STRING("Later-Pirate", fixture.nvs.values["hostname"].c_str());
+    TEST_ASSERT_TRUE(fixture.terminalInput.blockingChars.empty());
 }
 
-void test_mode_entry_shows_configuration_guidance_once() {
+void test_mode_entry_prompts_for_hostname_only_once() {
     WifiFixture fixture;
+    fixture.terminalInput.queueLine("");
     fixture.controller.ensureConfigured();
-    TEST_ASSERT_TRUE(fixture.view.contains("config hostname [name]"));
+    TEST_ASSERT_TRUE(fixture.view.contains("WiFi Configuration:"));
     const auto calls = fixture.view.printlnCalls.size();
+    fixture.terminalInput.queueLine("leave-for-next-command");
+    const auto queued = fixture.terminalInput.blockingChars.size();
     fixture.controller.ensureConfigured();
     TEST_ASSERT_EQUAL_UINT32(calls, fixture.view.printlnCalls.size());
-    TEST_ASSERT_EQUAL_UINT32(0, fixture.nvs.openCalls);
+    TEST_ASSERT_EQUAL_UINT32(queued, fixture.terminalInput.blockingChars.size());
+    TEST_ASSERT_EQUAL_UINT32(1, fixture.nvs.openCalls);
+}
+
+void test_hostname_invalid_input_reprompts_until_valid() {
+    WifiFixture fixture;
+    fixture.nvs.values["hostname"] = "old-name";
+    fixture.terminalInput.queueLine("bad_name");
+    fixture.terminalInput.queueLine("Valid-Pirate");
+    fixture.controller.ensureConfigured();
+    TEST_ASSERT_TRUE(fixture.view.contains("Invalid hostname"));
+    TEST_ASSERT_EQUAL_STRING("Valid-Pirate", fixture.nvs.values["hostname"].c_str());
+    TEST_ASSERT_EQUAL_UINT32(1, fixture.nvs.savedStrings.size());
+    TEST_ASSERT_TRUE(fixture.terminalInput.blockingChars.empty());
+}
+
+void test_existing_invalid_hostname_can_be_kept_without_looping() {
+    WifiFixture fixture;
+    fixture.nvs.values["hostname"] = std::string(32, 'a');
+    fixture.terminalInput.queueLine("");
+    fixture.controller.ensureConfigured();
+    TEST_ASSERT_TRUE(fixture.view.contains("Hostname unchanged"));
+    TEST_ASSERT_TRUE(fixture.nvs.savedStrings.empty());
+    TEST_ASSERT_EQUAL_UINT32(32, fixture.nvs.values["hostname"].size());
+}
+
+void test_hotspot_hostname_setup_keeps_access_point_running() {
+    WifiFixture fixture;
+    GlobalState::getInstance().setTerminalMode(TerminalTypeEnum::WiFiAp);
+    fixture.wifi.modeRaw = IWifiService::kWifiModeAp;
+    fixture.terminalInput.queueLine("Hotspot-Pirate");
+    fixture.controller.ensureConfigured();
+    TEST_ASSERT_TRUE(fixture.view.contains("Wi-Fi Hotspot mode"));
+    TEST_ASSERT_EQUAL_STRING("Hotspot-Pirate", fixture.nvs.values["hostname"].c_str());
+    TEST_ASSERT_EQUAL_STRING("buspirate", fixture.wifi.hostname.c_str());
+    TEST_ASSERT_EQUAL_UINT32(0, fixture.wifi.stopAccessPointCalls);
+    TEST_ASSERT_EQUAL_UINT32(0, fixture.wifi.disconnectCalls);
+    TEST_ASSERT_EQUAL_UINT32(0, fixture.wifi.resetCalls);
+    TEST_ASSERT_EQUAL_UINT32(IWifiService::kWifiModeAp, fixture.wifi.modeRaw);
 }
 
 }  // namespace wifi_controller_tests
@@ -481,9 +543,12 @@ void runWifiControllerTests() {
     RUN_TEST(test_hostname_storage_failure_is_reported);
     RUN_TEST(test_hostname_status_without_saved_value_uses_framework_default);
     RUN_TEST(test_changing_wifi_credentials_preserves_pending_hostname);
-    RUN_TEST(test_config_without_subcommand_shows_guidance_without_saving);
-    RUN_TEST(test_config_unknown_subcommand_does_not_change_hostname);
-    RUN_TEST(test_mode_entry_shows_configuration_guidance_once);
+    RUN_TEST(test_config_enter_keeps_saved_hostname_and_credentials);
+    RUN_TEST(test_config_reopens_hostname_prompt_after_mode_entry);
+    RUN_TEST(test_mode_entry_prompts_for_hostname_only_once);
+    RUN_TEST(test_hostname_invalid_input_reprompts_until_valid);
+    RUN_TEST(test_existing_invalid_hostname_can_be_kept_without_looping);
+    RUN_TEST(test_hotspot_hostname_setup_keeps_access_point_running);
     RUN_TEST(test_build_wifi_lines_reports_disconnected_mode);
     RUN_TEST(test_build_wifi_lines_reports_connected_ip_and_truncated_ssid);
     RUN_TEST(test_connect_with_inline_credentials_saves_nvs_on_success);
