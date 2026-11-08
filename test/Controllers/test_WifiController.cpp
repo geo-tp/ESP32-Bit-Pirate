@@ -418,6 +418,31 @@ void test_hostname_storage_failure_is_reported() {
     TEST_ASSERT_FALSE(fixture.view.contains("Hostname saved"));
 }
 
+void test_hostname_status_without_saved_value_uses_framework_default() {
+    WifiFixture fixture;
+    fixture.controller.handleCommand(TerminalCommandTransformer().transform("config hostname"));
+    TEST_ASSERT_TRUE(fixture.view.contains("Saved hostname: default"));
+    TEST_ASSERT_TRUE(fixture.view.contains("Active hostname: buspirate"));
+    TEST_ASSERT_TRUE(fixture.nvs.values.empty());
+    TEST_ASSERT_TRUE(fixture.nvs.savedStrings.empty());
+}
+
+void test_changing_wifi_credentials_preserves_pending_hostname() {
+    WifiFixture fixture;
+    fixture.controller.handleCommand(TerminalCommandTransformer().transform("config hostname Next-Pirate"));
+    fixture.nvs.values["ssid"] = "OldNetwork";
+    fixture.nvs.values["pass"] = "old-secret";
+    fixture.controller.handleCommand(TerminalCommandTransformer().transform("connect NewNetwork new-secret"));
+    TEST_ASSERT_EQUAL_STRING("Next-Pirate", fixture.nvs.values["hostname"].c_str());
+    TEST_ASSERT_EQUAL_STRING("NewNetwork", fixture.nvs.values["ssid"].c_str());
+    TEST_ASSERT_EQUAL_STRING("new-secret", fixture.nvs.values["pass"].c_str());
+    TEST_ASSERT_EQUAL_STRING("buspirate", fixture.wifi.hostname.c_str());
+    fixture.view.output.clear();
+    fixture.controller.handleCommand(TerminalCommandTransformer().transform("config hostname"));
+    TEST_ASSERT_TRUE(fixture.view.contains("Saved hostname: Next-Pirate"));
+    TEST_ASSERT_TRUE(fixture.view.contains("Active hostname: buspirate"));
+}
+
 void test_config_without_subcommand_shows_guidance_without_saving() {
     WifiFixture fixture;
     fixture.controller.handleCommand(TerminalCommandTransformer().transform("config"));
@@ -454,6 +479,8 @@ void runWifiControllerTests() {
     RUN_TEST(test_hostname_invalid_input_does_not_overwrite_saved_value);
     RUN_TEST(test_hostname_status_distinguishes_saved_and_active_values);
     RUN_TEST(test_hostname_storage_failure_is_reported);
+    RUN_TEST(test_hostname_status_without_saved_value_uses_framework_default);
+    RUN_TEST(test_changing_wifi_credentials_preserves_pending_hostname);
     RUN_TEST(test_config_without_subcommand_shows_guidance_without_saving);
     RUN_TEST(test_config_unknown_subcommand_does_not_change_hostname);
     RUN_TEST(test_mode_entry_shows_configuration_guidance_once);

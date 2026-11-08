@@ -43,6 +43,7 @@ static const char* const autoCompleteWords[] = {
     "connect","probe","deauth","disconnect","ap", "ap spam",
     "ssh","telnet","nc","nmap","modbus", "repeater", "extender",
     "http","lookup","webui", "flood",
+    "config hostname",
 
     // --- JTAG ---
     "scan swd","scan jtag","openocd",

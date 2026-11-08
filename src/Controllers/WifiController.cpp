@@ -233,7 +233,7 @@ void WifiController::handleHostname(const TerminalCommand &cmd)
     }
     // Save only: changing the active interface could disconnect the Web CLI.
     nvsService.open();
-    nvsService.saveString(GlobalState::getInstance().getNvsHostnameField(), hostname);
+    nvsService.saveString(state.getNvsHostnameField(), hostname);
     nvsService.close();
     nvsService.open();
     const auto saved = nvsService.getString(state.getNvsHostnameField(), "");
