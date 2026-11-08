@@ -25,6 +25,9 @@ public:
     
     WifiService();
 
+    // Call once at boot, before any Wi-Fi mode or connection is started.
+    static bool setStartupHostname(const std::string& hostname);
+
     // Connection
     bool connect(const std::string& ssid, const std::string& password, unsigned long timeoutMs = 15000) override;
     void disconnect() override;

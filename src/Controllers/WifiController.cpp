@@ -11,6 +11,7 @@ void WifiController::handleCommand(const TerminalCommand &cmd)
     if (root == "connect") handleConnect(cmd);
     else if (root == "disconnect") handleDisconnect(cmd);
     else if (root == "status") handleStatus(cmd);
+    else if (root == "config") handleConfig();
     else if (root == "ap") handleAp(cmd);
     else if (root == "spam") handleApSpam();
     else if (root == "spoof") handleSpoof(cmd);
@@ -863,6 +864,44 @@ void WifiController::handleConfig()
         terminalView.println(" may cause the hotspot to stop or disconnect.");
         terminalView.println(" Don't use: sniff, ap, flood, spoof, reset...");
         terminalView.println(" Use USB serial or restart if connection is lost.\n");
+    }
+
+    nvsService.open();
+    const auto saved = nvsService.getString(state.getNvsHostnameField(), "");
+    nvsService.close();
+    auto active = wifiService.getHostname();
+    if (active.empty()) active = "N/A";
+
+    terminalView.println("WiFi Configuration:");
+    terminalView.println("Saved hostname: " + (saved.empty() ? std::string("default") : saved));
+    terminalView.println("Active hostname: " + active);
+    terminalView.println("Hostname changes take effect after restarting the device.");
+
+    while (true) {
+        const auto hostname = userInputManager.readString("Hostname (ENTER to keep)", saved);
+        if (hostname == saved) {
+            terminalView.println("WiFi: Hostname unchanged.");
+            return;
+        }
+        if (!argTransformer.isValidHostname(hostname)) {
+            terminalView.println("Invalid hostname. Use 1-31 ASCII letters, digits or hyphens; no leading or trailing hyphen.");
+            continue;
+        }
+
+        // Save only: changing the active interface could disconnect the Web CLI.
+        nvsService.open();
+        nvsService.saveString(state.getNvsHostnameField(), hostname);
+        nvsService.close();
+        nvsService.open();
+        const auto stored = nvsService.getString(state.getNvsHostnameField(), "");
+        nvsService.close();
+        if (stored != hostname) {
+            terminalView.println("WiFi: Failed to save hostname.");
+            return;
+        }
+        terminalView.println("WiFi: Hostname saved: " + stored);
+        terminalView.println("Restart your device to apply it. The current connection is unchanged.");
+        return;
     }
 }
 
