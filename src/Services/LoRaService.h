@@ -6,6 +6,9 @@
 #include <cstdint>
 #include <vector>
 #include "Interfaces/ILoRaService.h"
+#ifdef DEVICE_CARDPUTERADV
+#include <Wire.h>
+#endif
 
 class LoRaService : public ILoRaService {
 public:
@@ -79,6 +82,13 @@ private:
     static bool waitBusyLow(uint8_t busy, uint32_t timeoutMs);
     void releaseSpiBus();
     void releaseRadioPins();
+
+    #ifdef DEVICE_CARDPUTERADV
+    TwoWire *findLoraCapBus();
+    bool pi4ioWrite(TwoWire *bus, uint8_t reg, uint8_t val);
+    void initLoraCap();
+    void deInitLoraCap();
+    #endif
 
     bool ensureReceiveQueue();
     void clearReceiveQueue();

@@ -182,6 +182,10 @@ inline constexpr I2cKnownAddress i2cKnownAddresses[] = {
 {0x59, "GP8413", "DAC2 (default address)"},
 {0x63, "STM32G030", "Joystick Unit"},
 {0x65, "GP8413", "DAC2 (alt address)"},
+{0x18, "ES8311","Audio CODEC"},
+{0x34, "TCA8418","Keypad Scanner"},
+{0x43, "PI4IOE5V6408","I/O Expander"},
+{0x69, "BMI270", "IMU-Pro Accelerometer/Gyroscope"},
 
 // Adafruit List
 {0x0C, "MLX90393", "3-Axis Magnetometer"},

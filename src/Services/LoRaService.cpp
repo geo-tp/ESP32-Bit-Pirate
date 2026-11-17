@@ -4,6 +4,9 @@
 #include <cstring>
 #include <limits>
 #include <new>
+#ifdef DEVICE_CARDPUTERADV
+#include <Wire.h>
+#endif
 
 LoRaService* LoRaService::instance_ = nullptr;
 
@@ -136,6 +139,62 @@ void LoRaService::releaseSpiBus() {
     spi_ = nullptr;
 }
 
+#ifdef DEVICE_CARDPUTERADV
+
+#define PI4IO_ADDR 0x43
+#define PI4IO_REG_IO_DIR 0x03
+#define PI4IO_REG_OUT_SET 0x05
+#define PI4IO_REG_OUT_H_IM 0x07
+
+TwoWire *LoRaService::findLoraCapBus()
+{
+    TwoWire *candidates[] = {&Wire1, &Wire};
+    for (size_t i = 0; i < sizeof(candidates) / sizeof(candidates[0]); ++i) {
+        candidates[i]->beginTransmission(PI4IO_ADDR);
+        if (candidates[i]->endTransmission() == 0) {
+            return candidates[i];
+        }
+    }
+    return nullptr;
+}
+
+bool LoRaService::pi4ioWrite(TwoWire *bus, uint8_t reg, uint8_t val)
+{
+    bus->beginTransmission(PI4IO_ADDR);
+    bus->write(reg);
+    bus->write(val);
+    uint8_t status = bus->endTransmission();
+    if (status != 0) {
+        Serial.println("!!! PI4IO write error !!!");
+        return false;
+    }
+    return true;
+}
+
+void LoRaService::initLoraCap()
+{
+    Serial.println("Init LoraCap");
+    TwoWire *bus = findLoraCapBus();
+    if (!bus) {
+        return;
+    }
+    pi4ioWrite(bus, PI4IO_REG_IO_DIR, 0b00000001);
+    pi4ioWrite(bus, PI4IO_REG_OUT_H_IM, 0b00000000);
+    pi4ioWrite(bus, PI4IO_REG_OUT_SET, 0b00000001);
+}
+
+void LoRaService::deInitLoraCap()
+{
+    TwoWire *bus = findLoraCapBus();
+    if (!bus) {
+        return;
+    }
+    pi4ioWrite(bus, PI4IO_REG_IO_DIR, 0b00000001);
+    pi4ioWrite(bus, PI4IO_REG_OUT_H_IM, 0b00000000);
+    pi4ioWrite(bus, PI4IO_REG_OUT_SET, 0b00000000);
+}
+#endif
+
 bool LoRaService::configure(SPIClass& spi, uint8_t sck, uint8_t miso, uint8_t mosi,
                             uint8_t cs, uint8_t rst, uint8_t busy, uint8_t dio1,
                             const LoRaRadioProfile& profile) {
@@ -192,8 +251,11 @@ bool LoRaService::configure(SPIClass& spi, uint8_t sck, uint8_t miso, uint8_t mo
         releaseSpiBus();
         return false;
     }
-    hardwareInitialized_ = true;
+    #ifdef DEVICE_CARDPUTERADV
+    initLoraCap();
+    #endif
 
+    hardwareInitialized_ = true;
     instance_ = this;
     events_ = {};
     events_.TxDone = onTxDone;
@@ -238,6 +300,9 @@ void LoRaService::deinitRfModule() {
     }
 
     if (hardwareInitialized_) {
+    #ifdef DEVICE_CARDPUTERADV
+        deInitLoraCap();
+    #endif
         lora_hardware_uninit();
     }
 
