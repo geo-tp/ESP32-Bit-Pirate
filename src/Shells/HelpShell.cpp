@@ -360,7 +360,8 @@ void HelpShell::cmdWifi() {
         "http analyze <url>   - Get analysis report",
         "lookup mac|ip <addr> - Lookup MAC or IP address",
         "webui                - Show the web UI IP",
-        "reset                - Reset interface"
+        "reset                - Reset interface",
+        "config               - Configure settings"
     };
     printLines(lines, (int)(sizeof(lines) / sizeof(lines[0])));
 }
@@ -476,7 +477,7 @@ void HelpShell::cmdFm() {
         "trace [freq]         - Observe frequency signal",
         "waterfall            - Show frequency peaks",
         "broadcast            - Create FM station",
-        "reset                - Reset via pin", 
+        "reset                - Reset via pin",
         "config               - Configure Si4713 settings"
     };
     printLines(lines, (int)(sizeof(lines) / sizeof(lines[0])));

@@ -1,4 +1,10 @@
 #include "WifiService.h"
+#include "Transformers/ArgTransformer.h"
+
+bool WifiService::setStartupHostname(const std::string& hostname) {
+    ArgTransformer transformer;
+    return transformer.isValidHostname(hostname) && WiFi.setHostname(hostname.c_str());
+}
 
 WifiService::WifiService() : connected(false) {
     if (WiFi.getMode() == WIFI_MODE_NULL) {

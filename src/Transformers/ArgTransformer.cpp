@@ -313,6 +313,21 @@ bool ArgTransformer::isValidSignedNumber(const std::string& input) {
     return true;
 }
 
+bool ArgTransformer::isValidHostname(const std::string& input) {
+    // Arduino-ESP32 3.3.7 stores the default hostname in a 32-byte buffer,
+    // including the terminating NUL. Reject names that would be truncated.
+    if (input.empty() || input.size() > 31 || input.front() == '-' || input.back() == '-') return false;
+
+    for (unsigned char c : input) {
+        if (!((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') ||
+              (c >= '0' && c <= '9') || c == '-')) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
 uint8_t ArgTransformer::toUint8(const std::string& input) {
     if (input.empty()) return 0;
 
