@@ -22,6 +22,7 @@ int hexNibble(char c) {
 const MeshtasticService::Preset* MeshtasticService::presets(size_t& count) {
     static const Preset values[] = {
         {"LONG_FAST", 250, 11, 5}, {"LONG_SLOW", 125, 12, 8},
+        {"LONG_MODERATE", 125, 11, 8},
         {"VERY_LONG_SLOW", 62, 12, 8}, {"MEDIUM_SLOW", 250, 10, 5},
         {"MEDIUM_FAST", 250, 9, 5}, {"SHORT_SLOW", 250, 8, 5},
         {"SHORT_FAST", 250, 7, 5}, {"SHORT_TURBO", 500, 7, 5},
