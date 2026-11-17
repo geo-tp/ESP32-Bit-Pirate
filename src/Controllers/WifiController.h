@@ -21,7 +21,7 @@ public:
     //  Entry point for Wi-Fi command
     void handleCommand(const TerminalCommand& cmd);
 
-    // Ensure WiFi is configured before any action
+    // Show connection warnings once when entering Wi-Fi mode
     void ensureConfigured();
 
     // Build current connection state
@@ -77,8 +77,8 @@ private:
     // Waterfall scan
     void handleWaterfall();
 
-    // Ask config for Wi-Fi
-    void handleConfig();
+    // Configure the hostname on explicit request
+    void handleHostname();
 
     // Show help for Wi-Fi commands
     void handleHelp();

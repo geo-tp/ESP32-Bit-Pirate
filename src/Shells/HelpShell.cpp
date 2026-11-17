@@ -361,7 +361,7 @@ void HelpShell::cmdWifi() {
         "lookup mac|ip <addr> - Lookup MAC or IP address",
         "webui                - Show the web UI IP",
         "reset                - Reset interface",
-        "config               - Configure settings"
+        "hostname             - Set hostname"
     };
     printLines(lines, (int)(sizeof(lines) / sizeof(lines[0])));
 }

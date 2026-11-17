@@ -11,7 +11,7 @@ void WifiController::handleCommand(const TerminalCommand &cmd)
     if (root == "connect") handleConnect(cmd);
     else if (root == "disconnect") handleDisconnect(cmd);
     else if (root == "status") handleStatus(cmd);
-    else if (root == "config") handleConfig();
+    else if (root == "hostname") handleHostname();
     else if (root == "ap") handleAp(cmd);
     else if (root == "spam") handleApSpam();
     else if (root == "spoof") handleSpoof(cmd);
@@ -847,10 +847,12 @@ void WifiController::handleWebUi(const TerminalCommand &)
 }
 
 /*
-Config
+Wi-Fi mode entry
 */
-void WifiController::handleConfig()
+void WifiController::ensureConfigured()
 {
+    if (configured) return;
+
     if (state.getTerminalMode() == TerminalTypeEnum::WiFiClient) {
         terminalView.println(" [⚠️  WARNING] ");
         terminalView.println(" You are connected via the Web CLI,");
@@ -866,20 +868,28 @@ void WifiController::handleConfig()
         terminalView.println(" Use USB serial or restart if connection is lost.\n");
     }
 
+    configured = true;
+}
+
+/*
+Hostname
+*/
+void WifiController::handleHostname()
+{
     nvsService.open();
     const auto saved = nvsService.getString(state.getNvsHostnameField(), "");
     nvsService.close();
-    auto active = wifiService.getHostname();
-    if (active.empty()) active = "N/A";
+    const auto active = wifiService.getHostname();
+    const auto current = saved.empty() ? active : saved;
 
-    terminalView.println("WiFi Configuration:");
+    terminalView.println("WiFi Hostname:");
     terminalView.println("Saved hostname: " + (saved.empty() ? std::string("default") : saved));
-    terminalView.println("Active hostname: " + active);
+    terminalView.println("Active hostname: " + (active.empty() ? std::string("N/A") : active));
     terminalView.println("Hostname changes take effect after restarting the device.");
 
     while (true) {
-        const auto hostname = userInputManager.readString("Hostname (ENTER to keep)", saved);
-        if (hostname == saved) {
+        const auto hostname = userInputManager.readString("Hostname", current);
+        if (hostname == current) {
             terminalView.println("WiFi: Hostname unchanged.");
             return;
         }
@@ -912,18 +922,6 @@ void WifiController::handleHelp()
 {
     terminalView.println("\nUnknown command. Available WiFi commands:");
     helpShell.run(state.getCurrentMode(), false);
-}
-
-/*
-Ensure Configuration
-*/
-void WifiController::ensureConfigured()
-{
-    if (!configured)
-    {
-        handleConfig();
-        configured = true;
-    }
 }
 
 /*

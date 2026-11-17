@@ -5,6 +5,7 @@
 #include <vector>
 #include <sstream>
 #include "Interfaces/IWifiService.h"
+#include "Interfaces/INvsService.h"
 
 extern "C" {
   #include "esp_wifi.h"
@@ -26,7 +27,11 @@ public:
     WifiService();
 
     // Call once at boot, before any Wi-Fi mode or connection is started.
-    static bool setStartupHostname(const std::string& hostname);
+    static bool restoreStartupHostname(INvsService& nvsService);
+
+    // Keep the AP hostname in sync with the name loaded at boot, including
+    // when an interface is recreated. Arduino applies that name only to STA.
+    static bool setMode(wifi_mode_t mode);
 
     // Connection
     bool connect(const std::string& ssid, const std::string& password, unsigned long timeoutMs = 15000) override;

@@ -1,14 +1,29 @@
 #include "WifiService.h"
 #include "Transformers/ArgTransformer.h"
+#include "States/GlobalState.h"
 
-bool WifiService::setStartupHostname(const std::string& hostname) {
+bool WifiService::restoreStartupHostname(INvsService& nvsService) {
+    nvsService.open();
+    const auto hostname = nvsService.getString(GlobalState::getInstance().getNvsHostnameField(), "");
+    nvsService.close();
+
+    if (hostname.empty()) return true;
     ArgTransformer transformer;
     return transformer.isValidHostname(hostname) && WiFi.setHostname(hostname.c_str());
 }
 
+bool WifiService::setMode(wifi_mode_t mode) {
+    if (!WiFi.mode(mode)) return false;
+    if ((mode & WIFI_AP) && !WiFi.softAPsetHostname(WiFi.getHostname())) {
+        log_e("Could not apply the WiFi hostname to the access point");
+        return false;
+    }
+    return true;
+}
+
 WifiService::WifiService() : connected(false) {
     if (WiFi.getMode() == WIFI_MODE_NULL) {
-        WiFi.mode(WIFI_STA);
+        setMode(WIFI_STA);
     }
 }
 
@@ -61,7 +76,11 @@ std::string WifiService::getDns2() const {
 }
 
 std::string WifiService::getHostname() const {
-    const char* h = WiFi.getHostname();
+    // Read the interface, not the framework's default for future interfaces.
+    // Prefer STA in AP+STA mode; both interfaces use the same startup name.
+    const auto mode = WiFi.getMode();
+    const char* h = (mode & WIFI_STA) ? WiFi.STA.getHostname()
+                  : (mode & WIFI_AP) ? WiFi.softAPgetHostname() : nullptr;
     return std::string(h ? h : "");
 }
 
@@ -98,7 +117,7 @@ std::string WifiService::getBssid() const {
 }
 
 bool WifiService::startAccessPoint(const std::string& ssid, const std::string& password, int channel, int maxConn) {
-    // WiFi.mode(WIFI_AP);
+    if (!setMode(static_cast<wifi_mode_t>(WiFi.getMode() | WIFI_AP))) return false;
     if (password.empty()) {
         return WiFi.softAP(ssid.c_str(), nullptr, channel, false, maxConn);
     } else {
@@ -112,7 +131,7 @@ bool WifiService::stopAccessPoint() {
 
 void WifiService::reset() {
     disconnect();
-    WiFi.mode(WIFI_STA);
+    setMode(WIFI_STA);
     connected = false;
 }
 
@@ -123,9 +142,9 @@ void WifiService::recoverStaForRetry(bool keepApMode) {
     delay(100);
 
     if (keepApMode) {
-        WiFi.mode(WIFI_AP_STA);
+        setMode(WIFI_AP_STA);
     } else {
-        WiFi.mode(WIFI_STA);
+        setMode(WIFI_STA);
     }
 
     connected = false;
@@ -135,7 +154,7 @@ bool WifiService::prepareRawTx(uint8_t channel) {
     esp_wifi_set_promiscuous(false);
     esp_wifi_set_promiscuous_rx_cb(nullptr);
 
-    WiFi.mode(WIFI_STA);
+    setMode(WIFI_STA);
 
     esp_err_t err = esp_wifi_start();
     if (err != ESP_OK && err != ESP_ERR_WIFI_CONN && err != ESP_ERR_WIFI_STATE) {
@@ -147,11 +166,11 @@ bool WifiService::prepareRawTx(uint8_t channel) {
 }
 
 void WifiService::setModeApSta() {
-    WiFi.mode(WIFI_AP_STA);
+    setMode(WIFI_AP_STA);
 }
 
 void WifiService::setModeApOnly() {
-    WiFi.mode(WIFI_AP);
+    setMode(WIFI_AP);
 }
 
 std::string WifiService::getLocalIp() const {
@@ -319,7 +338,7 @@ void WifiService::startPassiveSniffing() {
     esp_wifi_set_promiscuous(false);
     esp_wifi_set_promiscuous_rx_cb(nullptr);
 
-    WiFi.mode(WIFI_STA);
+    setMode(WIFI_STA);
     esp_wifi_start();
 
     esp_wifi_set_promiscuous_rx_cb(&WifiService::snifferCallback);
@@ -330,7 +349,7 @@ void WifiService::stopPassiveSniffing() {
     esp_wifi_set_promiscuous(false);
     esp_wifi_set_promiscuous_rx_cb(nullptr);
     sniffLog.clear();
-    WiFi.mode(WIFI_STA);
+    setMode(WIFI_STA);
     esp_wifi_start();
 }
 
@@ -467,9 +486,9 @@ bool WifiService::spoofMacAddress(const std::string& macStr, MacInterface which)
 
     // Mode
     if (iface == WIFI_IF_STA) {
-        WiFi.mode(WIFI_MODE_STA);
+        setMode(WIFI_MODE_STA);
     } else {
-        WiFi.mode(WIFI_MODE_AP);
+        setMode(WIFI_MODE_AP);
     }
 
     esp_err_t err = esp_wifi_set_mac(iface, mac);
@@ -529,7 +548,7 @@ void WifiService::clientSnifferCallback(void* buf, wifi_promiscuous_pkt_type_t t
 void WifiService::deauthAttack(const uint8_t bssid[6], uint8_t channel, uint8_t bursts, uint32_t sniffMs)
 {
     if (WiFi.getMode() != WIFI_MODE_AP && WiFi.getMode() != WIFI_MODE_APSTA) {
-        WiFi.mode(WIFI_MODE_AP);
+        setMode(WIFI_MODE_AP);
         esp_wifi_start();
     }
 
@@ -606,7 +625,7 @@ bool WifiService::startRepeater(const std::string& staSsid,
     stopRepeater();
 
     // AP+STA
-    WiFi.mode(WIFI_AP_STA);
+    if (!setMode(WIFI_AP_STA)) return false;
 
     // AP IP
     IPAddress ap_ip(192, 168, 4, 1);
@@ -687,7 +706,7 @@ void WifiService::stopRepeater()
     }
 
     WiFi.softAPdisconnect(true);
-    WiFi.mode(WIFI_STA);
+    setMode(WIFI_STA);
     repeater = false;
 }
 

@@ -1,5 +1,6 @@
 #include "Configurators/WifiTypeConfigurator.h"
 #include <States/GlobalState.h>
+#include <Services/WifiService.h>
 
 std::string WifiTypeConfigurator::configure(TerminalTypeEnum& terminalType) {
     switch (terminalType)
@@ -35,7 +36,7 @@ std::string WifiTypeConfigurator::configure(TerminalTypeEnum& terminalType) {
         WiFi.persistent(false);
         WiFi.disconnect(true);
         utilityService.sleepMs(100);
-        WiFi.mode(WIFI_AP);
+        if (!WifiService::setMode(WIFI_AP)) return "0.0.0.0";
         WiFi.setSleep(false);
 
         IPAddress apIp(192, 168, 4, 1);

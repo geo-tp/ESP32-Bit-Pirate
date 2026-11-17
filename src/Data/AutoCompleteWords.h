@@ -42,7 +42,7 @@ static const char* const autoCompleteWords[] = {
     // --- WIFI ---
     "connect","probe","deauth","disconnect","ap", "ap spam",
     "ssh","telnet","nc","nmap","modbus", "repeater", "extender",
-    "http","lookup","webui", "flood",
+    "http","lookup","webui", "flood", "hostname",
 
     // --- JTAG ---
     "scan swd","scan jtag","openocd",
