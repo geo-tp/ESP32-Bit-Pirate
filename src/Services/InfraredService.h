@@ -39,8 +39,8 @@ public:
     void startReceiver();
     void stopReceiver();
 
-    void sendInfraredCommand(InfraredCommand command);
-    void sendInfraredFileCommand(InfraredFileRemoteCommand command);
+    bool sendInfraredCommand(InfraredCommand command);
+    bool sendInfraredFileCommand(const InfraredFileRemoteCommand& command);
     InfraredCommand receiveInfraredCommand();
     bool receiveRaw(std::vector<uint16_t>& timings, uint32_t& khzAllowGuess);
     void sendRaw(const std::vector<uint16_t>& timings, uint32_t khz);
@@ -53,6 +53,10 @@ public:
     std::vector<std::string> getJamModeStrings();
 
 private:
+    bool sendMakeHexCommand(const InfraredCommand& command);
+    bool sendRawSequence(const std::vector<float>& timings, uint32_t frequencyHz);
+    bool sendWaveform(const std::vector<uint32_t>& timings, uint32_t frequencyHz, unsigned dutyPercent = 33);
+    bool fileToggle = false;
     enum class JamMode : uint8_t { CARRIER = 0, SWEEP = 1, RANDOM = 2 };
     inline static const uint16_t carrierKhz[] = {36, 38, 40, 56, 57, 58};
     inline static constexpr uint16_t kRawBufferSize = 512; //Increase raw buffer size from its default value of 100
@@ -78,8 +82,8 @@ public:
     void configure(uint8_t tx, uint8_t rx);
     void startReceiver();
     void stopReceiver();
-    void sendInfraredCommand(InfraredCommand command);
-    void sendInfraredFileCommand(InfraredFileRemoteCommand command);
+    bool sendInfraredCommand(InfraredCommand command);
+    bool sendInfraredFileCommand(const InfraredFileRemoteCommand& command);
     InfraredCommand receiveInfraredCommand();
     bool receiveRaw(std::vector<uint16_t>& timings, uint32_t& khz);
     void sendRaw(const std::vector<uint16_t>& timings, uint32_t khz);
@@ -97,6 +101,11 @@ protected:
     inline static constexpr uint32_t IR_DEFAULT_FREQUENCY_KHZ = 38;
 
 private:
+    bool _configured = false;
+    bool sendMakeHexCommand(const InfraredCommand& command);
+    bool sendRawSequence(const std::vector<float>& timings, uint32_t frequencyHz);
+    bool sendWaveform(const std::vector<uint32_t>& timings, uint32_t frequencyHz, unsigned dutyPercent = 33);
+    bool fileToggle = false;
 #if defined(INFRARED_RMT)
     uint8_t rxPin = 0xFF;
     bool receiving = false;

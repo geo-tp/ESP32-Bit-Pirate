@@ -14,8 +14,8 @@ public:
     virtual void configure(uint8_t tx, uint8_t rx) = 0;
     virtual void startReceiver() = 0;
     virtual void stopReceiver() = 0;
-    virtual void sendInfraredCommand(InfraredCommand command) = 0;
-    virtual void sendInfraredFileCommand(InfraredFileRemoteCommand command) = 0;
+    virtual bool sendInfraredCommand(InfraredCommand command) = 0;
+    virtual bool sendInfraredFileCommand(const InfraredFileRemoteCommand& command) = 0;
     virtual InfraredCommand receiveInfraredCommand() = 0;
     virtual bool receiveRaw(std::vector<uint16_t>& timings, uint32_t& khz) = 0;
     virtual void sendRaw(const std::vector<uint16_t>& timings, uint32_t khz) = 0;

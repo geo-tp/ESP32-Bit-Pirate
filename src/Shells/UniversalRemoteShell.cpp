@@ -65,7 +65,11 @@ void UniversalRemoteShell::sendCommandGroup(const InfraredCommandStruct* group, 
     for (size_t i = 0; i < size; ++i) {
 
         InfraredCommand cmd(group[i].proto, group[i].device, group[i].subdevice, group[i].function);
-        infraredService.sendInfraredCommand(cmd);
+        if (!infraredService.sendInfraredCommand(cmd)) {
+            terminalView.println("Skipped unsupported or invalid command for protocol=" +
+                                 InfraredProtocolMapper::toString(cmd.getProtocol()));
+            continue;
+        }
         utilityService.sleepMs(100);
 
         // Enter press to stop

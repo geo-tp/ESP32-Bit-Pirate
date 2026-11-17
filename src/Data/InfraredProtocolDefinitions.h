@@ -696,5 +696,214 @@ inline constexpr InfraredProtocol protocolDefinitions[] = {
         "Form=;*,F:5,~F:5,_\n"
         "Prefix=8,-8\n"
         "suffix=23,-8\n"
+    },
+    // Additional definitions from Ultimate Remote (see Vendors/UltimateRemote.LICENSE).
+    { "nec1_f16",
+        "Frequency=38400\n"
+        "Time Base=564\n"
+        "Zero=1,-1\n"
+        "One=1,-3\n"
+        "Prefix=16,-8\n"
+        "Suffix=1,-78\n"
+        "R-Prefix=16,-4\n"
+        "R-Suffix=1,-174\n"
+        "Default S=~D\n"
+        "Form=*,D:8,S:8,F:16,_;*,_\n"
+    },
+    { "nec2_f16",
+        "Frequency=38400\n"
+        "Time Base=564\n"
+        "Zero=1,-1\n"
+        "One=1,-3\n"
+        "Prefix=16,-8\n"
+        "Suffix=1,-78\n"
+        "Default S=~D\n"
+        "Form=;*,D:8,S:8,F:16,_\n"
+    },
+    { "grundig16_30",
+        "Frequency=30300\n"
+        "Time Base=578\n"
+        "First Bit=MSB\n"
+        "Zero=-4,2\n"
+        "One=-3,1,-1,1\n"
+        "Two=-2,1,-2,1\n"
+        "Three=-1,1,-3,1\n"
+        "Form=806u,-2960u,1346u,0:1,F:8,D:7,-100\n"
+    },
+    { "sejin_1_38",
+        "Frequency=38800\n"
+        "Time Base=310\n"
+        "First Bit=MSB\n"
+        "Zero=1,-3\n"
+        "One=-1,1,-2\n"
+        "Two=-2,1,-1\n"
+        "Three=-3,1\n"
+        "Define E=0\n"
+        "Define C=(D:4)+(D:4:4)+(F:4)+(F:4:4)+(S:4)+(S:4:4)+E\n"
+        "Form=3,3:2,D:8,F:8,S:8,E:4,C:4,-77\n"
+    },
+    { "sejin_1_56",
+        "Frequency=56300\n"
+        "Time Base=310\n"
+        "First Bit=MSB\n"
+        "Zero=1,-3\n"
+        "One=-1,1,-2\n"
+        "Two=-2,1,-1\n"
+        "Three=-3,1\n"
+        "Define E=0\n"
+        "Define C=(D:4)+(D:4:4)+(F:4)+(F:4:4)+(S:4)+(S:4:4)+E\n"
+        "Form=3,3:2,D:8,F:8,S:8,E:4,C:4,-77\n"
+    },
+    { "akai",
+        "Frequency=38000\n"
+        "Zero=289,-751\n"
+        "One=289,-1821\n"
+        "Form=;D:3,F:7,289,^25300u\n"
+    },
+    { "bose",
+        "Frequency=38000\n"
+        "Time Base=500\n"
+        "First Bit=MSB\n"
+        "Zero=1,-1\n"
+        "One=1,-3\n"
+        "Form=;2,-3,F:8,~F:8,1,-50m\n"
+    },
+    { "canalsat",
+        "Frequency=55500\n"
+        "Time Base=250\n"
+        "First Bit=MSB\n"
+        "Zero=-1,1\n"
+        "One=1,-1\n"
+        "Form=1,-1,D:7,S:6,0:1,0:1,F:7,-89m;1,-1,D:7,S:6,1:1,0:1,F:7,-89m\n"
+    },
+    { "directv",
+        "Frequency=38000\n"
+        "Time Base=600\n"
+        "First Bit=MSB\n"
+        "Zero=1,-1\n"
+        "One=1,-2\n"
+        "Two=2,-1\n"
+        "Three=2,-2\n"
+        "Define C=7*(F:2:6)+5*(F:2:4)+3*(F:2:2)+(F:2)\n"
+        "Form=10,-2,D:4,F:8,C:4,1,-50;5,-2,D:4,F:8,C:4,1,-50\n"
+    },
+    { "grundig16",
+        "Frequency=35700\n"
+        "Time Base=578\n"
+        "First Bit=MSB\n"
+        "Zero=-4,2\n"
+        "One=-3,1,-1,1\n"
+        "Two=-2,1,-2,1\n"
+        "Three=-1,1,-3,1\n"
+        "Form=806u,-2960u,1346u,0:1,F:8,D:7,-100\n"
+    },
+    { "gxb",
+        "Frequency=38300\n"
+        "Time Base=520\n"
+        "First Bit=MSB\n"
+        "Zero=1,-3\n"
+        "One=3,-1\n"
+        "Define P=1^(F:1)^(F:1:1)^(F:1:2)^(F:1:3)^(F:1:4)^(F:1:5)^(F:1:6)^(F:1:7)\n"
+        "Form=1,-1,D:4,F:8,P:1,1,^100m\n"
+    },
+    { "kathrein",
+        "Frequency=38000\n"
+        "Time Base=540\n"
+        "Zero=1,-1\n"
+        "One=1,-3\n"
+        "Form=16,-8,D:4,~D:4,F:8,~F:8,1,^105m;16,-8,F:8,1,^105m\n"
+    },
+    { "konka",
+        "Frequency=38000\n"
+        "Time Base=500\n"
+        "First Bit=MSB\n"
+        "Zero=1,-3\n"
+        "One=1,-5\n"
+        "Form=;6,-6,D:8,F:8,1,-8,1,-46\n"
+    },
+    { "logitech",
+        "Frequency=38000\n"
+        "Time Base=127\n"
+        "Zero=3,-4\n"
+        "One=3,-8\n"
+        "Form=;31,-36,D:4,~D:4,F:8,~F:8,3,-50m\n"
+    },
+    { "nec1_rnc",
+        "Frequency=38400\n"
+        "Time Base=564\n"
+        "Zero=1,-1\n"
+        "One=1,-3\n"
+        "Default S=~D\n"
+        "Form=16,-8,D:8,S:8,F:8,~F:4:4,~F:4,1,^108m;16,-4,1,^108m\n"
+    },
+    { "nec1_y1",
+        "Frequency=38400\n"
+        "Time Base=564\n"
+        "Zero=1,-1\n"
+        "One=1,-3\n"
+        "Default S=~D\n"
+        "Form=16,-8,D:8,S:8,F:8,~F:1,~F:6:1,F:1:7,1,^108m;16,-4,1,^108m\n"
+    },
+    { "nec1_y2",
+        "Frequency=38400\n"
+        "Time Base=564\n"
+        "Zero=1,-1\n"
+        "One=1,-3\n"
+        "Default S=~D\n"
+        "Form=16,-8,D:8,S:8,F:8,F:1,~F:6:1,~F:1:7,1,^108m;16,-4,1,^108m\n"
+    },
+    { "nec1_y3",
+        "Frequency=38400\n"
+        "Time Base=564\n"
+        "Zero=1,-1\n"
+        "One=1,-3\n"
+        "Default S=~D\n"
+        "Form=16,-8,D:8,S:8,F:8,~F:1,~F:6:1,~F:1:7,1,^108m;16,-4,1,^108m\n"
+    },
+    { "nrc16",
+        "Frequency=38000\n"
+        "Time Base=500\n"
+        "Zero=-1,1\n"
+        "One=1,-1\n"
+        "Form=1,-5,1:1,254:8,127:7,-15m,1,-5,1:1,F:8,D:7,-110m,1,-5,1:1,254:8,127:7,-15m\n"
+    },
+    { "nrc17",
+        "Frequency=38000\n"
+        "Time Base=500\n"
+        "Zero=-1,1\n"
+        "One=1,-1\n"
+        "Form=1,-5,1:1,254:8,255:8,-28,1,-5,1:1,F:8,D:8,-220,1,-5,1:1,254:8,255:8,-200\n"
+    },
+    { "pacemss",
+        "Frequency=38000\n"
+        "Time Base=630\n"
+        "First Bit=MSB\n"
+        "Zero=1,-7\n"
+        "One=1,-11\n"
+        "Form=1,-5,1,-5,0:1,D:1,F:8,1,^120m\n"
+    },
+    { "replay",
+        "Frequency=36000\n"
+        "Time Base=444\n"
+        "Message Time=100m\n"
+        "First Bit=MSB\n"
+        "Zero=-1,1\n"
+        "One=1,-1\n"
+        "Prefix=6,-2,1,-1\n"
+        "Form=;*,6:3,(4*T-2),(2-4*T),D:8,S:8,F:8\n"
+    },
+    { "scatl_6",
+        "Frequency=57600\n"
+        "Time Base=846\n"
+        "Zero=1,-1\n"
+        "One=1,-3\n"
+        "Form=;4,-4,D:6,F:6,~D:6,~F:6,1,-40\n"
+    },
+    { "velleman",
+        "Frequency=38000\n"
+        "Zero=700,-5060\n"
+        "One=700,-7590\n"
+        "First Bit=MSB\n"
+        "Form=1:1,0:1,D:3,F:6,700,-55m\n"
     }
 };

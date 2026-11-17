@@ -141,7 +141,7 @@ bool LittleFsService::readChunks(const std::string& userPath,
     fs::File f = LittleFS.open(p.c_str(), "r");
     if (!f) return false;
 
-    uint8_t buf[4096];
+    uint8_t buf[512]; // Keep the streaming IR path light on the ESP32 task stack.
     bool ok = true;
     while (true) {
         int n = f.read(buf, sizeof(buf));

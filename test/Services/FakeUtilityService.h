@@ -14,6 +14,8 @@ public:
     mutable uint32_t lastSleepMs = 0;
     mutable uint32_t lastSleepUs = 0;
     bool advanceTimeOnSleep = false;
+    bool useMicrosecondClock = false;
+    mutable uint32_t currentNowUs = 0;
     uint32_t randomValue = 0;
     int32_t randomRangeValue = 0;
 
@@ -25,18 +27,20 @@ public:
         return currentNowMs;
     }
 
-    uint32_t nowUs() const override { return currentNowMs * 1000; }
+    uint32_t nowUs() const override { return useMicrosecondClock ? currentNowUs : currentNowMs * 1000; }
 
     void sleepMs(uint32_t durationMs) const override {
         ++sleepMsCalls;
         lastSleepMs = durationMs;
         if (advanceTimeOnSleep) currentNowMs += durationMs;
+        if (advanceTimeOnSleep) currentNowUs += durationMs * 1000;
     }
 
     void sleepUs(uint32_t durationUs) const override {
         ++sleepUsCalls;
         lastSleepUs = durationUs;
         if (advanceTimeOnSleep) currentNowMs += durationUs / 1000;
+        if (advanceTimeOnSleep) currentNowUs += durationUs;
     }
 
     uint32_t randomUint32() const override { return randomValue; }

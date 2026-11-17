@@ -1,49 +1,30 @@
 #pragma once
 
-#include <stddef.h>
+#include <cstdint>
 #include <string>
 #include <vector>
-#include <Enums/InfraredProtocolEnum.h>
+#include "Enums/InfraredProtocolEnum.h"
 
-typedef struct {
+struct InfraredFileRemoteCommand {
     std::string functionName;
-    InfraredProtocolEnum protocol;
-    uint16_t address;
-    uint8_t function; // command
-    uint16_t* rawData; // unused if protocol != RAW
-    size_t rawDataSize; // unused if protocol != RAW
-    int frequency; // unused if protocol != RAW
-    float dutyCycle; // unused if protocol != RAW
-} InfraredFileRemoteCommand;
+    InfraredProtocolEnum protocol = _IR_UNKNOWN;
+    uint32_t address = 0;
+    uint32_t function = 0;
+    std::vector<uint32_t> rawData;
+    uint32_t frequency = 38000; // Hz, including import/export and encoding.
+    float dutyCycle = 0.33f;
+    // Flipper names and field layouts are distinct from MakeHex D/S/F.
+    std::string fileProtocol;
+    std::string error;
+    bool legacyDsf = false; // Older Bit Pirate files used MakeHex names and packed D/S.
+};
 
-
-// Operator == 
-inline bool operator==(const InfraredFileRemoteCommand& lhs, const InfraredFileRemoteCommand& rhs) {
-    if (lhs.functionName != rhs.functionName) return false;
-    if (lhs.protocol != rhs.protocol) return false;
-    if (lhs.address != rhs.address) return false;
-    if (lhs.function != rhs.function) return false;
-    if (lhs.rawDataSize != rhs.rawDataSize) return false;
-    if (lhs.frequency != rhs.frequency) return false;
-    if (lhs.dutyCycle != rhs.dutyCycle) return false;
-
-    // Compare rawData only if it is used (protocol == RAW)
-    if (lhs.protocol == InfraredProtocolEnum::_RAW) {
-        if (lhs.rawDataSize > 0 && rhs.rawDataSize > 0) {
-            for (size_t i = 0; i < 20; ++i) {
-                if (lhs.rawData[i] != rhs.rawData[i]) {
-                    return false;
-                }
-            }
-        } else if (lhs.rawDataSize != rhs.rawDataSize) {
-            return false;
-        }
-    }
-
-    return true;
+inline bool operator==(const InfraredFileRemoteCommand& a, const InfraredFileRemoteCommand& b) {
+    return a.functionName == b.functionName && a.protocol == b.protocol &&
+           a.address == b.address && a.function == b.function && a.rawData == b.rawData &&
+           a.frequency == b.frequency && a.dutyCycle == b.dutyCycle &&
+           a.fileProtocol == b.fileProtocol && a.error == b.error && a.legacyDsf == b.legacyDsf;
 }
-
-// Operator !=
-inline bool operator!=(const InfraredFileRemoteCommand& lhs, const InfraredFileRemoteCommand& rhs) {
-    return !(lhs == rhs);
+inline bool operator!=(const InfraredFileRemoteCommand& a, const InfraredFileRemoteCommand& b) {
+    return !(a == b);
 }

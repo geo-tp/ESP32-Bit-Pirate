@@ -120,6 +120,7 @@ typedef enum InfraredProtocolEnum {
     _LG = 114,
     _SANYO_LC7461 = 115,
     _RAW = 116,
+    _IR_UNKNOWN = 117,
 } InfraredProtocolEnum;
 
 class InfraredProtocolMapper {
@@ -183,8 +184,8 @@ public:
             case NOKIA12: return "Nokia32single";
             case PACEMSS: return "pacemss";
             case _PANASONIC:
-            case PANASONIC_:
-            case PANASONIC2: return "panasonic";
+            case PANASONIC_: return "panasonic";
+            case PANASONIC2: return "panasonic2";
             case PANASONIC_OLD: return "panasonic_old";
             case _PIONEER: return "pioneer";
             case PROTON: return "Proton";
@@ -243,7 +244,7 @@ public:
             case _SANYO_LC7461: return "Sanyo_LC7461";
             case _RAW: return "raw";
 
-            default: return "nec2";
+            default: return "unknown";
         }
     }
 
@@ -292,12 +293,13 @@ public:
         if (protocolStr == "nec2_f16") return NEC2_F16;
         if (protocolStr == "NECx1") return NECX1;
         if (protocolStr == "NECx2") return NECX2;
-        if (protocolStr == "NECext") return NECX2;
+        if (protocolStr == "NECext") return NECext;
         if (protocolStr == "NEC42") return NEC42;
         if (protocolStr == "NEC42ext") return NEC42ext;
         if (protocolStr == "nrc16") return NRC16;
         if (protocolStr == "nrc17") return NRC17;
         if (protocolStr == "Nokia32") return NOKIA;
+        if (protocolStr == "Nokia32single") return NOKIA12;
         if (protocolStr == "pacemss") return PACEMSS;
         if (protocolStr == "panasonic") return _PANASONIC;
         if (protocolStr == "panasonic2") return PANASONIC2;
@@ -342,7 +344,7 @@ public:
         if (protocolStr == "LG") return _LG;
         if (protocolStr == "Sanyo_LC7461") return _SANYO_LC7461;
         if (protocolStr == "raw") return _RAW;
-        return _NEC2; // Default or fallback
+        return _IR_UNKNOWN;
     }
 
 };

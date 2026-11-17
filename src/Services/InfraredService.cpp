@@ -2,6 +2,10 @@
 
 #include <algorithm>
 #include <Vendors/MakeHex.h>
+#include "Transformers/InfraredCommandLimits.h"
+#include "Transformers/InfraredRemoteTransformer.h"
+#include <cmath>
+#include <limits>
 
 #ifdef INFRARED_IREMOTE_ESP8266
 
@@ -59,8 +63,8 @@ void InfraredService::stopReceiver() {
     if (_receiver) _receiver->disableIRIn();
 }
 
-void InfraredService::sendInfraredCommand(InfraredCommand command) {
-    if (!_sender) return;
+bool InfraredService::sendInfraredCommand(InfraredCommand command) {
+    if (!_sender || !InfraredCommandLimits::valid(command)) return false;
 
     std::string protoStr = InfraredProtocolMapper::toString(command.getProtocol());
 
@@ -77,22 +81,15 @@ void InfraredService::sendInfraredCommand(InfraredCommand command) {
         case InfraredProtocolEnum::_NEC2: {
             uint32_t frame = _sender->encodeNEC(addr16, func);
             _sender->sendNEC(frame);
-            return;
+            return true;
         }
 
-        case InfraredProtocolEnum::_SAMSUNG:
-        case InfraredProtocolEnum::SAMSUNG20: {
+        case InfraredProtocolEnum::_SAMSUNG: {
             if (subdevice != -1) break;
 
             uint32_t frame = _sender->encodeSAMSUNG(device, func);
             _sender->sendSAMSUNG(frame);
-            return;
-        }
-
-        case InfraredProtocolEnum::SONY20: {
-            uint32_t frame = _sender->encodeSony(20, func, addr16, 0);
-            _sender->sendSony(frame);
-            return;
+            return true;
         }
 
         case InfraredProtocolEnum::_LG: {
@@ -100,71 +97,36 @@ void InfraredService::sendInfraredCommand(InfraredCommand command) {
 
             uint32_t frame = _sender->encodeLG(addr16, func);
             _sender->sendLG(frame);
-            return;
+            return true;
         }
 
         case InfraredProtocolEnum::_SANYO_LC7461: {
             uint32_t frame = _sender->encodeSanyoLC7461(addr16, func);
             _sender->sendSanyoLC7461(frame);
-            return;
+            return true;
         }
 
         case InfraredProtocolEnum::_PANASONIC:
-        case InfraredProtocolEnum::PANASONIC_:
-        case InfraredProtocolEnum::PANASONIC2: {
+        case InfraredProtocolEnum::PANASONIC_: {
             uint16_t vendor = getKaseikyoVendorIdCode(protoStr);
             uint8_t sub = (subdevice < 0) ? 0 : (uint8_t)subdevice;
 
             uint64_t frame = _sender->encodePanasonic(vendor, device, sub, func);
             _sender->sendPanasonic64(frame);
-            return;
+            return true;
         }
 
         case InfraredProtocolEnum::_PIONEER: {
             uint64_t frame = _sender->encodePioneer(addr16, func);
             _sender->sendPioneer(frame);
-            return;
+            return true;
         }
 
         default:
             break;
     }
 
-    // Fallback MakeHex for all other protcols
-    int frequency = IR_DEFAULT_FREQUENCY_KHZ;
-    std::vector<float> seq = encodeRemoteCommand(command, protoStr.c_str(), frequency);
-    if (seq.empty()) return;
-
-    std::vector<uint16_t> raw;
-    raw.reserve(seq.size());
-    for (float v : seq) {
-        uint32_t us = (uint32_t)v;
-        if (us > 0xFFFF) us = 0xFFFF;
-        raw.push_back((uint16_t)us);
-    }
-
-    _sender->sendRaw(raw.data(), raw.size(), frequency);
-}
-
-void InfraredService::sendInfraredFileCommand(InfraredFileRemoteCommand command) {
-    if (!_sender) return;
-
-    if (command.protocol == InfraredProtocolEnum::_RAW) {
-        _sender->sendRaw(command.rawData, command.rawDataSize, command.frequency);
-        return;
-    }
-
-    uint8_t dev = command.address & 0xFF;
-    uint8_t sub = (command.address >> 8) & 0xFF;
-
-    InfraredCommand finalCmd(
-        command.protocol,
-        dev,
-        sub,
-        command.function
-    );
-
-    sendInfraredCommand(finalCmd);
+    return sendMakeHexCommand(command);
 }
 
 void InfraredService::sendRaw(const std::vector<uint16_t>& timings, uint32_t khz) {
@@ -174,50 +136,103 @@ void InfraredService::sendRaw(const std::vector<uint16_t>& timings, uint32_t khz
 
 InfraredCommand InfraredService::receiveInfraredCommand() {
     InfraredCommand command;
-    if (!_receiver) return command;
+    if (!_receiver || !_receiver->decode(&_results)) return command;
 
-    if (!_receiver->decode(&_results)) {
+    struct ResumeGuard {
+        IRrecv* receiver;
+        ~ResumeGuard() { receiver->resume(); }
+    } guard{_receiver};
+
+    if (_results.overflow || _results.decode_type == UNKNOWN) return command;
+
+    // IRremoteESP8266 can identify many more protocols than our legacy
+    // address/subdevice/function schema can express, including A/C states.
+    // Preserve the native name, complete <=64-bit code, repeat flag, and
+    // bounded extended state instead of silently discarding the decode.
+    const auto nativeName = typeToString(_results.decode_type);
+    command.setNativeDecode(nativeName.c_str(), _results.bits,
+                            _results.bits <= 64 ? _results.value : 0,
+                            _results.repeat);
+    if (_results.bits > 64) {
+        const size_t bytes = (_results.bits + 7u) / 8u;
+        const size_t available = std::min<size_t>(bytes, sizeof(_results.state));
+        command.setDecodedState(_results.state, available);
+        if (available < bytes) command.markDecodedStateTruncated();
+    }
+    // Short repeat frames contain no new address/function fields.
+    if (_results.bits == 0) {
+        command.setProtocol(_IR_UNKNOWN);
+        command.setDevice(-1);
+        command.setSubdevice(-1);
+        command.setFunction(-1);
         return command;
     }
 
-    _receiver->resume();
+    // Apple does not use the NEC complement/check fields. On this backend
+    // it can arrive as NEC or NEC_LIKE; inspect the original wire payload.
+    if ((_results.decode_type == NEC || _results.decode_type == NEC_LIKE) &&
+        _results.bits == 32 &&
+        InfraredRemoteTransformer::decodeAppleEitherBitOrder(
+            static_cast<uint32_t>(_results.value), command)) return command;
 
-    if (_results.bits == 0 || _results.decode_type == UNKNOWN) {
-        return InfraredCommand();
+    // Preserve the Sony frame length (12/15/20) and its extended address.
+    if (_results.decode_type == SONY &&
+        (_results.bits == 12 || _results.bits == 15 || _results.bits == 20)) {
+        command.setProtocol(_results.bits == 20 ? SIRC20 :
+                            (_results.bits == 15 ? SIRC15 : SIRC));
+        command.setDevice(_results.address & (_results.bits == 20 ? 31 : 255));
+        command.setSubdevice(_results.bits == 20 ?
+                             (_results.command >> 7) & 255 : -1);
+        command.setFunction(_results.command & 127);
+        return command;
     }
 
     switch (_results.decode_type) {
-        case NEC:       command.setProtocol(InfraredProtocolEnum::_NEC); break;
-        case SONY:      command.setProtocol(InfraredProtocolEnum::SONY20); break;
-        case PANASONIC: command.setProtocol(InfraredProtocolEnum::_PANASONIC); break;
-        case JVC:       command.setProtocol(InfraredProtocolEnum::_JVC); break;
-        case SAMSUNG:   command.setProtocol(InfraredProtocolEnum::SAMSUNG20); break;
-        case DENON:     command.setProtocol(InfraredProtocolEnum::_DENON); break;
-        case RC5:       command.setProtocol(InfraredProtocolEnum::_RC5); break;
-        case RC6:       command.setProtocol(InfraredProtocolEnum::_RC6); break;
-        case RC5X:      command.setProtocol(InfraredProtocolEnum::_RC5X); break;
-        case DISH:      command.setProtocol(InfraredProtocolEnum::DISH_NETWORK); break;
-        case SHARP:     command.setProtocol(InfraredProtocolEnum::_SHARP); break;
-        case BOSE:      command.setProtocol(InfraredProtocolEnum::_BOSE); break;
-        case XMP:       command.setProtocol(InfraredProtocolEnum::_XMP); break;
-        case LG:        command.setProtocol(InfraredProtocolEnum::_LG); break;
-        case SANYO_LC7461: command.setProtocol(InfraredProtocolEnum::_SANYO_LC7461); break;
-        case LEGOPF:    command.setProtocol(InfraredProtocolEnum::LEGO); break;
-        case MITSUBISHI: command.setProtocol(InfraredProtocolEnum::_MITSUBISHI); break;
-        case PIONEER:    command.setProtocol(InfraredProtocolEnum::_PIONEER); break;
-
-        default:
-            return InfraredCommand();
+        case NEC: command.setProtocol(_NEC); break;
+        case PANASONIC: command.setProtocol(_PANASONIC); break;
+        case JVC: command.setProtocol(_JVC); break;
+        case SAMSUNG: command.setProtocol(SAMSUNG32); break;
+        case SAMSUNG36: command.setProtocol(_SAMSUNG36); break;
+        case DENON: command.setProtocol(_DENON); break;
+        case RC5: command.setProtocol(_RC5); break;
+        case RC6: command.setProtocol(_RC6); break;
+        case RC5X: command.setProtocol(_RC5X); break;
+        case DISH: command.setProtocol(DISH_NETWORK); break;
+        case SHARP: command.setProtocol(_SHARP); break;
+        case BOSE: command.setProtocol(_BOSE); break;
+        case XMP: command.setProtocol(_XMP); break;
+        case LG: command.setProtocol(_LG); break;
+        case SANYO_LC7461: command.setProtocol(_SANYO_LC7461); break;
+        case LEGOPF: command.setProtocol(LEGO); break;
+        case MITSUBISHI: command.setProtocol(_MITSUBISHI); break;
+        case PIONEER: command.setProtocol(_PIONEER); break;
+        case GICABLE: command.setProtocol(G_I_CABLE); break;
+        // NEC_LIKE, A/C states and all other supported library protocols:
+        // identification and raw data remain available via native metadata.
+        default: break;
     }
 
-    uint32_t addr = _results.address;
-    uint8_t dev = addr & 0xFF;
-    uint8_t sub = (addr >> 8) & 0xFF;
-
-    command.setDevice(dev);
+    if (command.getProtocol() == _RAW || command.getProtocol() == _IR_UNKNOWN) {
+        command.setProtocol(_IR_UNKNOWN);
+        command.setDevice(-1);
+        command.setSubdevice(-1);
+        command.setFunction(-1);
+        return command;
+    }
+    // The library's address/command fields are wider than InfraredCommand.
+    // Never silently narrow them into bogus values.
+    if (_results.address > 0x7FFFu || _results.command > 0x7FFFu) {
+        command.setProtocol(_IR_UNKNOWN);
+        command.setDevice(-1);
+        command.setSubdevice(-1);
+        command.setFunction(-1);
+        return command;
+    }
+    const uint32_t address = _results.address;
+    command.setDevice(address & 0xFFu);
+    const uint32_t sub = (address >> 8u) & 0xFFu;
     command.setSubdevice(sub == 0 ? -1 : sub);
-    command.setFunction(_results.command & 0xFF);
-
+    command.setFunction(_results.command);
     return command;
 }
 
@@ -231,16 +246,15 @@ bool InfraredService::receiveRaw(std::vector<uint16_t>& timings, uint32_t& khz) 
         ~ResumeGuard(){ r->resume(); }
     } guard{_receiver};
 
-    if (!_results.rawbuf || _results.rawlen <= 1) return false;
+    timings.clear();
+    if (_results.overflow || !_results.rawbuf || _results.rawlen <= 1) return false;
 
     khz = IR_DEFAULT_FREQUENCY_KHZ;
-    timings.clear();
     timings.reserve(_results.rawlen - 1);
 
     for (uint16_t i = 1; i < _results.rawlen; i++) {
-        uint32_t us = _results.rawbuf[i] * kRawTick;
-        if (us > 0xFFFF) us = 0xFFFF;
-        timings.push_back((uint16_t)us);
+        const uint32_t us = static_cast<uint32_t>(_results.rawbuf[i]) * kRawTick;
+        if (!InfraredRemoteTransformer::appendRawTiming(timings, i % 2 == 1, us)) return false;
     }
 
     return true;
@@ -331,7 +345,6 @@ Arduino-IRemote
 #if defined(DEVICE_STICKS3)
 #include <M5Unified.h>
 #endif
-#include "Transformers/SubGhzTransformer.h"
 #endif
 
 #if defined(INFRARED_RMT)
@@ -383,31 +396,15 @@ bool InfraredService::receiveRmtRaw(std::vector<uint16_t> &timings, uint32_t &kh
     // A full buffer may be truncated; never expose it as a complete frame.
     timings.clear();
     if (rxSymbolCount > 0 && rxSymbolCount < rxSymbols.size()) {
-        std::vector<rmt_symbol_word_t> symbols;
-        symbols.reserve(rxSymbolCount);
+        timings.reserve(rxSymbolCount * 2);
         for (size_t i = 0; i < rxSymbolCount; ++i) {
             const auto &raw = rxSymbols[i];
             if (!raw.duration0) break;
-            rmt_symbol_word_t symbol{};
-            symbol.duration0 = raw.duration0;
-            symbol.level0 = raw.level0;
-            symbol.duration1 = raw.duration1;
-            symbol.level1 = raw.level1;
-            symbols.push_back(symbol);
+            // RX is 1 MHz and active-low. Merge adjacent levels in-place, with
+            // no intermediate symbol/signed-timing buffers or narrowing overflow.
+            if (!InfraredRemoteTransformer::appendRawTiming(timings, !raw.level0, raw.duration0)) break;
             if (!raw.duration1) break;
-        }
-        // RX runs at 1 MHz. IR marks are active-low; discard leading idle.
-        for (int32_t timing : SubGhzTransformer().symbolsToSignedTimings(symbols, 1)) {
-            const bool space = timing > 0;
-            const uint32_t us = space ? timing : -timing;
-            if (timings.empty() && space) continue;
-            if (!timings.empty() && space == ((timings.size() - 1) % 2 != 0)) {
-                const uint32_t merged = timings.back() + us;
-                if (merged > UINT16_MAX) { timings.clear(); break; }
-                timings.back() = merged;
-            } else {
-                timings.push_back(us);
-            }
+            if (!InfraredRemoteTransformer::appendRawTiming(timings, !raw.level1, raw.duration1)) break;
         }
         if (!timings.empty() && timings.size() % 2 == 0) timings.pop_back();
     }
@@ -434,6 +431,7 @@ void InfraredService::configureTransmitter(uint8_t tx) {
     // begin() only records the pin; initialize PWM at zero duty for TX idle.
     IrSender.enableIROut(IR_DEFAULT_FREQUENCY_KHZ);
     IrSender.IRLedOff();
+    _configured = true;
 }
 
 void InfraredService::configure(uint8_t tx, uint8_t rx) {
@@ -484,7 +482,8 @@ void InfraredService::stopReceiver() {
 #endif
 }
 
-void InfraredService::sendInfraredCommand(InfraredCommand command) {
+bool InfraredService::sendInfraredCommand(InfraredCommand command) {
+    if (!_configured || !InfraredCommandLimits::valid(command)) return false;
     uint16_t vendorCode;
     std::string protocolString = InfraredProtocolMapper::toString(command.getProtocol());
     uint8_t device = command.getDevice();
@@ -494,24 +493,16 @@ void InfraredService::sendInfraredCommand(InfraredCommand command) {
     uint16_t address = (static_cast<uint16_t>(subdevice) << 8) | device;
 
     switch (command.getProtocol()) {
-        case InfraredProtocolEnum::_SAMSUNG:
-        case InfraredProtocolEnum::SAMSUNG20: {
+        case InfraredProtocolEnum::_SAMSUNG: {
             IrSender.sendSamsung(address, command.getFunction(), 0);
             break;
         }
 
-        case InfraredProtocolEnum::_PANASONIC:
-        case InfraredProtocolEnum::PANASONIC2: {
+        case InfraredProtocolEnum::_PANASONIC: {
             // Panasonic can be used by many manufacturers in the IRDB format, we check for vendor name
             vendorCode = getKaseikyoVendorIdCode(protocolString);
             
             IrSender.sendKaseikyo(address, command.getFunction(), 0, vendorCode);
-            break;
-        }
-
-        // Same for Sony20
-        case InfraredProtocolEnum::SONY20: {
-            IrSender.sendSony(address, command.getFunction(), 0, SIRCS_20_PROTOCOL);  
             break;
         }
 
@@ -521,41 +512,10 @@ void InfraredService::sendInfraredCommand(InfraredCommand command) {
             break;
         }
         
-        // Handle by MakeHex
-        default: {
-            int frequency = IR_DEFAULT_FREQUENCY_KHZ; // Default frequency, passed by reference to encodeRemoteCommand
-            std::vector<float> sequence = encodeRemoteCommand(command, protocolString.c_str(), frequency);
-
-            // Convert for sendRaw
-            uint16_t* raw = new uint16_t[sequence.size()];
-            for (size_t i = 0; i < sequence.size(); ++i) {
-                raw[i] = static_cast<uint16_t>(sequence[i]);
-            }
-            
-            // Send the raw generated sequence with the correct frequency
-            IrSender.sendRaw(raw, sequence.size(), frequency);
-            delete[] raw;
-        }
+        default:
+            return sendMakeHexCommand(command);
     }
-}
-
-void InfraredService::sendInfraredFileCommand(InfraredFileRemoteCommand command) {
-
-    if (command.protocol == InfraredProtocolEnum::_RAW) {
-        IrSender.sendRaw(command.rawData, command.rawDataSize, command.frequency);
-        return;
-    }
-
-    uint8_t device = static_cast<uint8_t>(command.address & 0xFF);
-    uint8_t sub = static_cast<uint8_t>((command.address >> 8) & 0xFF);
-    auto finalCmd = InfraredCommand(
-        command.protocol,
-        device,
-            sub,
-            command.function
-        );
-
-    sendInfraredCommand(finalCmd);
+    return true;
 }
 
 InfraredCommand InfraredService::receiveInfraredCommand() {
@@ -569,116 +529,92 @@ InfraredCommand InfraredService::receiveInfraredCommand() {
 InfraredCommand InfraredService::decodeIrCommand(bool injected) {
     (void)injected;
     InfraredCommand command;
-
-    if (!IrReceiver.decode()) {
-        return command;
-    }
+    if (!IrReceiver.decode()) return command;
 
     const IRData& data = IrReceiver.decodedIRData;
-    IrReceiver.resume();
+    struct ResumeGuard {
+        ~ResumeGuard() { IrReceiver.resume(); }
+    } guard;
+    if (data.protocol == UNKNOWN ||
+        (data.flags & IRDATA_FLAGS_WAS_OVERFLOW)) return command;
 
-    // Ignore invalid
-    if (data.numberOfBits == 0 || data.protocol == UNKNOWN) {
+    command.setNativeDecode(getProtocolString(data.protocol),
+                            data.numberOfBits,
+                            data.numberOfBits <= 64 ?
+                                static_cast<uint64_t>(data.decodedRawData) : 0,
+                            (data.flags & IRDATA_FLAGS_IS_REPEAT) != 0);
+
+    if (data.numberOfBits == 0) {
+        command.setProtocol(_IR_UNKNOWN);
+        command.setDevice(-1);
+        command.setSubdevice(-1);
+        command.setFunction(-1);
         return command;
     }
 
-    // Mapping protocols
-    switch (data.protocol) {
-        case NEC:
-            command.setProtocol(_NEC);
-            break;
-        case NEC2:
-        case ONKYO:
-            command.setProtocol(_NEC2);
-            break;
+    // Apple has a fixed 0x87 identifier and non-NEC function bits.
+    // Never pass the generic IRremote address/command values to MakeHex.
+    if ((data.protocol == APPLE || data.protocol == NEC ||
+         data.protocol == ONKYO) && data.numberOfBits == 32 &&
+        InfraredRemoteTransformer::decodeAppleEitherBitOrder(
+            static_cast<uint32_t>(data.decodedRawData), command)) return command;
 
-        case DENON:
-            command.setProtocol(_DENON);
-            break;
-
-        case APPLE:
-            command.setProtocol(_APPLE);
-            break;
-
-        case SONY:
-            command.setProtocol(SONY20);
-            break;
-
-        case JVC:
-            command.setProtocol(_JVC);
-            break;
-
-        case RC5:
-            command.setProtocol(_RC5);
-            break;
-
-        case BOSEWAVE:
-        case BANG_OLUFSEN:
-            command.setProtocol(_BOSE);
-            break;
-
-        case RC6:
-            command.setProtocol(_RC6);
-            break;
-        case LG:
-        case LG2:
-        case SAMSUNG:
-            command.setProtocol(SAMSUNG20);
-            break;
-
-        case SAMSUNGLG:
-        case SAMSUNG48:
-            command.setProtocol(_SAMSUNG);
-            break;
-
-        case PANASONIC:
-            command.setProtocol(_PANASONIC);
-            break;
-
-        case KASEIKYO_DENON:
-            command.setProtocol(DENON_K);
-            break;
-
-        case KASEIKYO:
-        case KASEIKYO_SHARP:
-        case KASEIKYO_JVC:
-        case KASEIKYO_MITSUBISHI:
-            command.setProtocol(_KASEIKYO);
-            break;
-
-        case LEGO_PF:
-            command.setProtocol(LEGO);
-            break;
-
-        default:
-            return InfraredCommand();
+    if (data.protocol == SONY &&
+        (data.numberOfBits == 12 || data.numberOfBits == 15 ||
+         data.numberOfBits == 20)) {
+        command.setProtocol(data.numberOfBits == 20 ? SIRC20 :
+                            (data.numberOfBits == 15 ? SIRC15 : SIRC));
+        command.setDevice(data.numberOfBits == 20 ? data.address & 31 : data.address);
+        command.setSubdevice(data.numberOfBits == 20 ?
+                             (data.address >> 5) & 255 : -1);
+        command.setFunction(data.command & 127);
+        return command;
     }
 
-    // Panasonic and derived
-    if (data.protocol == PANASONIC || data.protocol == KASEIKYO || data.protocol == KASEIKYO_JVC ||
-        data.protocol == KASEIKYO_SHARP || data.protocol == KASEIKYO_MITSUBISHI || data.protocol == KASEIKYO_DENON) {
-        // PANASONIC: 16 bits = 8b subdevice + 8b device
+    switch (data.protocol) {
+        case NEC: command.setProtocol(_NEC); break;
+        case NEC2: command.setProtocol(_NEC2); break;
+        // Onkyo's 16-bit command is not a normal NEC8 command.
+        case ONKYO: command.setProtocol(_IR_UNKNOWN); break;
+        case DENON: command.setProtocol(_DENON); break;
+        case JVC: command.setProtocol(_JVC); break;
+        case RC5: command.setProtocol(_RC5); break;
+        case RC6: command.setProtocol(_RC6); break;
+        case LG: command.setProtocol(_LG); break;
+        case SAMSUNG: command.setProtocol(SAMSUNG32); break;
+        case SAMSUNG48: command.setProtocol(_SAMSUNG); break;
+        case PANASONIC: command.setProtocol(_PANASONIC); break;
+        case KASEIKYO_DENON: command.setProtocol(DENON_K); break;
+        case KASEIKYO: command.setProtocol(_KASEIKYO); break;
+        case LEGO_PF: command.setProtocol(LEGO); break;
+        // APPLE (if not validated), RC6A, SAMSUNGLG, Kaseikyo vendor
+        // variants, FAST, MAGIQUEST, MARANTZ, BOSEWAVE, BANG_OLUFSEN,
+        // PULSE_DISTANCE, PULSE_WIDTH and OTHER remain labelled by the
+        // library without claiming a MakeHex-compatible address/function.
+        default: command.setProtocol(_IR_UNKNOWN); break;
+    }
+
+    if (command.getProtocol() == _IR_UNKNOWN ||
+        data.address > 0x7FFFu || data.command > 0x7FFFu) {
+        command.setProtocol(_IR_UNKNOWN);
+        command.setDevice(-1);
+        command.setSubdevice(-1);
+        command.setFunction(-1);
+        return command;
+    }
+    if (data.protocol == PANASONIC || data.protocol == KASEIKYO ||
+        data.protocol == KASEIKYO_DENON) {
         command.setDevice((data.address >> 8) & 0xFF);
         command.setSubdevice(data.address & 0xFF);
-        
-    // Samsung
-    } else if (data.protocol == SAMSUNG || data.protocol == SAMSUNGLG) {
+    } else if (data.protocol == SAMSUNG) {
         command.setDevice(data.address & 0xFF);
         command.setSubdevice((data.address >> 8) & 0xFF);
-
     } else {
-        // que l'adresse
-        int device = data.address & 0xFF;
-        int subdevice = (data.address >> 8) & 0xFF;
-
-        // Si subdevice est 0, ignore
-        command.setDevice(device);
-        command.setSubdevice(subdevice == 0 ? -1 : subdevice);
+        command.setDevice(data.address & 0xFF);
+        const int sub = (data.address >> 8) & 0xFF;
+        command.setSubdevice(sub == 0 ? -1 : sub);
     }
-
-    // Commande principale
     command.setFunction(data.command);
-
     return command;
 }
 
@@ -698,19 +634,19 @@ bool InfraredService::receiveRaw(std::vector<uint16_t>& timings, uint32_t& khz) 
         ~ResumeGuard(){ IrReceiver.resume(); }
     } guard;
 
-    if (raw == nullptr || raw->rawlen <= 1) {
+    timings.clear();
+    if (raw == nullptr || raw->rawlen <= 1 || raw->OverflowFlag) {
         return false;
     }
 
-    khz = IR_DEFAULT_FREQUENCY_KHZ; // TODO: default frequency, handle that ?
+    khz = IR_DEFAULT_FREQUENCY_KHZ; // Demodulated RX cannot measure the carrier.
 
-    timings.clear();
     timings.reserve(raw->rawlen - 1);
 
     for (uint16_t i = 1; i < raw->rawlen; i++) {
         // Convert ticks to microseconds
         uint32_t us = static_cast<uint32_t>(raw->rawbuf[i]) * MICROS_PER_TICK;
-        timings.push_back(static_cast<uint16_t>(us));
+        if (!InfraredRemoteTransformer::appendRawTiming(timings, i % 2 == 1, us)) return false;
     }
 
     return true;
@@ -718,13 +654,8 @@ bool InfraredService::receiveRaw(std::vector<uint16_t>& timings, uint32_t& khz) 
 }
 
 void InfraredService::sendRaw(const std::vector<uint16_t>& timings, uint32_t khz) {
-    if (timings.empty()) return;
-
-    uint16_t* buf = new uint16_t[timings.size()];
-    for (size_t i = 0; i < timings.size(); ++i) buf[i] = timings[i];
-
-    IrSender.sendRaw(buf, timings.size(), khz);
-    delete[] buf;
+    if (!_configured || timings.empty() || timings.size() > UINT16_MAX || khz == 0 || khz > 255) return;
+    IrSender.sendRaw(timings.data(), timings.size(), khz);
 }
 
 void InfraredService::sendJam(uint8_t modeIndex,
@@ -815,3 +746,87 @@ std::vector<std::string> InfraredService::getJamModeStrings() {
 }
 
 #endif
+
+bool InfraredService::sendInfraredFileCommand(const InfraredFileRemoteCommand& command) {
+    if (!command.error.empty()) return false;
+    if (command.legacyDsf) {
+        if (command.address > 65535 || command.function > 255) return false;
+        return sendInfraredCommand(InfraredCommand(command.protocol, command.address & 255,
+                                                   command.address >> 8, command.function));
+    }
+    if (command.fileProtocol == "raw") {
+        if (command.frequency < 10000 || command.frequency > 1000000 ||
+            !std::isfinite(command.dutyCycle) || command.dutyCycle <= 0 || command.dutyCycle > 1)
+            return false;
+        // RAW is already an owned waveform; do not duplicate it for transmission.
+        const unsigned duty = std::clamp(static_cast<unsigned>(std::lround(command.dutyCycle * 100)), 1u, 100u);
+        return sendWaveform(command.rawData, command.frequency, duty);
+    }
+    const auto wave = InfraredRemoteTransformer::fromFileCommand(command, fileToggle);
+    const bool sent = sendWaveform(wave.pulses, wave.frequencyHz, wave.dutyPercent);
+    if (sent && (command.fileProtocol == "RC5" || command.fileProtocol == "RC5X" ||
+                 command.fileProtocol == "RC6")) fileToggle = !fileToggle;
+    return sent;
+}
+
+bool InfraredService::sendMakeHexCommand(const InfraredCommand& command) {
+    int frequencyHz = 38000;
+    const auto name = InfraredProtocolMapper::toString(command.getProtocol());
+    const auto timings = encodeRemoteCommand(command, name.c_str(), frequencyHz);
+    return frequencyHz > 0 && sendRawSequence(timings, static_cast<uint32_t>(frequencyHz));
+}
+
+bool InfraredService::sendRawSequence(const std::vector<float>& timings, uint32_t frequencyHz) {
+    if (timings.empty() || timings.size() % 2 != 0) return false;
+    std::vector<uint32_t> pulses;
+    pulses.reserve(timings.size());
+    for (float duration : timings) {
+        if (!std::isfinite(duration) || duration < 1 ||
+            static_cast<double>(duration) > UINT32_MAX) return false;
+        pulses.push_back(static_cast<uint32_t>(duration));
+    }
+    return sendWaveform(pulses, frequencyHz);
+}
+
+bool InfraredService::sendWaveform(const std::vector<uint32_t>& timings, uint32_t frequencyHz, unsigned dutyPercent) {
+#ifdef INFRARED_IREMOTE_ESP8266
+    if (!_sender) return false;
+#else
+    if (!_configured || (frequencyHz + 500ULL) / 1000 > 255) return false;
+#endif
+    if (timings.empty() || timings.size() > 65535 || frequencyHz < 1000 ||
+        frequencyHz > 1000000 || dutyPercent < 1 || dutyPercent > 100) return false;
+    uint64_t total = 0;
+    for (size_t i = 0; i < timings.size(); ++i) {
+        // mark() accepts 16 bits on both backends. Validate the entire frame
+        // before emitting anything; spaces can be split without extra marks.
+        if (!timings[i] || (i % 2 == 0 && timings[i] > UINT16_MAX)) return false;
+        total += timings[i];
+        if (total > 10000000) return false;
+    }
+#ifdef INFRARED_IREMOTE_ESP8266
+    auto& sender = *_sender;
+    sender.enableIROut(frequencyHz, dutyPercent);
+#else
+    auto& sender = IrSender;
+    // Arduino-IRremote exposes integer kHz and a compile-time duty cycle.
+    sender.enableIROut((frequencyHz + 500) / 1000);
+#endif
+    for (size_t i = 0; i < timings.size(); ++i) {
+        if (i % 2 == 0) sender.mark(static_cast<uint16_t>(timings[i]));
+        else {
+            uint32_t remaining = timings[i];
+            while (remaining) {
+                const uint16_t chunk = static_cast<uint16_t>(std::min<uint32_t>(remaining, UINT16_MAX));
+                sender.space(chunk);
+                remaining -= chunk;
+            }
+        }
+    }
+#ifdef INFRARED_IREMOTE_ESP8266
+    sender.space(0); // Public API also switches the LED off at 100% duty.
+#else
+    sender.IRLedOff();
+#endif
+    return true;
+}

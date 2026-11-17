@@ -34,7 +34,7 @@ public:
 
     bool readAll(const std::string& userPath, std::string& out) const;
     bool readChunks(const std::string& userPath,
-                    const std::function<bool(const uint8_t*, size_t)>& writer) const;
+                    const std::function<bool(const uint8_t*, size_t)>& writer) const override;
 
     bool write(const std::string& userPath, const std::string& data, bool append=false);
     bool write(const std::string& userPath, const uint8_t* data, size_t len, bool append=false);

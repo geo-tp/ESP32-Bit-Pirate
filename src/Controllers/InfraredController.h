@@ -51,13 +51,14 @@ private:
     HelpShell& helpShell;
     
     bool configured = false;
-    uint8_t MAX_IR_FRAMES = 64; // Maximum frames to record
+    static constexpr size_t MAX_IR_FRAMES = 64;
+    static constexpr size_t MAX_REPLAY_TIMINGS = 4096; // 8 KiB of uint16_t timings
 
     // Frames
     struct IRFrame {
         std::vector<uint16_t> timings; // raw ir timings
         uint32_t khz; // carrier frequency
-        uint32_t gapMs; // delay from previous frame in milliseconds
+        uint32_t gapUs; // silence from the previous frame's end, in microseconds
     };
 
     // Configure IR settings

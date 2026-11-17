@@ -27,7 +27,6 @@
 #include <cctype>
 #include <cmath>
 #include <cstdio> 
-#include <vector>
 #include <Data/InfraredProtocolDefinitions.h>
 #include <Models/InfraredCommand.h>
 
@@ -39,7 +38,7 @@ public:
     ~IRP();
 
     bool readIrpString(char* str);
-    void generate(int* s, int* r, float* raw);
+    void generate(int* s, int* r, std::vector<float>& raw);
 
 private:
     struct Value {

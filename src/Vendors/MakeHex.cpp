@@ -1,43 +1,202 @@
+
 /*
 
-########################################################################################################################
-#                                                                                                                      #
-#                                                                                                                      #
-#                          This file was adapted from https://github.com/probonopd/MakeHex/.                           #
-#                         It takes an IRP string and return the raw IR sequence. By John Fine                          #           
-#                                                                                                                      #
-#                                                                                                                      #
-########################################################################################################################
+############################################################################################################################################
+#                                                                                                                                          #
+#                                                                                                                                          #
+#                                 This file was adapted from https://github.com/probonopd/MakeHex/.                                        #
+#                               It takes an IRP string and return the raw IR sequence. By John Fine                                        #
+#                                                                                                                                          #
+#                                                                                                                                          #
+############################################################################################################################################
 
 */
 
 // Copyright 2005 John S. Fine
 
-// You may use, copy, modify and/or distribute this program for private or commercial use provided that: 
-// 1) You do not hold me responsible for any damage or negative consequences resulting from those activities. 
-// 2) You include this copyright notice and disclaimer in any copy of any part or all of this program. 
-// I do not provide any warranty of the correctness, safety, or suitibility of this program for any purpose. 
+// You may use, copy, modify and/or distribute this program for private or commercial use provided that:
+// 1) You do not hold me responsible for any damage or negative consequences resulting from those activities.
+// 2) You include this copyright notice and disclaimer in any copy of any part or all of this program.
+// I do not provide any warranty of the correctness, safety, or suitibility of this program for any purpose.
 // If you do not agree to these conditions, you have no permission to use, copy, modify or distribute this program.
 
+// Ultimate Remote additions: see UltimateRemote.LICENSE.
 #include "MakeHex.h"
 
+
+
 std::vector<float> encodeRemoteCommand(const InfraredCommand& cmd, const char* protocolString, int& frequency) {
+
+    if (!protocolString || !*protocolString) return {};
+    frequency = 38000;
 
     // Adapted from
     // https://github.com/probonopd/MakeHex/tree/master
     // By John Fine
 
-    char irp[512] = ""; // IRP string, will contains all necessary infos to generate the IR sequence
+    // Zenith uses a nested binary bit specification and a variable number of
+    // function bits. Historical MakeHex cannot change the bit specification
+    // midway through a frame; encode that one protocol directly from its IRP:
+    // {40k,520,msb}<1,-10|1,-1,1,-8>(S:1,<1:2|2:2>(F:D),-90m)*
+    // Reference: Harctoolbox IrpProtocols.xml, Zenith.
+    if (strcmp(protocolString, "zenith") == 0) {
+        const int bits = cmd.getDevice();
+        const int style = cmd.getSubdevice();
+        if (bits < 5 || bits > 8 || style < 0 || style > 1 ||
+            cmd.getFunction() < 0 || cmd.getFunction() >= (1 << bits)) return {};
+        frequency = 40000;
+        std::vector<float> out;
+        auto emitOuter = [&](bool one) {
+            if (one) {
+                out.insert(out.end(), {520.f, 520.f, 520.f, 4160.f});
+            } else {
+                out.insert(out.end(), {520.f, 5200.f});
+            }
+        };
+        emitOuter(style != 0);
+        for (int i = bits - 1; i >= 0; --i) {
+            // Nested 2-bit symbols: 0 -> 01, 1 -> 10 (MSB first).
+            const bool bit = (cmd.getFunction() >> i) & 1;
+            emitOuter(bit);
+            emitOuter(!bit);
+        }
+        out.back() += 90000.f;
+        return out;
+    }
+
+    // Dedicated Apple Remote encoder. Apple is NOT regular NEC1: its 32-bit
+    // payload includes a fixed 0x87 byte, a 1-bit check, 7-bit function and
+    // an 8-bit remote Pair ID. Source: Harctoolbox IrpProtocols.xml (Apple).
+    // The RemoteCommand fields are: D=device (normally 238), S=Pair ID,
+    // F=command. Built-in Apple entries use Pair ID 0 (see Database.h).
+    if (strcmp(protocolString, "apple") == 0) {
+        if (cmd.getDevice() < 0 || cmd.getDevice() > 255 ||
+            cmd.getSubdevice() < 0 || cmd.getSubdevice() > 255 ||
+            cmd.getFunction() < 0 || cmd.getFunction() > 127) return {};
+        const uint32_t device = static_cast<uint8_t>(cmd.getDevice());
+        const uint32_t pairId = static_cast<uint8_t>(cmd.getSubdevice());
+        const uint32_t function = static_cast<uint8_t>(cmd.getFunction());
+        const auto countBits = [](uint32_t n) {
+            unsigned count = 0;
+            while (n) { count += n & 1u; n >>= 1; }
+            return count;
+        };
+        const uint32_t check = 1u - ((countBits(device) + countBits(135u) +
+                                      countBits(function) + countBits(pairId)) & 1u);
+        const uint32_t payload = device | (135u << 8) | (check << 16) |
+                                 (function << 17) | (pairId << 24);
+        frequency = 38400;
+        std::vector<float> result;
+        result.reserve(68);
+        result.push_back(16.f * 564.f);
+        result.push_back(8.f * 564.f);
+        for (unsigned b = 0; b < 32; ++b) {
+            result.push_back(564.f);
+            result.push_back((payload & (uint32_t(1) << b)) ? 3.f * 564.f : 564.f);
+        }
+        result.push_back(564.f);
+        // NEC1-compatible 108ms frame period; include trailing SPACE so
+        // the raw sender always receives an even number of timings.
+        float elapsed = 0.f;
+        for (float duration : result) elapsed += duration;
+        result.push_back(108000.f - elapsed);
+        return result;
+    }
+
+    // NEC42 / NEC42ext: 42-bit NEC frames as used by the existing Flipper
+    // parsed-file encoder. Builder mapping: D=low 13 address bits,
+    // S=high 13 address bits (only for NEC42ext), F=command (8/16-bit).
+    if (strcmp(protocolString, "NEC42") == 0 ||
+        strcmp(protocolString, "NEC42ext") == 0) {
+        const bool extended = strcmp(protocolString, "NEC42ext") == 0;
+        if (cmd.getDevice() < 0 || cmd.getDevice() > 8191 ||
+            (extended && (cmd.getSubdevice() < -1 || cmd.getSubdevice() > 8191)) ||
+            cmd.getFunction() < 0 || cmd.getFunction() > (extended ? 32767 : 255)) return {};
+        frequency = 38000;
+        const uint64_t address = static_cast<uint16_t>(cmd.getDevice()) |
+            ((extended && cmd.getSubdevice() >= 0) ?
+                (static_cast<uint64_t>(cmd.getSubdevice()) << 13) : 0ULL);
+        const uint64_t f = static_cast<uint16_t>(cmd.getFunction());
+        const uint64_t bits = extended ? (address | (f << 26)) :
+            (address | ((~address & 8191ULL) << 13) | (f << 26) |
+             ((~f & 255ULL) << 34));
+        std::vector<float> result{9000.f, 4500.f};
+        result.reserve(88);
+        for (unsigned i = 0; i < 42; ++i) {
+            result.push_back(560.f);
+            result.push_back((bits & (1ULL << i)) ? 1690.f : 560.f);
+        }
+        result.push_back(560.f);
+        float elapsed = 0;
+        for (float t : result) elapsed += t;
+        result.push_back(145000.f - elapsed);
+        return result;
+    }
+
+    // Built-in Samsung32 and Sony SIRC variants share their physical format
+    // with the existing Flipper .ir support, but are represented by D/S/F in
+    // the built-in DB / IR Builder rather than an already packed payload.
+    if (strcmp(protocolString, "Samsung32") == 0) {
+        if (cmd.getDevice() < 0 || cmd.getDevice() > 255 ||
+            cmd.getFunction() < 0 || cmd.getFunction() > 255) return {};
+        frequency = 38000;
+        const uint32_t d = static_cast<uint8_t>(cmd.getDevice());
+        const uint32_t f = static_cast<uint8_t>(cmd.getFunction());
+        const uint32_t bits = d | (d << 8) | (f << 16) | ((f ^ 255u) << 24);
+        std::vector<float> result{4500.f, 4500.f};
+        result.reserve(68);
+        for (unsigned bit = 0; bit < 32; ++bit) {
+            result.push_back(550.f);
+            result.push_back((bits & (uint32_t(1) << bit)) ? 1650.f : 550.f);
+        }
+        result.push_back(550.f);
+        float elapsed = 0;
+        for (float t : result) elapsed += t;
+        result.push_back(108000.f - elapsed);
+        return result;
+    }
+    if (strcmp(protocolString, "SIRC") == 0 || strcmp(protocolString, "SIRC15") == 0 ||
+        strcmp(protocolString, "SIRC20") == 0) {
+        const bool longAddress = strcmp(protocolString, "SIRC15") == 0;
+        const bool twenty = strcmp(protocolString, "SIRC20") == 0;
+        const unsigned bits = twenty ? 20u : (longAddress ? 15u : 12u);
+        const int maxDevice = longAddress ? 255 : 31;
+        if (cmd.getDevice() < 0 || cmd.getDevice() > maxDevice ||
+            cmd.getFunction() < 0 || cmd.getFunction() > 127 ||
+            (twenty && (cmd.getSubdevice() < 0 || cmd.getSubdevice() > 255))) return {};
+        frequency = 40000;
+        uint32_t value = static_cast<uint8_t>(cmd.getFunction()) |
+                         (static_cast<uint32_t>(cmd.getDevice()) << 7);
+        if (twenty) value |= static_cast<uint32_t>(cmd.getSubdevice()) << 12;
+        std::vector<float> result;
+        result.reserve((2 + bits * 2) * 3);
+        for (unsigned repeat = 0; repeat < 3; ++repeat) {
+            const size_t start = result.size();
+            result.insert(result.end(), {2400.f, 600.f});
+            for (unsigned b = 0; b < bits; ++b) {
+                result.push_back((value & (uint32_t(1) << b)) ? 1200.f : 600.f);
+                result.push_back(600.f);
+            }
+            float elapsed = 0.f;
+            for (size_t i = start; i < result.size(); ++i) elapsed += result[i];
+            // Whole Sony frame repeats about every 45ms; the last mark has
+            // a single combined lead-out SPACE, not an extra phantom mark.
+            result.back() += 45000.f - elapsed;
+        }
+        return result;
+    }
+
+    char irp[1024] = ""; // IRP string, will contains all necessary infos to generate the IR sequence
 
     // Device
     if (cmd.getSubdevice() >= 0)
         snprintf(irp, sizeof(irp), "Device=%d.%d\nFunction=%d\n", cmd.getDevice(), cmd.getSubdevice(), cmd.getFunction());
     else
-        snprintf(irp, sizeof(irp), "Device=%d\nFunction=%d\n", cmd.getSubdevice(), cmd.getFunction());
+        snprintf(irp, sizeof(irp), "Device=%d\nFunction=%d\n", cmd.getDevice(), cmd.getFunction());
 
     // Protocol
     int p = -1;
-    for (int i = 0; i < 62; i++) {
+    for (size_t i = 0; i < sizeof(protocolDefinitions) / sizeof(protocolDefinitions[0]); i++) {
         if (strcmp(protocolString, protocolDefinitions[i].name) == 0) {
             p = i;
             break;
@@ -51,9 +210,11 @@ std::vector<float> encodeRemoteCommand(const InfraredCommand& cmd, const char* p
         strncpy(tempProt, protocolString, sizeof(tempProt));
         tempProt[sizeof(tempProt) - 1] = '\0';
         for (int i = 0; i < strlen(tempProt); i++)
-            tempProt[i] = toupper(tempProt[i]); // Convert to uppercase
+            tempProt[i] = toupper(static_cast<unsigned char>(tempProt[i])); // Convert to uppercase
 
-        if (sscanf(tempProt, "RC6-%d-%d", &M, &L) == 2) {
+        int consumed = 0;
+        if (sscanf(tempProt, "RC6-%d-%d%n", &M, &L, &consumed) == 2) {
+            if (tempProt[consumed] || M < 0 || M > 7 || L < 20 || L > 48) return {};
             char temp[512];
             snprintf(temp, sizeof(temp), "Define M=%d\nDefine L=%d\n", M, L);
             strncat(irp, temp, sizeof(irp) - strlen(irp) - 1);
@@ -65,24 +226,15 @@ std::vector<float> encodeRemoteCommand(const InfraredCommand& cmd, const char* p
         }
 
         // Search again for protocol
-        for (int i = 0; i < 62; i++) {
+        for (size_t i = 0; i < sizeof(protocolDefinitions) / sizeof(protocolDefinitions[0]); i++) {
             if (strcmp(protocolString, protocolDefinitions[i].name) == 0) {
                 p = i;
                 break;
             }
         }
 
-        // Default NEC2 if no protocol found
-        // NEC2 for reliabity which continuously sends the full command frame
-        if (p < 0) {
-            protocolString = "nec2";
-            for (int i = 0; i < 62; i++) {
-                if (strcmp(protocolString, protocolDefinitions[i].name) == 0) {
-                    p = i;
-                    break;
-                }
-            }
-        }  
+        // Never send an unrelated NEC2 frame for an unsupported protocol.
+        if (p < 0) return {};
     }
 
     strncat(irp, protocolDefinitions[p].def, sizeof(irp) - strlen(irp) - 1);
@@ -91,7 +243,7 @@ std::vector<float> encodeRemoteCommand(const InfraredCommand& cmd, const char* p
     const char* freqStr = strstr(protocolDefinitions[p].def, "Frequency=");
     if (freqStr != nullptr) {
         sscanf(freqStr, "Frequency=%d", &frequency);
-        frequency = frequency / 1000; // Convert to kHz for sendRaw
+        // Keep carrier frequency in Hz until the hardware interface.
     }
 
     // Validate IRP string
@@ -109,13 +261,11 @@ std::vector<float> encodeRemoteCommand(const InfraredCommand& cmd, const char* p
 
     // Generate IR sequence
     int s, r;
-    float* seq = new float[256];
-    Irp.generate(&s, &r, seq);
-
-    // Convert to vector for easier handling
-    std::vector<float> result(seq, seq + 2 * (s + r));
-    delete[] seq;
-
+    std::vector<float> result;
+    Irp.generate(&s, &r, result);
+    // Reject malformed generated sequences rather than passing them to LIRC.
+    if (result.empty() || (result.size() & 1u) || result.size() > 2048) return {};
+    for (float duration : result) if (!std::isfinite(duration) || duration <= 0) return {};
     return result;
 }
 
@@ -256,10 +406,14 @@ bool IRP::readIrpString(char* str) {
         line = strtok(NULL, "\n");
     }
 
-    if (m_device[1] >= 0)
-        m_def['S' - 'A'] = 0;
-    if (m_functions[1] >= 0)
-        m_def['N' - 'A'] = 0;
+    if (m_device[1] >= 0) {
+        free((void*)m_def['S' - 'A']);
+        m_def['S' - 'A'] = nullptr;
+    }
+    if (m_functions[1] >= 0) {
+        free((void*)m_def['N' - 'A']);
+        m_def['N' - 'A'] = nullptr;
+    }
 
     return true;
 }
@@ -400,10 +554,11 @@ void IRP::parseVal(Value& result, char*& in, int prec) {
     }
 }
 
-void IRP::generate(int* s, int* r, float* raw) {
+void IRP::generate(int* s, int* r, std::vector<float>& raw) {
     m_hex.clear();
     m_cumulative = 0.0;
     m_pendingBits = (m_msb ? 1 : m_bitGroup);
+    if (!m_form) { raw.clear(); *s = *r = 0; return; }
     int Single = genHex(m_form);
     if (m_cumulative < m_messageTime)
         genHex(m_cumulative - m_messageTime);
@@ -413,24 +568,7 @@ void IRP::generate(int* s, int* r, float* raw) {
         Single = m_hex.size();
     Single >>= 1;
 
-    int unit;
-    if (m_frequency) {
-        unit = floor(4145146. / m_frequency + 0.5);
-    } else {
-        float mn = m_hex[0];
-        for (int nIndex = 1; nIndex < m_hex.size(); nIndex++)
-            if (mn > m_hex[nIndex])
-                mn = m_hex[nIndex];
-        unit = 4.145146 * .125 * mn + 0.5;
-        unit &= -2;
-    }
-    if (unit <= 0)
-        unit = 1;
-
-    for (int nIndex = 0; nIndex < m_hex.size(); nIndex += 2) {
-        raw[nIndex] = m_hex[nIndex];
-        raw[nIndex + 1] = m_hex[nIndex + 1];
-    }
+    raw = m_hex;
 
     *s = Single;
     *r = m_hex.size() / 2 - Single;
@@ -439,6 +577,7 @@ void IRP::generate(int* s, int* r, float* raw) {
 
 int IRP::genHex(const char* Pattern) {
     int Result = -1;
+    if (!Pattern) return Result;
     if (*Pattern == ';') {
         Result = 0; // Single section is empty
         Pattern++;

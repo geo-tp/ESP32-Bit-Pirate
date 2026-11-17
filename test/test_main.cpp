@@ -10,6 +10,7 @@
 #include "../src/Transformers/PinoutTransformer.cpp"
 #include "../src/Transformers/AtTransformer.cpp"
 #include "../src/Transformers/InfraredRemoteTransformer.cpp"
+#include "../src/Vendors/MakeHex.cpp"
 #include "../src/Transformers/Bpio2Transformer.cpp"
 #include "../src/Transformers/LoRaTransformer.cpp"
 #include "../src/Transformers/SubGhzTransformer.cpp"
@@ -63,6 +64,7 @@
 #include "Transformers/test_PinoutTransformer.cpp"
 #include "Transformers/test_AtTransformer.cpp"
 #include "Transformers/test_InfraredRemoteTransformer.cpp"
+#include "Vendors/test_MakeHex.cpp"
 #include "Transformers/test_Bpio2Transformer.cpp"
 #include "Transformers/test_LoRaTransformer.cpp"
 #include "Transformers/test_SubGhzTransformer.cpp"
@@ -128,6 +130,7 @@ int main(int, char**) {
     runPinoutTransformerTests();
     runAtTransformerTests();
     runInfraredRemoteTransformerTests();
+    runMakeHexTests();
     runBpio2TransformerTests();
     runLoRaTransformerTests();
     runSubGhzTransformerTests();

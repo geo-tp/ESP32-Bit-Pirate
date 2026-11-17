@@ -2,6 +2,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <algorithm>
 #include <map>
 #include <string>
 #include <vector>
@@ -20,6 +21,8 @@ public:
     size_t usedBytesValue = 0;
     uint32_t beginCalls = 0;
     uint32_t endCalls = 0;
+    mutable uint32_t readAllCalls = 0;
+    mutable uint32_t readChunksCalls = 0;
     std::map<std::string, std::string> files;
     std::string lastWritePath;
     std::string lastWriteData;
@@ -66,10 +69,25 @@ public:
     }
 
     bool readAll(const std::string& userPath, std::string& out) const override {
+        ++readAllCalls;
         if (!readResult) return false;
         const auto it = files.find(userPath);
         if (it == files.end()) return false;
         out = it->second;
+        return true;
+    }
+
+    bool readChunks(const std::string& userPath,
+                    const std::function<bool(const uint8_t*, size_t)>& writer) const override {
+        ++readChunksCalls;
+        if (!readResult) return false;
+        const auto it = files.find(userPath);
+        if (it == files.end()) return false;
+        const auto& data = it->second;
+        for (size_t pos = 0; pos < data.size(); pos += 128) {
+            const size_t len = std::min<size_t>(128, data.size() - pos);
+            if (!writer(reinterpret_cast<const uint8_t*>(data.data() + pos), len)) return false;
+        }
         return true;
     }
 

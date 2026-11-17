@@ -1,5 +1,150 @@
 #include "InfraredController.h"
 #include "Data/UniversalRemoteCommands.h"
+#include "Transformers/InfraredCommandLimits.h"
+#include <string_view>
+#include <algorithm>
+#include <cerrno>
+#include <cstdlib>
+#include <limits>
+#include <numeric>
+#include <cstdio>
+
+namespace {
+
+struct IrFileEntry {
+    std::string name;
+    size_t begin = 0;
+    size_t end = 0;
+};
+
+std::string_view trimIrLine(std::string_view value) {
+    const size_t begin = value.find_first_not_of(" \t\r\n");
+    if (begin == std::string_view::npos) return {};
+    const size_t end = value.find_last_not_of(" \t\r\n");
+    return value.substr(begin, end - begin + 1);
+}
+
+// Index only the short name fields; never retain RAW data or a whole file.
+// A DATA line may be 32 KiB, but its contents are irrelevant for the menu.
+class IrFileIndex {
+public:
+    bool feed(const uint8_t* bytes, size_t count) {
+        for (size_t i = 0; i < count; ++i) {
+            const char ch = static_cast<char>(bytes[i]);
+            if (!ch) return false;
+            if (ch == '\n') {
+                if (!finishLine()) return false;
+                lineBegin_ = offset_ + 1;
+            } else if (!discardLine_) {
+                if (line_.size() < 256) line_ += ch;
+                else {
+                    const auto trimmed = trimIrLine(line_);
+                    if (trimmed.substr(0, 5) == "data:" ||
+                        (!trimmed.empty() && trimmed[0] == '#')) {
+                        discardLine_ = true;
+                    } else return false; // Reject unbounded name/metadata fields.
+                }
+            }
+            ++offset_;
+        }
+        return true;
+    }
+
+    bool finish() {
+        if (!line_.empty() || discardLine_) {
+            if (!finishLine()) return false;
+        }
+        if (headerCount_ != 2) return false;
+        if (!entries.empty()) entries.back().end = offset_;
+        return true;
+    }
+
+    std::vector<IrFileEntry> entries;
+    bool legacy = false;
+
+private:
+    bool finishLine() {
+        auto line = trimIrLine(line_);
+        if (headerCount_ == 0 && line.substr(0, 3) == "\xef\xbb\xbf")
+            line.remove_prefix(3);
+        if (!line.empty() && line[0] != '#') {
+            if (headerCount_ == 0) {
+                legacy = line == "Filetype: IR";
+                if (!legacy && line != "Filetype: IR signals file") return false;
+                ++headerCount_;
+            } else if (headerCount_ == 1) {
+                if (line != "Version: 1") return false;
+                ++headerCount_;
+            } else if (line.substr(0, 5) == "name:") {
+                const auto name = trimIrLine(line.substr(5));
+                if (!name.empty()) {
+                    if (!entries.empty()) entries.back().end = lineBegin_;
+                    if (entries.size() >= InfraredRemoteTransformer::MAX_COMMAND_COUNT)
+                        return false; // Bound the filename index and menu allocations.
+                    entries.push_back({std::string(name), lineBegin_, 0});
+                }
+            }
+        }
+        line_.clear();
+        discardLine_ = false;
+        return true;
+    }
+
+    std::string line_;
+    size_t offset_ = 0;
+    size_t lineBegin_ = 0;
+    unsigned headerCount_ = 0;
+    bool discardLine_ = false;
+};
+
+// Build only the selected command. Strip comments while streaming (large
+// comments are valid in Flipper files but should not count against RAM).
+class IrFileCommandSlice {
+public:
+    explicit IrFileCommandSlice(bool legacy) {
+        text = legacy ? "Filetype: IR\nVersion: 1\n" :
+                        "Filetype: IR signals file\nVersion: 1\n";
+    }
+
+    bool feed(const uint8_t* bytes, size_t n, size_t chunkOffset,
+              size_t begin, size_t end) {
+        if (begin >= end || end < chunkOffset) return true;
+        const size_t first = begin > chunkOffset ? begin - chunkOffset : 0;
+        const size_t last = std::min(n, end - chunkOffset);
+        for (size_t i = first; i < last; ++i) {
+            const char c = static_cast<char>(bytes[i]);
+            if (!c) return false;
+            if (c == '\n') {
+                if (!comment_ && !atLineStart_) {
+                    if (!append(c)) return false;
+                }
+                atLineStart_ = true;
+                comment_ = false;
+                continue;
+            }
+            if (comment_) continue;
+            if (atLineStart_) {
+                if (c == ' ' || c == '\t' || c == '\r') continue;
+                if (c == '#') { comment_ = true; continue; }
+                atLineStart_ = false;
+            }
+            if (!append(c)) return false;
+        }
+        return true;
+    }
+
+    std::string text;
+private:
+    bool append(char c) {
+        if (text.size() >= InfraredRemoteTransformer::MAX_COMMAND_SIZE) return false;
+        text += c;
+        return true;
+    }
+    bool atLineStart_ = true;
+    bool comment_ = false;
+};
+
+} // namespace
 
 /*
 Constructor
@@ -54,12 +199,16 @@ Send
 */
 void InfraredController::handleSend(const TerminalCommand& command) {
     std::istringstream iss(command.getArgs());
-    std::string subStr, cmdStr;
+    std::string subStr, cmdStr, extra;
     iss >> subStr >> cmdStr;
     auto addrStr = command.getSubcommand();
 
     if (addrStr.empty() || subStr.empty() || cmdStr.empty()) {
         terminalView.println("Missing argument. Usage: send <device> <sub> <cmd>");
+        return;
+    }
+    if (iss >> extra) {
+        terminalView.println("Too many arguments. Usage: send <device> <sub> <cmd>");
         return;
     }
 
@@ -70,15 +219,27 @@ void InfraredController::handleSend(const TerminalCommand& command) {
         terminalView.println("Invalid number format. Use decimal or hex.");
         return;
     }
+    if (device < 0 || device > INT16_MAX || subdevice < -1 || subdevice > INT16_MAX ||
+        function < 0 || function > INT16_MAX) {
+        terminalView.println("Invalid range: device/cmd 0..32767, sub -1..32767 (protocol limits also apply).");
+        return;
+    }
 
     InfraredCommand infraredCommand;
     infraredCommand.setDevice(device);
     infraredCommand.setSubdevice(subdevice);
     infraredCommand.setFunction(function);
     infraredCommand.setProtocol(state.getInfraredProtocol());
+    if (!InfraredCommandLimits::valid(infraredCommand)) {
+        terminalView.println("INFRARED: Values exceed the selected protocol's field widths.");
+        return;
+    }
 
     for (int i = 0; i < 3; ++i) {
-        infraredService.sendInfraredCommand(infraredCommand);
+        if (!infraredService.sendInfraredCommand(infraredCommand)) {
+            terminalView.println("INFRARED: Unsupported or invalid command; transmission failed.");
+            return;
+        }
         utilityService.sleepMs(100);
     }
 
@@ -114,26 +275,57 @@ void InfraredController::handleReceive() {
             // Decode signal
             InfraredCommand cmd = infraredService.receiveInfraredCommand();
             if (cmd.getProtocol() != _RAW) {
+                const std::string protocol = cmd.getDisplayProtocolName();
+                const bool hasFields = cmd.getProtocol() != _IR_UNKNOWN;
                 terminalView.println("");
                 terminalView.println("Infrared signal received:");
-                terminalView.println("  Protocol : " + InfraredProtocolMapper::toString(cmd.getProtocol()));
-                terminalView.println("  Device   : " + std::to_string(cmd.getDevice()));
-                terminalView.println("  SubDev   : " + std::to_string(cmd.getSubdevice()));
-                terminalView.println("  Command  : " + std::to_string(cmd.getFunction()));
+                terminalView.println("  Protocol : " + protocol);
+                if (hasFields) {
+                    terminalView.println("  Device   : " + std::to_string(cmd.getDevice()));
+                    terminalView.println("  SubDev   : " + std::to_string(cmd.getSubdevice()));
+                    terminalView.println("  Command  : " + std::to_string(cmd.getFunction()));
+                } else {
+                    terminalView.println("  Fields   : not represented by D/S/F (use native payload or RAW)");
+                }
+                if (cmd.hasNativeDecode()) {
+                    terminalView.println("  Bits     : " + std::to_string(cmd.getDecodedBits()));
+                    if (cmd.isDecodedRepeat()) terminalView.println("  Repeat   : yes");
+                    if (!cmd.getDecodedState().empty()) {
+                        std::string stateHex;
+                        stateHex.reserve(cmd.getDecodedState().size() * 2);
+                        static const char digits[] = "0123456789ABCDEF";
+                        for (uint8_t b : cmd.getDecodedState()) {
+                            stateHex += digits[b >> 4];
+                            stateHex += digits[b & 0x0F];
+                        }
+                        terminalView.println("  State    : " + stateHex +
+                            (cmd.isDecodedStateTruncated() ? " (truncated)" : ""));
+                    } else if (cmd.getDecodedBits() > 0 && cmd.getDecodedBits() <= 64) {
+                        char hex[24];
+                        std::snprintf(hex, sizeof(hex), "0x%llX",
+                                      static_cast<unsigned long long>(cmd.getDecodedRawData()));
+                        terminalView.println(std::string("  Raw code : ") + hex);
+                    } else if (cmd.getDecodedBits() > 64) {
+                        terminalView.println("  Native   : long frame (RAW capture recommended)");
+                    }
+                }
                 terminalView.println("");
                 terminalView.println("INFRARED Receive: Waiting for next signal or press [ENTER] to exit.");
-                
-                // show on device screen
-                lines.clear();
-                lines.push_back(InfraredProtocolMapper::toString(cmd.getProtocol()));
-                lines.push_back("Device: " + std::to_string(cmd.getDevice()));
-                lines.push_back("SubDev: " + std::to_string(cmd.getSubdevice()));
-                lines.push_back("Command: " + std::to_string(cmd.getFunction()));
-                cfg.setMappings(lines);
 
+                lines.clear();
+                lines.push_back(protocol);
+                if (hasFields) {
+                    lines.push_back("Device: " + std::to_string(cmd.getDevice()));
+                    lines.push_back("SubDev: " + std::to_string(cmd.getSubdevice()));
+                    lines.push_back("Command: " + std::to_string(cmd.getFunction()));
+                } else {
+                    lines.push_back("Bits: " + std::to_string(cmd.getDecodedBits()));
+                    lines.push_back("Native decode");
+                    if (cmd.isDecodedRepeat()) lines.push_back("Repeat");
+                }
+                cfg.setMappings(lines);
                 if (cfg.getMappings() != lastCfg.getMappings()) {
                     cfg.setMode("RECV");
-                    cfg.setMappings(lines);
                     lastCfg = cfg;
                     deviceView.show(cfg);
                 }
@@ -184,13 +376,15 @@ void InfraredController::handleDeviceBgone() {
             return;
         }
 
+        bool sent = true;
         for (int i = 0; i < 2; ++i) { // send 2x per command
-            infraredService.sendInfraredCommand(cmd);
+            if (!infraredService.sendInfraredCommand(cmd)) { sent = false; break; }
             utilityService.sleepMs(100);
         }
 
         terminalView.println(
-            "Sent On/Off to protocol=" + InfraredProtocolMapper::toString(cmd.getProtocol()) +
+            std::string(sent ? "Sent On/Off to protocol=" : "Skipped unsupported command for protocol=") +
+            InfraredProtocolMapper::toString(cmd.getProtocol()) +
             " device=" + std::to_string(cmd.getDevice()) +
             " sub=" + std::to_string(cmd.getSubdevice()) +
             " cmd=" + std::to_string(cmd.getFunction())
@@ -215,8 +409,20 @@ void InfraredController::handleReplay(const TerminalCommand& command) {
     // Optional replay count
     uint32_t replayCount = 0; // 0 = infinite
     const std::string sub = command.getSubcommand();
-    if (!sub.empty() && argTransformer.isValidNumber(sub)) {
-        replayCount = argTransformer.toUint32(sub);
+    if (!sub.empty()) {
+        char* end = nullptr;
+        errno = 0;
+        const auto parsed = std::strtoull(sub.c_str(), &end,
+            sub.size() > 2 && sub[0] == '0' && (sub[1] == 'x' || sub[1] == 'X') ? 16 : 10);
+        if (!argTransformer.isValidNumber(sub) || errno || *end || parsed > UINT32_MAX) {
+            terminalView.println("Invalid replay count. Usage: replay [count] (0..4294967295; 0 = until ENTER).");
+            return;
+        }
+        replayCount = static_cast<uint32_t>(parsed);
+    }
+    if (!command.getArgs().empty()) {
+        terminalView.println("Too many arguments. Usage: replay [count]");
+        return;
     }
 
     // Record frames
@@ -253,15 +459,15 @@ void InfraredController::handleRecord() {
         return;
     }
 
-    // Record decoded commands
-    std::vector<InfraredFileRemoteCommand> cmds;
-    cmds.reserve(64);
+    // Keep only the bounded file text, not a second tape of 32-bit RAW frames.
+    std::string text = "Filetype: IR signals file\nVersion: 1\n\n";
+    size_t savedCommands = 0;
+    const size_t maxBytes = std::min(free, InfraredRemoteTransformer::MAX_FILE_SIZE);
     std::vector<std::string> lines;
     PinoutConfig cfg;
-    PinoutConfig lastCfg;
     lines.reserve(4);
 
-    terminalView.println("\nINFRARED Record: Waiting for frames (max 64)... Press [ENTER] to stop.\n");
+    terminalView.println("\nINFRARED Record: Waiting for frames (max 64 commands, 32 KiB file)... Press [ENTER] to stop.\n");
 
     infraredService.startReceiver();
 
@@ -273,82 +479,48 @@ void InfraredController::handleRecord() {
             break;
         }
 
-        if (cmds.size() >= 64) {
+        if (savedCommands >= MAX_IR_FRAMES) {
             terminalView.println("\nINFRARED Record: Reached maximum of 64 saved commands, stopping.\n");
             break;
         }
 
-        InfraredCommand decoded = infraredService.receiveInfraredCommand();
+        std::vector<uint16_t> timings;
+        uint32_t khz = 0;
+        if (!infraredService.receiveRaw(timings, khz)) continue;
 
-        // ignore RAW / invalid
-        if (decoded.getProtocol() == _RAW) {
-            continue;
-        }
-
-        terminalView.println("");
-        terminalView.println("Infrared signal received:");
-        terminalView.println("  Protocol : " + InfraredProtocolMapper::toString(decoded.getProtocol()));
-        terminalView.println("  Device   : " + std::to_string(decoded.getDevice()));
-        terminalView.println("  SubDev   : " + std::to_string(decoded.getSubdevice()));
-        terminalView.println("  Command  : " + std::to_string(decoded.getFunction()));
-        terminalView.println("");
-
-        // show on device screen
-        lines.clear();
-        lines.push_back(InfraredProtocolMapper::toString(decoded.getProtocol()));
-        lines.push_back("Device: " + std::to_string(decoded.getDevice()));
-        lines.push_back("SubDev: " + std::to_string(decoded.getSubdevice()));
-        lines.push_back("Command: " + std::to_string(decoded.getFunction()));
+        terminalView.println("Infrared signal received: " + std::to_string(timings.size()) + " raw timings.");
+        lines = {"Raw infrared", "Timings: " + std::to_string(timings.size()),
+                 "Carrier: " + std::to_string(khz) + " kHz (assumed)"};
+        cfg.setMode("RECORD");
         cfg.setMappings(lines);
-
-        if (cfg.getMappings() != lastCfg.getMappings()) {
-            cfg.setMode("RECORD");
-            cfg.setMappings(lines);
-            lastCfg = cfg;
-            deviceView.show(cfg);
-            lines.clear();
-        }
+        deviceView.show(cfg);
 
         // Save the command ?
         if (!userInputManager.readYesNo("Save this command?", true)) {
             terminalView.println("\nSkipped. Press [ENTER] to stop or wait for next signal...\n");
-            infraredService.receiveInfraredCommand(); // Clear the buffer to avoid duplicate reception during prompt
+            infraredService.receiveRaw(timings, khz); // Clear the buffer to avoid duplicate reception during prompt
             continue;
         }
 
         // If yes, Ask function name
-        std::string defFunc = "cmd_" + std::to_string(cmds.size() + 1);
+        std::string defFunc = "cmd_" + std::to_string(savedCommands + 1);
         std::string funcName = userInputManager.readSanitizedString("Enter function name", defFunc, false);
         if (funcName.empty()) funcName = defFunc;
 
-        // Build cmd
-        InfraredFileRemoteCommand cmd;
-        cmd.functionName = funcName;
-        cmd.protocol     = decoded.getProtocol();
-
-        // Address
-        uint8_t device = static_cast<uint8_t>(decoded.getDevice() & 0xFF);
-        uint8_t sub    = static_cast<uint8_t>((decoded.getSubdevice() < 0 ? 0 : decoded.getSubdevice()) & 0xFF);
-        cmd.address     = (static_cast<uint16_t>(sub) << 8) | device;
-
-        cmd.function    = static_cast<uint8_t>(decoded.getFunction() & 0xFF);
-
-        // Unused for non-RAW
-        cmd.rawData = nullptr;
-        cmd.rawDataSize = 0;
-        cmd.frequency = 0;
-        cmd.dutyCycle = 0.0f;
-
-        cmds.push_back(cmd);
+        if (!infraredRemoteTransformer.appendRawCommand(text, funcName, timings, khz, maxBytes)) {
+            terminalView.println("INFRARED Record: Frame not saved: invalid RAW data or file/space limit reached (max 32 KiB). Saving previous commands.");
+            break;
+        }
+        ++savedCommands;
 
         terminalView.println("\n✅ Saved '" + funcName + "'\n");
-        infraredService.receiveInfraredCommand(); // Clear the buffer for received cmd during prompt
+        infraredService.receiveRaw(timings, khz); // Clear the buffer for received cmd during prompt
         terminalView.println("INFRARED Record: Waiting for next signal... Press [ENTER] to stop and save.\n");
     }
 
     infraredService.stopReceiver();
 
-    if (cmds.empty()) {
+    if (savedCommands == 0) {
         terminalView.println("INFRARED Record: No commands saved.\n");
         return;
     }
@@ -363,9 +535,6 @@ void InfraredController::handleRecord() {
         path += ".ir";
     }
 
-    // Serialize to file format
-    std::string text = infraredRemoteTransformer.transformToFileFormat(fileBase, cmds);
-
     // Write to LittleFS
     if (!littleFsService.write(path, text)) {
         terminalView.println("INFRARED Record: Failed to write: " + path);
@@ -378,13 +547,13 @@ void InfraredController::handleRecord() {
 
 bool InfraredController::recordFrames(std::vector<IRFrame>& tape) {
     tape.clear();
-    tape.reserve(MAX_IR_FRAMES);
+    size_t timingCount = 0;
 
-    terminalView.println("INFRARED Replay: Recording raw IR frames (max 64)... Press [ENTER] to stop.\n");
+    terminalView.println("INFRARED Replay: Recording raw IR frames (max 64 frames / 4096 timings)... Press [ENTER] to stop.\n");
 
     // Start the capture
     infraredService.startReceiver();
-    uint32_t lastMillis = utilityService.nowMs();
+    uint32_t lastEndUs = 0;
     while (true) {
         // Stop if Enter pressed
         char c = terminalInput.readChar();
@@ -400,14 +569,23 @@ bool InfraredController::recordFrames(std::vector<IRFrame>& tape) {
         std::vector<uint16_t> timings;
         uint32_t khz = 0;
         if (infraredService.receiveRaw(timings, khz)) {
-            const uint32_t now = utilityService.nowMs();
-            const uint32_t gap = tape.empty() ? 0u : (now - lastMillis);
-            lastMillis = now;
+            const uint32_t now = utilityService.nowUs();
+            if (timings.size() > MAX_REPLAY_TIMINGS - timingCount) {
+                terminalView.println("INFRARED Replay: Reached limit of 4096 timings; last frame discarded.");
+                break;
+            }
+            timingCount += timings.size();
+            // RX reports frame completion. Remove this frame's duration from
+            // end-to-end elapsed time to obtain the silence after the previous one.
+            const uint32_t duration = std::accumulate(timings.begin(), timings.end(), uint32_t(0));
+            const uint32_t elapsed = now - lastEndUs;
+            const uint32_t gap = tape.empty() || elapsed <= duration ? 0u : elapsed - duration;
+            lastEndUs = now;
 
             tape.push_back(IRFrame{ std::move(timings), khz, gap });
             terminalView.println(
                 "  📥 Captured frame #" + std::to_string(tape.size()) +
-                " (gap " + std::to_string(gap) + " ms, carrier " + std::to_string(khz) + " kHz)"
+                " (gap " + std::to_string(gap) + " us, carrier " + std::to_string(khz) + " kHz)"
             );
         }
     }
@@ -435,26 +613,30 @@ void InfraredController::playbackFrames(const std::vector<IRFrame>& tape, uint32
     while (true) {
         if (replayCount > 0 && playedLoops >= replayCount) break;
 
+        uint32_t previousEndUs = utilityService.nowUs();
         for (size_t i = 0; i < tape.size(); ++i) {
             const auto& f = tape[i];
-
-            // Check for Enter press and wait for gap
-            uint32_t start = utilityService.nowMs();
-            while (utilityService.nowMs() - start < f.gapMs) {
+            // Account for logging overhead in the interval and check ENTER even
+            // for zero-gap frames, so single-frame infinite replay can stop.
+            terminalView.println(
+                "  📤 Sending frame #" + std::to_string(i + 1) +
+                " (gap " + std::to_string(f.gapUs) + " us, carrier " + std::to_string(f.khz) + " kHz)"
+            );
+            while (true) {
                 char c = terminalInput.readChar();
                 if (c == '\r' || c == '\n') {
                     terminalView.println("\nINFRARED Replay: Stopped by user.");
                     return;
                 }
-                utilityService.sleepMs(1);
+                const uint32_t elapsed = utilityService.nowUs() - previousEndUs;
+                if (elapsed >= f.gapUs) break;
+                const uint32_t remaining = f.gapUs - elapsed;
+                if (remaining >= 1000) utilityService.sleepMs(1);
+                else utilityService.sleepUs(remaining);
             }
 
-            // Log and send frame
-            terminalView.println(
-                "  📤 Sending frame #" + std::to_string(i) +
-                " (gap " + std::to_string(f.gapMs) + " ms, carrier " + std::to_string(f.khz) + " kHz)"
-            );
             infraredService.sendRaw(f.timings, f.khz);
+            previousEndUs = utilityService.nowUs();
         }
         ++playedLoops;
     }
@@ -487,39 +669,42 @@ void InfraredController::handleSetProtocol() {
     terminalView.println("");
     terminalView.print("Protocol Number > ");
 
-    std::string inputStr;
+    size_t index = 0;
+    bool hasDigit = false;
+    bool invalid = false;
     while (true) {
-        char c = terminalInput.handler();
+        const char c = terminalInput.handler();
         if (c == '\r' || c == '\n') {
             terminalView.println("");
             break;
         }
-
-        if (c == CARDPUTER_SPECIAL_ARROW_DOWN || 
-            c == CARDPUTER_SPECIAL_ARROW_UP) {
+        if (c == CARDPUTER_SPECIAL_ARROW_DOWN || c == CARDPUTER_SPECIAL_ARROW_UP) {
             terminalView.print(std::string(1, c));
             continue;
-        }        
-
-        if (std::isdigit(c)) {
-            if (c != CARDPUTER_SPECIAL_ARROW_DOWN || c != CARDPUTER_SPECIAL_ARROW_UP) {
-                inputStr += c;
-            }
-            terminalView.print(std::string(1, c));
-        } else {
+        }
+        if (c < '0' || c > '9') {
             terminalView.println("\r\nInvalid input: only digits allowed.\n");
             return;
         }
+        hasDigit = true;
+        // Bound the integer while reading; no unbounded string or stoi exception.
+        const size_t digit = static_cast<size_t>(c - '0');
+        if (index > (protocols.size() - std::min(protocols.size(), digit)) / 10)
+            invalid = true;
+        else if (!invalid) {
+            index = index * 10 + digit;
+            if (index > protocols.size()) invalid = true;
+        }
+        // A long sequence of digits must not exhaust memory or flood output.
+        if (!invalid) terminalView.print(std::string(1, c));
     }
 
-    if (inputStr.empty()) {
+    if (!hasDigit) {
         terminalView.println("No input given.");
         return;
     }
-
-    int index = std::stoi(inputStr);
-    if (index >= 1 && index <= static_cast<int>(protocols.size())) {
-        InfraredProtocolEnum selected = protocols[index - 1];
+    if (!invalid && index >= 1 && index <= protocols.size()) {
+        const auto selected = protocols[index - 1];
         state.setInfraredProtocol(selected);
         terminalView.println("Protocol changed to " + InfraredProtocolMapper::toString(selected));
     } else {
@@ -533,7 +718,10 @@ Load
 void InfraredController::handleLoad(TerminalCommand const& command) {
     if (!littleFsService.mounted()) {
         littleFsService.begin();
-        return;
+        if (!littleFsService.mounted()) {
+            terminalView.println("INFRARED Load: LittleFS not mounted. Aborting.");
+            return;
+        }
     }
 
     // Get IR files from LittleFS
@@ -556,49 +744,64 @@ void InfraredController::handleLoad(TerminalCommand const& command) {
     }
 
     // Check size
-    int MAX_FILE_SIZE = 32 * 1024; // 32 KB
     auto fileSize = littleFsService.getFileSize("/" + chosen);
-    if (fileSize == 0 || fileSize > MAX_FILE_SIZE) {
-        terminalView.println("\nINFRARED: File size invalid (>32KB): " + chosen);
+    if (fileSize == 0 || fileSize > InfraredRemoteTransformer::MAX_FILE_SIZE) {
+        terminalView.println("\nINFRARED: File is empty or exceeds 32 KiB: " + chosen);
         return;
     }
 
-    // Load file content
-    std::string text;
-    if (!littleFsService.readAll("/" + chosen, text)) {
-        terminalView.println("\nINFRARED: Failed to read file: " + chosen);
+    const std::string path = "/" + chosen;
+    IrFileIndex index;
+    if (!littleFsService.readChunks(path, [&](const uint8_t* chunk, size_t size) {
+            return index.feed(chunk, size);
+        }) || !index.finish()) {
+        terminalView.println("\nINFRARED: Unrecognized .ir format or failed to read: " + chosen);
         return;
     }
-
-    // Verify format
-    if (!infraredRemoteTransformer.isValidInfraredFile(text)) {
-        terminalView.println("\nINFRARED: Unrecognized .ir format or empty: " + chosen);
-        return;
-    }
-
-    // Extract commands
-    auto cmds = infraredRemoteTransformer.transformFromFileFormat(text);
-    if (cmds.empty()) {
+    if (index.entries.empty()) {
         terminalView.println("\nINFRARED: No commands found in: " + chosen);
         return;
     }
 
-    // Cmds names
-    auto cmdStrings = infraredRemoteTransformer.extractFunctionNames(cmds);
-    cmdStrings.push_back("Exit File"); // for exit option
+    std::vector<std::string> cmdStrings;
+    cmdStrings.reserve(index.entries.size() + 1);
+    for (const auto& entry : index.entries) cmdStrings.push_back(entry.name);
+    cmdStrings.push_back("Exit File");
 
     while (true) {
-        // Select command
         terminalView.println("\n=== Commands in file '" + chosen + "' ===");
-        uint8_t idxCmd = userInputManager.readValidatedChoiceIndex("Command number", cmdStrings, 0);
-        if (idxCmd == cmdStrings.size()-1) {
+        const uint16_t idxCmd = userInputManager.readValidatedChoiceIndex("Command number", cmdStrings, 0);
+        if (idxCmd == cmdStrings.size() - 1) {
             terminalView.println("Exiting command send...\n");
             break;
         }
 
-        // Send
-        infraredService.sendInfraredFileCommand(cmds[idxCmd]);
-        terminalView.println("\n ✅  Sent command '" + cmds[idxCmd].functionName + "' from file '" + chosen + "'");
+        const auto& entry = index.entries[idxCmd];
+        IrFileCommandSlice slice(index.legacy);
+        size_t offset = 0;
+        const bool read = littleFsService.readChunks(path,
+            [&](const uint8_t* chunk, size_t size) {
+                const bool ok = slice.feed(chunk, size, offset, entry.begin, entry.end);
+                offset += size;
+                return ok;
+            });
+        if (!read) {
+            terminalView.println("INFRARED: Cannot load '" + entry.name +
+                                 "': I/O error or command exceeds 8 KiB limit.");
+            continue;
+        }
+
+        // Parse one command only. The input text is released before sending,
+        // so RAW timings never coexist with the complete .ir file in RAM.
+        auto commands = infraredRemoteTransformer.transformFromFileFormat(slice.text);
+        std::string().swap(slice.text);
+        if (commands.size() != 1 || !commands[0].error.empty() ||
+            !infraredService.sendInfraredFileCommand(commands[0])) {
+            terminalView.println("INFRARED: Cannot send '" + entry.name +
+                                 "': invalid, unsupported or unavailable transmission.");
+            continue;
+        }
+        terminalView.println("\n ✅  Sent command '" + entry.name + "' from file '" + chosen + "'");
     }
 }
 

@@ -2,6 +2,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <functional>
 #include <string>
 #include <vector>
 
@@ -17,6 +18,9 @@ public:
     virtual std::vector<std::string> listFiles(const std::string& userDir = "/",
                                                const std::string& extension = ".ir") const = 0;
     virtual bool readAll(const std::string& userPath, std::string& out) const = 0;
+    // Stream fixed-size chunks. Callbacks returning false stop the read.
+    virtual bool readChunks(const std::string& userPath,
+                            const std::function<bool(const uint8_t*, size_t)>& writer) const = 0;
     virtual bool write(const std::string& userPath, const std::string& data, bool append = false) = 0;
     virtual bool write(const std::string& userPath, const uint8_t* data, size_t len, bool append = false) = 0;
     virtual bool removeFile(const std::string& userPath) = 0;
