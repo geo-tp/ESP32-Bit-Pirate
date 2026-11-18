@@ -59,6 +59,9 @@ private:
     // Send reset pulse and check device presence
     void handlePing();
 
+    // Raw transfer: reset, master-write given bytes, read read_count bytes
+    void handleXfer(const TerminalCommand& command);
+
     // Scan the bus for all devices
     void handleScan();
 

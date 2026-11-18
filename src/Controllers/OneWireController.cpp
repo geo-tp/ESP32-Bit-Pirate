@@ -1,5 +1,6 @@
 #include "OneWireController.h"
 #include <cstring>
+#include <cstdio>
 
 namespace {
 constexpr int kSignalLow = 0;
@@ -37,6 +38,7 @@ Entry point for command
 void OneWireController::handleCommand(const TerminalCommand& command) {
     if (command.getRoot()      == "scan")   handleScan();
     else if (command.getRoot() == "ping")   handlePing();
+    else if (command.getRoot() == "xfer")   handleXfer(command);
     else if (command.getRoot() == "sniff")  handleSniff();
     else if (command.getRoot() == "read")   handleRead();
     else if (command.getRoot() == "write")  handleWrite(command);
@@ -100,6 +102,57 @@ void OneWireController::handlePing() {
     } else {
         terminalView.println("OneWire Ping: No device found.");
     }
+}
+
+// xfer <read_count> [0xB1 ... 0xBn]
+// Reset, master-write the given bytes (8 write slots each), then read
+// read_count bytes (8 read slots each). Prints "1WIRE XFER: <hex bytes>".
+void OneWireController::handleXfer(const TerminalCommand& command) {
+    // First positional arrives as the subcommand (see I2C handlers); the
+    // remainder comes via getArgs().
+    std::vector<std::string> args;
+    if (!command.getSubcommand().empty()) {
+        args.push_back(command.getSubcommand());
+    }
+    auto rest = argTransformer.splitArgs(command.getArgs());
+    for (const auto& a : rest) {
+        args.push_back(a);
+    }
+    if (args.empty()) {
+        terminalView.println("Usage: xfer <read_count> [0xB1 ... 0xBn]");
+        return;
+    }
+    if (!argTransformer.isValidNumber(args[0])) {
+        terminalView.println("Error: Invalid read count. Use decimal or 0x-prefixed hex.");
+        return;
+    }
+    uint8_t readCount = (uint8_t)argTransformer.parseHexOrDec(args[0]);
+    std::vector<uint8_t> writeBytes;
+    for (size_t i = 1; i < args.size(); i++) {
+        if (!argTransformer.isValidNumber(args[i])) {
+            terminalView.println("Error: Invalid byte. Use decimal or 0x-prefixed hex.");
+            return;
+        }
+        writeBytes.push_back((uint8_t)argTransformer.parseHexOrDec(args[i]));
+    }
+    if (!oneWireService.reset()) {
+        terminalView.println("1WIRE XFER: no device");
+        return;
+    }
+    for (uint8_t b : writeBytes) {
+        oneWireService.write(b);
+    }
+    if (readCount == 0) {
+        terminalView.println("1WIRE XFER: 0 bytes read");
+        return;
+    }
+    std::string out = "1WIRE XFER:";
+    for (uint8_t i = 0; i < readCount; i++) {
+        char buf[4];
+        snprintf(buf, sizeof(buf), " %02X", oneWireService.read());
+        out += buf;
+    }
+    terminalView.println(out);
 }
 
 /*
