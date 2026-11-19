@@ -252,6 +252,50 @@ void test_unknown_command_displays_help() {
     TEST_ASSERT_TRUE(fixture.view.contains("Unknown command. Available 1Wire commands"));
 }
 
+void test_xfer_reports_usage_without_read_count() {
+    OneWireControllerFixture fixture;
+
+    fixture.controller.handleCommand(TerminalCommand("xfer"));
+
+    TEST_ASSERT_TRUE(fixture.view.contains("Usage: xfer <read_count> [0xB1 ... 0xBn]"));
+}
+
+void test_xfer_reports_no_device_when_reset_fails() {
+    OneWireControllerFixture fixture;
+    fixture.service.defaultResetResult = false;
+
+    fixture.controller.handleCommand(TerminalCommand("xfer", "8", "0x33"));
+
+    TEST_ASSERT_TRUE(fixture.view.contains("1WIRE XFER: no device"));
+    TEST_ASSERT_TRUE(fixture.service.writes.empty());
+}
+
+void test_xfer_writes_bytes_then_reads_count_hex() {
+    OneWireControllerFixture fixture;
+    fixture.service.defaultResetResult = true;
+    for (uint8_t b : {0x28, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x56}) {
+        fixture.service.readResults.push_back(b);
+    }
+
+    fixture.controller.handleCommand(TerminalCommand("xfer", "8", "0x33 0xAA"));
+
+    TEST_ASSERT_EQUAL_UINT32(2, fixture.service.writes.size());
+    TEST_ASSERT_EQUAL_UINT8(0x33, fixture.service.writes[0]);
+    TEST_ASSERT_EQUAL_UINT8(0xAA, fixture.service.writes[1]);
+    TEST_ASSERT_TRUE(fixture.view.contains("1WIRE XFER: 28 11 22 33 44 55 66 56"));
+}
+
+void test_xfer_zero_read_count_skips_reads() {
+    OneWireControllerFixture fixture;
+    fixture.service.defaultResetResult = true;
+
+    fixture.controller.handleCommand(TerminalCommand("xfer", "0", "0x55"));
+
+    TEST_ASSERT_EQUAL_UINT32(1, fixture.service.writes.size());
+    TEST_ASSERT_EQUAL_UINT8(0x55, fixture.service.writes[0]);
+    TEST_ASSERT_TRUE(fixture.view.contains("1WIRE XFER: 0 bytes read"));
+}
+
 }  // namespace one_wire_controller_tests
 
 void runOneWireControllerTests() {
@@ -273,5 +317,9 @@ void runOneWireControllerTests() {
     RUN_TEST(test_write_id_waits_for_device_writes_and_verifies);
     RUN_TEST(test_ibutton_command_delegates_to_shell);
     RUN_TEST(test_eeprom_command_wraps_shell_with_eeprom_service_lifecycle);
+    RUN_TEST(test_xfer_reports_usage_without_read_count);
+    RUN_TEST(test_xfer_reports_no_device_when_reset_fails);
+    RUN_TEST(test_xfer_writes_bytes_then_reads_count_hex);
+    RUN_TEST(test_xfer_zero_read_count_skips_reads);
     RUN_TEST(test_unknown_command_displays_help);
 }
