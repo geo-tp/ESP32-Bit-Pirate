@@ -157,7 +157,7 @@ void test_uread_reports_hex_bytes_within_timeout() {
     fixture.utility.queueNowMs(0);
     fixture.utility.queueNowMs(10);
 
-    fixture.controller.handleCommand(TerminalCommand("uread", "8 10"));
+    fixture.controller.handleCommand(TerminalCommand("uread", "8", "10"));
 
     TEST_ASSERT_TRUE(fixture.view.contains("UART READ: 504F4E"));
 }
@@ -170,7 +170,7 @@ void test_uread_reports_none_when_bus_idle() {
     fixture.utility.queueNowMs(0);
     fixture.utility.queueNowMs(10);
 
-    fixture.controller.handleCommand(TerminalCommand("uread", "8 10"));
+    fixture.controller.handleCommand(TerminalCommand("uread", "8", "10"));
 
     TEST_ASSERT_TRUE(fixture.view.contains("UART READ: none"));
 }
