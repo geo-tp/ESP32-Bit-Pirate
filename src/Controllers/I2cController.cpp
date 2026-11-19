@@ -36,6 +36,7 @@ void I2cController::handleCommand(const TerminalCommand& cmd) {
     else if (cmd.getRoot() == "discovery") handleDiscover();
     else if (cmd.getRoot() == "sniff") handleSniff(cmd);
     else if (cmd.getRoot() == "freq") handleFrequency();
+    else if (cmd.getRoot() == "freqms") handleFrequencyMs(cmd);
     else if (cmd.getRoot() == "ping") handlePing(cmd);
     else if (cmd.getRoot() == "identify") handleIdentify(cmd);
     else if (cmd.getRoot() == "write") handleWrite(cmd);
@@ -223,6 +224,49 @@ void I2cController::handleFrequency() {
         state.setI2cFrequency(result.frequencyHz);
         terminalView.println("Frequency saved to configuration.");
     }
+    terminalView.println("");
+}
+
+/*
+FrequencyMs (bounded non-interactive SCL frequency measurement for the MCP driver)
+*/
+void I2cController::handleFrequencyMs(const TerminalCommand& cmd) {
+    if (cmd.getSubcommand().empty() || !argTransformer.isValidNumber(cmd.getSubcommand())) {
+        terminalView.println("Usage: freqms <duration_ms>");
+        return;
+    }
+
+    const uint32_t durationMs =
+        std::min<uint32_t>(argTransformer.toUint32(cmd.getSubcommand()), 10000UL);
+
+    terminalView.println("I2C Freq: Measuring SCL for " + std::to_string(durationMs) + " ms...");
+
+    i2cService.end();
+    I2cFrequencyResult result;
+    const bool success = i2cSnifferService.measureFrequency(
+        state.getI2cSclPin(), durationMs, result, nullptr);
+    i2cService.configure(state.getI2cSdaPin(), state.getI2cSclPin(), state.getI2cFrequency());
+
+    if (!success) {
+        terminalView.println(std::string("Freq error: ") + i2cSnifferService.lastError());
+        return;
+    }
+    if (!result.reliable) {
+        terminalView.println("I2C Freq: No stable clock.\n");
+        return;
+    }
+
+    terminalView.println("\n=== Frequency Report ===");
+
+    std::ostringstream report;
+    report << std::fixed << std::setprecision(2)
+           << "Freq: " << result.frequencyHz / 1000.0 << " kHz\n\r"
+           << "Period: " << result.periodUs << " us\n\r"
+           << "LOW: " << result.lowUs << " us\n\r"
+           << "HIGH: " << result.highUs << " us\n\r"
+           << "Cycles: " << result.acceptedCycles << "/" << result.capturedCycles;
+    terminalView.println(report.str());
+    terminalView.println("========================\n");
     terminalView.println("");
 }
 

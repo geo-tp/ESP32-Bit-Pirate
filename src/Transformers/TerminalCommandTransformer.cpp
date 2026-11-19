@@ -199,8 +199,8 @@ bool TerminalCommandTransformer::isGlobalCommand(const TerminalCommand& cmd) con
     std::string root = cmd.getRoot();
 
     return  root == "mode"  || root == "m" || root == "l" ||
-            root == "logic" || root == "analogic" || root == "P" || root == "p" || 
-            root == "system" || root == "sys" || root == "guide" || root == "man" || root == "wizard" ||
+            root == "logic" || root == "logiccap" || root == "analogic" || root == "P" || root == "p" || 
+            root == "system" || root == "sys" || root == "guide" || root == "man" || root == "wizard" || root == "wizreport" ||
             root == "help" || root == "h" || root == "?" || root == "hex" || root == "dec" ||
             root == "profile" || root == "delay" || root == "delayms" || root == "delayus" || 
             root == "listen" || root == "alias" || root == "repeat";

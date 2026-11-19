@@ -297,6 +297,53 @@ void test_unknown_command_displays_current_mode_help() {
     TEST_ASSERT_TRUE(fixture.view.contains("help                 - Show this help"));
 }
 
+void test_wizreport_runs_bounded_window_and_prints_report() {
+    UtilityControllerFixture fixture;
+    // PinAnalyzer::begin consumes one nowMs(); startMs consumes one; the loop
+    // check consumes one per round. Queue: begin=0, startMs=0, check1=0 (in window),
+    // check2=5 (== durationMs, out of window) -> exactly one 256-sample round.
+    fixture.utility.queueNowMs(0);
+    fixture.utility.queueNowMs(0);
+    fixture.utility.queueNowMs(0);
+    fixture.utility.queueNowMs(5);
+
+    fixture.controller.handleCommand(TerminalCommand("wizreport", "4", "5"));
+
+    TEST_ASSERT_TRUE(fixture.view.contains("Wizreport: Analyzing GPIO 4"));
+    TEST_ASSERT_TRUE(fixture.view.contains("[Wizard report on GPIO 4]"));
+    TEST_ASSERT_TRUE(fixture.view.contains("Report: edges/sec="));
+}
+
+void test_wizreport_reports_usage_for_invalid_pin() {
+    UtilityControllerFixture fixture;
+
+    fixture.controller.handleCommand(TerminalCommand("wizreport", "wat"));
+
+    TEST_ASSERT_TRUE(fixture.view.contains("Usage: wizreport <gpio> [duration_ms]"));
+    TEST_ASSERT_FALSE(fixture.view.contains("[Wizard report on GPIO"));
+}
+
+void test_logiccap_prints_hex_of_captured_levels() {
+    UtilityControllerFixture fixture;
+    // 8 samples: 1,0,1,1 then 1,1,0,0 => nibbles 0xB, 0xC => "BC"
+    const bool levels[8] = {true, false, true, true, true, true, false, false};
+    for (const bool v : levels) fixture.pinService.readValues.push_back(v);
+
+    fixture.controller.handleCommand(TerminalCommand("logiccap", "4", "8"));
+
+    TEST_ASSERT_TRUE(fixture.view.contains("LogicCap: 8 samples: BC"));
+    TEST_ASSERT_EQUAL_UINT32(8, fixture.pinService.readCalls.size());
+}
+
+void test_logiccap_reports_usage_for_invalid_pin() {
+    UtilityControllerFixture fixture;
+
+    fixture.controller.handleCommand(TerminalCommand("logiccap", "wat"));
+
+    TEST_ASSERT_TRUE(fixture.view.contains("Usage: logiccap <gpio> [samples] [delay_us]"));
+    TEST_ASSERT_FALSE(fixture.view.contains("LogicCap:"));
+}
+
 }  // namespace utility_controller_tests
 
 void runUtilityControllerTests() {
@@ -318,5 +365,9 @@ void runUtilityControllerTests() {
     RUN_TEST(test_wizard_samples_once_and_stops_on_enter);
     RUN_TEST(test_listen_configures_audio_and_stops_on_enter);
     RUN_TEST(test_listen_rejects_i2s_owned_pin);
+    RUN_TEST(test_wizreport_runs_bounded_window_and_prints_report);
+    RUN_TEST(test_wizreport_reports_usage_for_invalid_pin);
+    RUN_TEST(test_logiccap_prints_hex_of_captured_levels);
+    RUN_TEST(test_logiccap_reports_usage_for_invalid_pin);
     RUN_TEST(test_unknown_command_displays_current_mode_help);
 }

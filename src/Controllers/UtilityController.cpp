@@ -45,11 +45,13 @@ void UtilityController::handleCommand(const TerminalCommand& cmd) {
     else if (cmd.getRoot() == "P")                                               handleEnablePullups();
     else if (cmd.getRoot() == "p")                                               handleDisablePullups();
     else if (cmd.getRoot() == "logic")                                           handleLogicAnalyzer(cmd);
+    else if (cmd.getRoot() == "logiccap")                                        handleLogicCap(cmd);
     else if (cmd.getRoot() == "analogic")                                        handleAnalogic(cmd);
     else if (cmd.getRoot() == "system" || cmd.getRoot() == "sys")                handleSystem();
     else if (cmd.getRoot() == "guide")                                           handleGuide();
     else if (cmd.getRoot() == "man")                                             handleGuide();
     else if (cmd.getRoot() == "wizard")                                          handleWizard(cmd);
+    else if (cmd.getRoot() == "wizreport")                                       handleWizreport(cmd);
     else if (cmd.getRoot() == "hex" || cmd.getRoot() == "dec")                   handleHex(cmd);
     else if (cmd.getRoot() == "profile")                                         handleProfile();
     else if (cmd.getRoot() == "listen")                                          handleListen(cmd);
@@ -484,6 +486,92 @@ void UtilityController::handleWizard(const TerminalCommand& cmd) {
 
     // Cleanup buffers
     pinAnalyzer.end();
+}
+
+/*
+Wizreport (bounded non-interactive PinAnalyzer report for the MCP driver)
+*/
+void UtilityController::handleWizreport(const TerminalCommand& cmd) {
+    if (cmd.getSubcommand().empty() || !argTransformer.isValidNumber(cmd.getSubcommand())) {
+        terminalView.println("Usage: wizreport <gpio> [duration_ms]");
+        return;
+    }
+
+    uint8_t pin = argTransformer.toUint8(cmd.getSubcommand());
+    if (state.isPinProtected(pin)) {
+        terminalView.println("Wizreport: This GPIO is protected or reserved.");
+        return;
+    }
+
+    uint32_t durationMs = 2000;
+    auto args = argTransformer.splitArgs(cmd.getArgs());
+    if (!args.empty() && argTransformer.isValidNumber(args[0])) {
+        durationMs = std::min<uint32_t>(argTransformer.toUint32(args[0]), 8000UL);
+    }
+
+    terminalView.println("Wizreport: Analyzing GPIO " + std::to_string(pin) +
+                         " for " + std::to_string(durationMs) + " ms...");
+
+    pinAnalyzer.begin(pin);
+    const uint32_t startMs = utilityService.nowMs();
+    uint32_t rounds = 0;
+    while (utilityService.nowMs() - startMs < durationMs) {
+        for (int i = 0; i < 256; i++) {
+            pinAnalyzer.sample();
+        }
+        if ((++rounds & 0x3F) == 0) {
+            utilityService.sleepUs(50);
+        }
+    }
+
+    auto report = pinAnalyzer.buildReport(false);
+    terminalView.print(pinAnalyzer.formatWizardReport(pin, report));
+    pinAnalyzer.end();
+}
+
+/*
+LogicCap (bounded non-interactive logic capture, hex, for the MCP driver)
+*/
+void UtilityController::handleLogicCap(const TerminalCommand& cmd) {
+    if (cmd.getSubcommand().empty() || !argTransformer.isValidNumber(cmd.getSubcommand())) {
+        terminalView.println("Usage: logiccap <gpio> [samples] [delay_us]");
+        return;
+    }
+
+    uint8_t pin = argTransformer.toUint8(cmd.getSubcommand());
+    if (state.isPinProtected(pin)) {
+        terminalView.println("LogicCap: This GPIO is protected or reserved.");
+        return;
+    }
+
+    uint16_t samples = 256;
+    uint32_t delayUs = 100;
+    auto args = argTransformer.splitArgs(cmd.getArgs());
+    if (!args.empty() && argTransformer.isValidNumber(args[0])) {
+        samples = std::min<uint16_t>(static_cast<uint16_t>(argTransformer.toUint32(args[0])), 1024);
+    }
+    if (args.size() > 1 && argTransformer.isValidNumber(args[1])) {
+        delayUs = std::min<uint32_t>(argTransformer.toUint32(args[1]), 10000UL);
+    }
+
+    pinService.setInput(pin);
+
+    std::string hex;
+    hex.reserve(samples / 2 + 1);
+    uint8_t nib = 0;
+    int bit = 0;
+    for (uint16_t i = 0; i < samples; i++) {
+        if (pinService.read(pin)) nib = static_cast<uint8_t>((nib << 1) | 1);
+        else                      nib = static_cast<uint8_t>(nib << 1);
+        if (++bit == 4) {
+            hex += "0123456789ABCDEF"[nib];
+            nib = 0;
+            bit = 0;
+        }
+        utilityService.sleepUs(delayUs);
+    }
+
+    terminalView.println("LogicCap: " + std::to_string(samples) + " samples: " + hex);
 }
 
 /*
