@@ -51,6 +51,7 @@ void UartController::handleCommand(const TerminalCommand& cmd) {
     else if (cmd.getRoot() == "raw") handleRaw();
     else if (cmd.getRoot() == "readraw") handleRaw();
     else if (cmd.getRoot() == "readhex") handleRaw();
+    else if (cmd.getRoot() == "uread") handleUread(cmd);
     else if (cmd.getRoot() == "write") handleWrite(cmd);
     else if (cmd.getRoot() == "bridge") handleBridge();
     else if (cmd.getRoot() == "at") handleAtCommand(cmd);
@@ -204,6 +205,53 @@ void UartController::handleRaw() {
             terminalView.println(dump);
             row.clear();
         }
+    }
+}
+
+/*
+Uread (MCP Phase 4): read up to max_bytes within timeout_ms, hex output.
+No ensureConfigured(): a reconfigure (_serial->end()) would flush the RX
+buffer and drop the very bytes we are reading.
+First positional arrives as the subcommand (TerminalCommand quirk).
+*/
+void UartController::handleUread(const TerminalCommand& cmd) {
+    std::vector<std::string> args;
+    if (!cmd.getSubcommand().empty()) {
+        args.push_back(cmd.getSubcommand());
+    }
+    auto rest = argTransformer.splitArgs(cmd.getArgs());
+    for (const auto& a : rest) {
+        args.push_back(a);
+    }
+
+    uint16_t maxBytes = 256;
+    uint16_t timeoutMs = 150;
+    if (args.size() >= 1 && argTransformer.isValidNumber(args[0])) {
+        maxBytes = argTransformer.parseHexOrDec16(args[0]);
+    }
+    if (args.size() >= 2 && argTransformer.isValidNumber(args[1])) {
+        timeoutMs = argTransformer.parseHexOrDec16(args[1]);
+    }
+    if (maxBytes == 0) maxBytes = 256;
+    if (timeoutMs == 0 || timeoutMs > 1000) timeoutMs = 150;
+
+    uint32_t start = utilityService.nowMs();
+    std::string hex;
+    size_t n = 0;
+    while (n < maxBytes && utilityService.nowMs() - start < timeoutMs) {
+        if (uartService.available() > 0) {
+            char c = uartService.read();
+            hex += "0123456789ABCDEF"[(uint8_t)c >> 4];
+            hex += "0123456789ABCDEF"[(uint8_t)c & 0x0F];
+            n++;
+        } else {
+            utilityService.sleepMs(2);
+        }
+    }
+    if (n == 0) {
+        terminalView.println("UART READ: none");
+    } else {
+        terminalView.println("UART READ: " + hex);
     }
 }
 
@@ -816,6 +864,7 @@ void UartController::handleConfig() {
     uint32_t config = uartService.buildUartConfig(dataBits, parityChar, stopBits);
     state.setUartConfig(config);
     uartService.configure(baud, config, rxPin, txPin, inverted);
+    snapshotApplied();
 
     terminalView.println("UART configured.");
     terminalView.println("");
@@ -1097,24 +1146,64 @@ void UartController::handleSniffTxt() {
 Ensure Config
 */
 void UartController::ensureConfigured() {
-    // hdUartService.end() // It crashed the app for some reasons, not rly needed
-
     if (!configured) {
         handleConfig();
         configured = true;
         return;
     }
 
-    // User could have set the same pin to a different usage
-    // eg. select UART, then select I2C, then select UART
-    // Always reconfigure pins before use
+    // Command path: re-init ONLY if the stored config changed since the
+    // last apply. A full end()+configure() floats the TX pin
+    // (gpio_reset_pin) and the target board receives spurious bytes
+    // (two-board rig: garbage ECHO lines ahead of the payload). Board
+    // caveat: if another mode reassigns the UART pins in the GPIO matrix
+    // during the session (e.g. DIO on the same pin), run `config` to
+    // force a re-apply; a mode entry re-applies via onModeEnter().
+    if (uartConfigChanged()) {
+        applyUartToHardware();
+    }
+}
+
+/*
+Mode entry (ActionDispatcher::setCurrentMode): re-establish UART pin
+ownership in the GPIO matrix — other modes (DIO read/measure, HIZ, ...)
+may have reassigned the UART pins, so a full re-init is required here.
+This is the one place the re-init always runs; per-command re-inits are
+skipped (see ensureConfigured).
+*/
+void UartController::onModeEnter() {
+    if (!configured) {
+        handleConfig();
+        configured = true;
+        return;
+    }
+    applyUartToHardware();
+}
+
+void UartController::applyUartToHardware() {
     uartService.end();
+    uartService.configure(state.getUartBaudRate(), state.getUartConfig(),
+                          state.getUartRxPin(), state.getUartTxPin(),
+                          state.isUartInverted());
+    snapshotApplied();
+}
 
-    uint8_t rx = state.getUartRxPin();
-    uint8_t tx = state.getUartTxPin();
-    uint32_t baud = state.getUartBaudRate();
-    uint32_t config = state.getUartConfig();
-    bool inverted = state.isUartInverted();
+void UartController::snapshotApplied() {
+    appliedRx = state.getUartRxPin();
+    appliedTx = state.getUartTxPin();
+    appliedBaud = state.getUartBaudRate();
+    appliedConfig = state.getUartConfig();
+    appliedInverted = state.isUartInverted();
+    appliedValid = true;
+}
 
-    uartService.configure(baud, config, rx, tx, inverted);
+bool UartController::uartConfigChanged() const {
+    if (!appliedValid) {
+        return true;
+    }
+    return appliedRx != state.getUartRxPin() ||
+           appliedTx != state.getUartTxPin() ||
+           appliedBaud != state.getUartBaudRate() ||
+           appliedConfig != state.getUartConfig() ||
+           appliedInverted != state.isUartInverted();
 }

@@ -303,7 +303,7 @@ void ActionDispatcher::setCurrentMode(ModeEnum newMode) {
             provider.getOneWireController().ensureConfigured();
             break;
         case ModeEnum::UART:
-            provider.getUartController().ensureConfigured();
+            provider.getUartController().onModeEnter();
             break;
         case ModeEnum::HDUART:
             provider.getHdUartController().ensureConfigured();

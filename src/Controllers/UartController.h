@@ -43,8 +43,14 @@ public:
     //  Entry point for handle parsed bytecode instructions
     void handleInstruction(const std::vector<ByteCode>& bytecodes);
 
-    // Ensure UART is configured before use
+    // Ensure UART is configured before use (command path: no redundant
+    // re-init — see ensureConfigured()).
     void ensureConfigured();
+
+    // Mode entry (ActionDispatcher::setCurrentMode): re-establish UART pin
+    // ownership in the GPIO matrix (other modes may have reassigned the
+    // pins), running the config walk on first use.
+    void onModeEnter();
 
 private:
     // Start bidirectional UART bridge
@@ -55,6 +61,19 @@ private:
 
     // Perform hex read
     void handleRaw();
+
+    // Bounded hex read (MCP Phase 4): no reconfigure (would flush RX)
+    void handleUread(const TerminalCommand& cmd);
+
+    // Apply the stored UART config to the hardware (end + configure) and
+    // update the applied cache.
+    void applyUartToHardware();
+
+    // Cache the currently stored UART config as last applied.
+    void snapshotApplied();
+
+    // True when the stored config differs from the last applied one.
+    bool uartConfigChanged() const;
 
     // Send probes to get a response
     void handlePing();
@@ -127,6 +146,16 @@ private:
     GlobalState& state = GlobalState::getInstance();
     bool configured = false;
     bool scanCancelled = false;
+
+    // Last config actually applied to the hardware (see ensureConfigured):
+    // a redundant end()+configure() floats the TX pin and the target board
+    // receives spurious bytes.
+    uint8_t appliedRx = 0;
+    uint8_t appliedTx = 0;
+    uint32_t appliedBaud = 0;
+    uint32_t appliedConfig = 0;
+    bool appliedInverted = false;
+    bool appliedValid = false;
 
     // Predefined probe commands for ping
     inline static constexpr const char* const kProbes[] = {

@@ -104,21 +104,75 @@ void test_config_applies_selected_serial_parameters() {
     TEST_ASSERT_TRUE(fixture.view.contains("UART configured."));
 }
 
-void test_ensure_configured_prompts_once_then_reapplies_saved_state() {
+void test_ensure_configured_configures_once_and_skips_redundant_reinit() {
     UartControllerFixture fixture;
     queueDefaultConfiguration(fixture);
 
     fixture.controller.ensureConfigured();
     fixture.controller.ensureConfigured();
 
+    // A redundant end()+configure() floats the TX pin (gpio_reset_pin) and
+    // the target board receives spurious bytes, so the second call must
+    // be a no-op when the stored config is unchanged.
+    TEST_ASSERT_EQUAL_UINT32(1, fixture.uartService.configurations.size());
+    TEST_ASSERT_EQUAL_UINT32(0, fixture.uartService.endCalls);
+}
+
+void test_ensure_configured_reapplies_when_saved_state_changes() {
+    UartControllerFixture fixture;
+    queueDefaultConfiguration(fixture);
+
+    fixture.controller.ensureConfigured();
+    GlobalState::getInstance().setUartBaudRate(19200);
+    fixture.controller.ensureConfigured();
+
     TEST_ASSERT_EQUAL_UINT32(2, fixture.uartService.configurations.size());
     TEST_ASSERT_EQUAL_UINT32(1, fixture.uartService.endCalls);
-    const auto& reapplied = fixture.uartService.configurations[1];
-    TEST_ASSERT_EQUAL_UINT32(9600, reapplied.baud);
-    TEST_ASSERT_EQUAL_HEX32(0x800001c, reapplied.config);
-    TEST_ASSERT_EQUAL_UINT8(4, reapplied.rx);
-    TEST_ASSERT_EQUAL_UINT8(5, reapplied.tx);
-    TEST_ASSERT_FALSE(reapplied.inverted);
+    TEST_ASSERT_EQUAL_UINT32(19200, fixture.uartService.configurations[1].baud);
+}
+
+void test_on_mode_enter_reinitializes_uart_unconditionally() {
+    UartControllerFixture fixture;
+    queueDefaultConfiguration(fixture);
+
+    fixture.controller.ensureConfigured();
+    fixture.controller.onModeEnter();
+
+    // Mode entry must always re-establish pin ownership (other modes may
+    // have reassigned the pins in the GPIO matrix), even when the config
+    // is unchanged.
+    TEST_ASSERT_EQUAL_UINT32(2, fixture.uartService.configurations.size());
+    TEST_ASSERT_EQUAL_UINT32(1, fixture.uartService.endCalls);
+}
+
+void test_uread_reports_hex_bytes_within_timeout() {
+    UartControllerFixture fixture;
+    fixture.uartService.rxData.push_back('P');
+    fixture.uartService.rxData.push_back('O');
+    fixture.uartService.rxData.push_back('N');
+    // start=0; three read iterations at t=0; timeout reached at t=10.
+    fixture.utility.queueNowMs(0);
+    fixture.utility.queueNowMs(0);
+    fixture.utility.queueNowMs(0);
+    fixture.utility.queueNowMs(0);
+    fixture.utility.queueNowMs(10);
+
+    fixture.controller.handleCommand(TerminalCommand("uread", "8", "10"));
+
+    TEST_ASSERT_TRUE(fixture.view.contains("UART READ: 504F4E"));
+}
+
+void test_uread_reports_none_when_bus_idle() {
+    UartControllerFixture fixture;
+    // start=0; two idle iterations at t=0; timeout reached at t=10.
+    fixture.utility.queueNowMs(0);
+    fixture.utility.queueNowMs(0);
+    fixture.utility.queueNowMs(0);
+    fixture.utility.queueNowMs(10);
+
+    fixture.controller.handleCommand(TerminalCommand("uread", "8", "10"));
+
+    TEST_ASSERT_TRUE(fixture.view.contains("UART READ: none"));
 }
 
 void test_instruction_delegates_bytecodes_and_clears_buffer_when_data_is_read() {
@@ -446,7 +500,11 @@ void test_unknown_command_displays_uart_help() {
 void runUartControllerTests() {
     using namespace uart_controller_tests;
     RUN_TEST(test_config_applies_selected_serial_parameters);
-    RUN_TEST(test_ensure_configured_prompts_once_then_reapplies_saved_state);
+    RUN_TEST(test_ensure_configured_configures_once_and_skips_redundant_reinit);
+    RUN_TEST(test_ensure_configured_reapplies_when_saved_state_changes);
+    RUN_TEST(test_on_mode_enter_reinitializes_uart_unconditionally);
+    RUN_TEST(test_uread_reports_hex_bytes_within_timeout);
+    RUN_TEST(test_uread_reports_none_when_bus_idle);
     RUN_TEST(test_instruction_delegates_bytecodes_and_clears_buffer_when_data_is_read);
     RUN_TEST(test_instruction_reports_no_data_for_empty_service_result);
     RUN_TEST(test_write_sends_decoded_text_payload_after_configuration);
