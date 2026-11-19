@@ -264,7 +264,7 @@ void test_xfer_reports_no_device_when_reset_fails() {
     OneWireControllerFixture fixture;
     fixture.service.defaultResetResult = false;
 
-    fixture.controller.handleCommand(TerminalCommand("xfer", "8 0x33"));
+    fixture.controller.handleCommand(TerminalCommand("xfer", "8", "0x33"));
 
     TEST_ASSERT_TRUE(fixture.view.contains("1WIRE XFER: no device"));
     TEST_ASSERT_TRUE(fixture.service.writes.empty());
@@ -277,7 +277,7 @@ void test_xfer_writes_bytes_then_reads_count_hex() {
         fixture.service.readResults.push_back(b);
     }
 
-    fixture.controller.handleCommand(TerminalCommand("xfer", "8 0x33 0xAA"));
+    fixture.controller.handleCommand(TerminalCommand("xfer", "8", "0x33 0xAA"));
 
     TEST_ASSERT_EQUAL_UINT32(2, fixture.service.writes.size());
     TEST_ASSERT_EQUAL_UINT8(0x33, fixture.service.writes[0]);
@@ -289,7 +289,7 @@ void test_xfer_zero_read_count_skips_reads() {
     OneWireControllerFixture fixture;
     fixture.service.defaultResetResult = true;
 
-    fixture.controller.handleCommand(TerminalCommand("xfer", "0 0x55"));
+    fixture.controller.handleCommand(TerminalCommand("xfer", "0", "0x55"));
 
     TEST_ASSERT_EQUAL_UINT32(1, fixture.service.writes.size());
     TEST_ASSERT_EQUAL_UINT8(0x55, fixture.service.writes[0]);
