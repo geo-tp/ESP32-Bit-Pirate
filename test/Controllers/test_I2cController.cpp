@@ -512,6 +512,36 @@ void test_frequency_reports_unreliable_capture() {
     TEST_ASSERT_EQUAL_UINT32(1, fixture.i2cService.configurations.size());
 }
 
+void test_freqms_reports_bounded_measurement_without_save_prompt() {
+    I2cControllerFixture fixture;
+    fixture.snifferService.frequencyResult = {true, 30, 27, 1000, 1000.0, 500.0, 500.0};
+
+    fixture.controller.handleCommand(TerminalCommand("freqms", "250"));
+
+    TEST_ASSERT_EQUAL_UINT32(1, fixture.snifferService.frequencyCalls);
+    TEST_ASSERT_EQUAL_UINT8(1, fixture.snifferService.frequencyScl);
+    TEST_ASSERT_EQUAL_UINT32(250, fixture.snifferService.frequencyTimeoutMs);  // bounded timeout
+    TEST_ASSERT_EQUAL_UINT32(1, fixture.i2cService.configurations.size());    // bus restored
+    TEST_ASSERT_TRUE(fixture.view.contains("I2C Freq: Measuring SCL for 250 ms"));
+    TEST_ASSERT_TRUE(fixture.view.contains("Freq: 1.00 kHz"));
+    TEST_ASSERT_TRUE(fixture.view.contains("Cycles: 27/30"));
+    TEST_ASSERT_FALSE(fixture.view.contains("Save frequency to the configuration?"));
+}
+
+void test_freqms_reports_unreliable_capture() {
+    I2cControllerFixture fixture;
+    fixture.controller.handleCommand(TerminalCommand("freqms", "250"));
+    TEST_ASSERT_TRUE(fixture.view.contains("Freq: No stable clock."));
+    TEST_ASSERT_EQUAL_UINT32(1, fixture.i2cService.configurations.size());
+}
+
+void test_freqms_reports_usage_for_invalid_duration() {
+    I2cControllerFixture fixture;
+    fixture.controller.handleCommand(TerminalCommand("freqms", "abc"));
+    TEST_ASSERT_EQUAL_UINT32(0, fixture.snifferService.frequencyCalls);
+    TEST_ASSERT_TRUE(fixture.view.contains("Usage: freqms <duration_ms>"));
+}
+
 void test_frequency_failure_and_enter_cancellation_restore_bus() {
     for (bool fail : {true, false}) {
         I2cControllerFixture fixture;
@@ -599,6 +629,9 @@ void runI2cControllerTests() {
     RUN_TEST(test_frequency_waits_without_timeout_and_restores_bus_without_changing_speed);
     RUN_TEST(test_frequency_saves_detected_speed_only_after_confirmation);
     RUN_TEST(test_frequency_reports_unreliable_capture);
+    RUN_TEST(test_freqms_reports_bounded_measurement_without_save_prompt);
+    RUN_TEST(test_freqms_reports_unreliable_capture);
+    RUN_TEST(test_freqms_reports_usage_for_invalid_duration);
     RUN_TEST(test_frequency_failure_and_enter_cancellation_restore_bus);
     RUN_TEST(test_release_frees_sniffer_and_forces_next_configuration_prompt);
     RUN_TEST(test_identify_uses_known_address_database);

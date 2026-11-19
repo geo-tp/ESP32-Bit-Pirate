@@ -52,6 +52,9 @@ public:
     // Logic Analyzer on device screen
     void handleLogicAnalyzer(const TerminalCommand& cmd);
 
+    // Bounded non-interactive logic capture (hex levels) for the MCP driver
+    void handleLogicCap(const TerminalCommand& cmd);
+
     // Analogic plotter on device screen
     void handleAnalogic(const TerminalCommand& cmd);
 
@@ -79,6 +82,9 @@ private:
 
     // Pin diagnostic with periodic report
     void handleWizard(const TerminalCommand& cmd);
+
+    // Bounded non-interactive signal report (PinAnalyzer, single report)
+    void handleWizreport(const TerminalCommand& cmd);
 
     // Pin activity to audio
     void handleListen(const TerminalCommand& cmd);

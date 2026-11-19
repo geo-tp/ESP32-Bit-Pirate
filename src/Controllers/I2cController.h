@@ -84,6 +84,9 @@ private:
     // Estimate external bus frequency from passive SCL observations
     void handleFrequency();
 
+    // Bounded non-interactive SCL frequency measurement (duration-limited)
+    void handleFrequencyMs(const TerminalCommand& cmd);
+
     // Read data from an I2C device
     void handleRead(const TerminalCommand& cmd);
 
