@@ -48,6 +48,15 @@ void DioController::handleCommand(const TerminalCommand& cmd) {
 }
 
 /*
+Release (mode exit): stop active PWM and return every output-driven pin
+to INPUT (high-Z, no pull). Silent, like I2cController::ensureReleased.
+*/
+void DioController::release() {
+    pinService.releaseActivePwmPins();
+    pinService.releaseOutputPins();
+}
+
+/*
 Read
 */
 void DioController::handleReadPin(const TerminalCommand& cmd) {

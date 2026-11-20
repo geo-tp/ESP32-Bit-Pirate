@@ -4,16 +4,19 @@
 void PinService::setInput(uint8_t pin) {
     pinMode(pin, INPUT);
     pullState[pin] = NOPULL;
+    unmarkActiveOutputPin(pin);
 }
 
 void PinService::setInputPullup(uint8_t pin) {
     pinMode(pin, INPUT_PULLUP);
     pullState[pin] = PULL_UP;
+    unmarkActiveOutputPin(pin);
 }
 
 void PinService::setInputPullDown(uint8_t pin) {
     pinMode(pin, INPUT_PULLDOWN);
     pullState[pin] = PULL_DOWN;
+    unmarkActiveOutputPin(pin);
 }
 
 void PinService::setOutput(uint8_t pin) {
@@ -23,11 +26,13 @@ void PinService::setOutput(uint8_t pin) {
 void PinService::setHigh(uint8_t pin) {
     setOutput(pin);  // force OUTPUT
     digitalWrite(pin, HIGH);
+    markActiveOutputPin(pin);
 }
 
 void PinService::setLow(uint8_t pin) {
     setOutput(pin);  // force OUTPUT
     digitalWrite(pin, LOW);
+    markActiveOutputPin(pin);
 }
 
 bool PinService::read(uint8_t pin) {
@@ -65,6 +70,7 @@ void PinService::togglePullDown(uint8_t pin) {
 
 int PinService::readAnalog(uint8_t pin) {
     pinMode(pin, INPUT); 
+    unmarkActiveOutputPin(pin);
     return analogRead(pin);
 }
 
@@ -160,5 +166,39 @@ void PinService::unmarkActivePwmPin(uint8_t pin) {
     auto it = std::remove(activePwmPins.begin(), activePwmPins.end(), pin);
     if (it != activePwmPins.end()) {
         activePwmPins.erase(it, activePwmPins.end());
+    }
+}
+
+bool PinService::isActiveOutputPin(uint8_t pin) const {
+    return std::find(activeOutputPins.begin(), activeOutputPins.end(), pin) != activeOutputPins.end();
+}
+
+void PinService::markActiveOutputPin(uint8_t pin) {
+    if (!isActiveOutputPin(pin)) activeOutputPins.push_back(pin);
+}
+
+void PinService::unmarkActiveOutputPin(uint8_t pin) {
+    auto it = std::remove(activeOutputPins.begin(), activeOutputPins.end(), pin);
+    if (it != activeOutputPins.end()) {
+        activeOutputPins.erase(it, activeOutputPins.end());
+    }
+}
+
+void PinService::releaseOutputPins() {
+    // Re-pin every output-driven pin to plain INPUT (high-Z, no pull) —
+    // same semantics as the per-pin `reset <gpio>` command.
+    for (uint8_t pin : activeOutputPins) {
+        setInput(pin);
+    }
+    activeOutputPins.clear();
+}
+
+void PinService::releaseActivePwmPins() {
+    // Copy first: detachSignal() unmarks (erases) the pin, so iterating the
+    // live vector while it mutates is undefined.
+    std::vector<uint8_t> copy = activePwmPins;
+    activePwmPins.clear();
+    for (uint8_t pin : copy) {
+        detachSignal(pin);
     }
 }

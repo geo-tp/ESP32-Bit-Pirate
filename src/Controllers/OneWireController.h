@@ -40,6 +40,10 @@ public:
     // Ensure initialized/configured
     void ensureConfigured();
 
+    // Release 1-Wire resources (called on mode exit): return the data pin
+    // to INPUT without destroying the library object (session state kept)
+    void release();
+
 private:
     ITerminalView& terminalView;
     IInput& terminalInput;

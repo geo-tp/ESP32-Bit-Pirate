@@ -46,6 +46,10 @@ public:
     // Ensure UART is configured before use
     void ensureConfigured();
 
+    // Release UART resources (called on mode exit): end the serial
+    // peripheral so RX/TX float (high-Z)
+    void release();
+
 private:
     // Start bidirectional UART bridge
     void handleBridge();

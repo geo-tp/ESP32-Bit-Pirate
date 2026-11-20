@@ -1118,3 +1118,12 @@ void UartController::ensureConfigured() {
 
     uartService.configure(baud, config, rx, tx, inverted);
 }
+
+/*
+Release (mode exit): end the serial peripheral so RX/TX float (high-Z).
+The configured flag is kept — re-entry reconfigures pins from state
+without re-walking the config prompts (existing ensureConfigured path).
+*/
+void UartController::release() {
+    uartService.end();
+}

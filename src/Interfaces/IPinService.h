@@ -25,4 +25,6 @@ public:
     virtual pullType getPullType(uint8_t pin) = 0;
     virtual std::vector<uint8_t> getConfiguredPullPins() = 0;
     virtual void detachSignal(uint8_t pin) = 0;
+    virtual void releaseOutputPins() = 0;
+    virtual void releaseActivePwmPins() = 0;
 };

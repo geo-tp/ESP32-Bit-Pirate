@@ -15,6 +15,7 @@ public:
 
     void configure(uint8_t pin) override;
     void close() override;
+    void releasePin() override;
     void beginPassiveSniff() override;
     int readPinLevel() const override;
     bool reset() override;
