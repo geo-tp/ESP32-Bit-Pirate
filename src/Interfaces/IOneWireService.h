@@ -13,6 +13,7 @@ public:
 
     virtual void configure(uint8_t pin) = 0;
     virtual void close() = 0;
+    virtual void releasePin() = 0;
     virtual void beginPassiveSniff() = 0;
     virtual int readPinLevel() const = 0;
     virtual bool reset() = 0;

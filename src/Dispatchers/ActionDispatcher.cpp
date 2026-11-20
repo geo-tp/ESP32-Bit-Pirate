@@ -414,6 +414,18 @@ void ActionDispatcher::releaseMode(ModeEnum currentMode, ModeEnum newMode) {
             provider.getLoRaController().ensureReleased();
             break;
 
+        case ModeEnum::DIO:
+            provider.getDioController().release();
+            break;
+
+        case ModeEnum::OneWire:
+            provider.getOneWireController().release();
+            break;
+
+        case ModeEnum::UART:
+            provider.getUartController().release();
+            break;
+
         // For now, no realy heavy resources in other modes 
 
         default:

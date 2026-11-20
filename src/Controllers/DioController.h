@@ -22,6 +22,10 @@ public:
     // Entry point to handle a DIO command
     void handleCommand(const TerminalCommand& cmd);
 
+    // Release DIO resources (called on mode exit): stop PWM and return
+    // output-driven pins to INPUT (high-Z)
+    void release();
+
     // Build GPIO and pull configuration lines
     std::vector<std::string> buildPullConfigLines();
 

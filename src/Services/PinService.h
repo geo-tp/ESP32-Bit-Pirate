@@ -23,6 +23,8 @@ public:
     pullType getPullType(uint8_t pin) override;
     std::vector<uint8_t> getConfiguredPullPins() override;
     void detachSignal(uint8_t pin) override;
+    void releaseOutputPins() override;
+    void releaseActivePwmPins() override;
 private:
     // track pins with pull config 
     std::unordered_map<uint8_t, pullType> pullState; 
@@ -30,7 +32,14 @@ private:
     // track pins with active PWM 
     std::vector<uint8_t> activePwmPins;
 
+    // track pins driven as outputs (setHigh/setLow)
+    std::vector<uint8_t> activeOutputPins;
+
     bool isActivePwmPin(uint8_t pin) const;
     void markActivePwmPin(uint8_t pin);
     void unmarkActivePwmPin(uint8_t pin);
+
+    bool isActiveOutputPin(uint8_t pin) const;
+    void markActiveOutputPin(uint8_t pin);
+    void unmarkActiveOutputPin(uint8_t pin);
 };

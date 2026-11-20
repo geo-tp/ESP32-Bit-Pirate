@@ -371,6 +371,17 @@ void OneWireController::handleConfig() {
 }
 
 /*
+Release (mode exit): return the data pin to INPUT (high-Z). The OneWire
+library object survives so session state persists across mode switches
+(consistent with the mode's no-walk re-entry behavior).
+*/
+void OneWireController::release() {
+    if (configured) {
+        oneWireService.releasePin();
+    }
+}
+
+/*
 Sniff
 */
 void OneWireController::handleSniff() {

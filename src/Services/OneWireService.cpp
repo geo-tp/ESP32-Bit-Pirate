@@ -18,6 +18,13 @@ void OneWireService::close() {
     }
 }
 
+void OneWireService::releasePin() {
+    // Release the pin drive left by the OneWire library's bit-banging
+    // (raw GPIO register ops, no pinMode) without destroying the library
+    // object: session state must survive mode switches.
+    pinMode(oneWirePin, INPUT);
+}
+
 void OneWireService::beginPassiveSniff() {
     pinMode(oneWirePin, INPUT);
 }
